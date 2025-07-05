@@ -1,0 +1,11 @@
+{
+  "name": "Pixel Ninja Siamese #4",
+  "description": "AI-generated pixel ninja cat.",
+  "attributes": [
+    {
+      "trait_type": "Breed",
+      "value": "Siamese"
+    }
+  ],
+  "image": "http://localhost:5000/images/4.png"
+}

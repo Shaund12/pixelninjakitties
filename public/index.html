@@ -1,0 +1,215 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pixel Ninja Cats — Mint</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="Mint an on-chain pixel-art ninja kitty.">
+    <link rel="icon" href="assets/detailed_ninja_cat_64.png">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <script type="module" src="js/mint.js"></script>
+    <style>
+        .hero {
+            position: relative;
+            padding: 2rem 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+            .hero h1 {
+                margin-top: 1rem;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+        .disclaimer {
+            background-color: rgba(255, 248, 220, 0.7);
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+            border-radius: 4px;
+        }
+
+        .breed-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0,0,0,0.03);
+            border-radius: 8px;
+            display: none;
+        }
+
+            .breed-info.active {
+                display: block;
+            }
+
+        .card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+            .card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            }
+
+        .mint-steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            padding: 0;
+        }
+
+            .mint-steps li {
+                flex: 1;
+                list-style: none;
+                text-align: center;
+                padding: 1rem 0.5rem;
+                background: rgba(0,0,0,0.03);
+                margin: 0 0.5rem;
+                border-radius: 6px;
+                font-size: 0.9rem;
+            }
+
+        .facts {
+            margin-top: 2rem;
+        }
+
+        #mintBtn {
+            transition: all 0.3s ease;
+        }
+
+            #mintBtn:not([disabled]):hover {
+                transform: scale(1.05);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+
+        .breed-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            margin: 1rem 0;
+            background: rgba(0,0,0,0.02);
+            border-radius: 8px;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <img src="assets/detailed_ninja_cat_64.png" alt="">
+        <a href="index.html">Mint</a><a href="lore.html">Lore</a><a href="my-kitties.html">My Kitties</a>
+        <span class="spacer"></span><button id="connectBtn">Connect Wallet</button>
+    </nav>
+
+    <div class="wrapper">
+        <!-- HERO -->
+        <header class="hero">
+            <img src="assets/detailed_ninja_cat_64.png" class="pixel" alt="">
+            <h1>Pixel Ninja Cats</h1>
+            <h2>Summon your stealthy on-chain companion</h2>
+            <p>Each Ninja Cat is uniquely generated on-chain with its own special attributes, colors, and ninja abilities.</p>
+        </header>
+
+        <div class="disclaimer">
+            <strong>AI Generation Notice:</strong> All Pixel Ninja Cat imagery is completely randomly generated using OpenAI's DALL-E. Each NFT is unique and algorithmically created at the moment of minting, making your ninja cat truly one-of-a-kind.
+        </div>
+
+        <!-- MINT STEPS -->
+        <ul class="mint-steps">
+            <li><strong>1.</strong> Choose your breed</li>
+            <li><strong>2.</strong> Connect your wallet</li>
+            <li><strong>3.</strong> Mint your unique ninja cat</li>
+        </ul>
+
+        <!-- MINT CARD -->
+        <section class="card">
+            <label for="breed">Choose your cat's breed</label>
+            <select id="breed">
+                <option>Bengal</option>
+                <option>Siamese</option>
+                <option>Maine Coon</option>
+                <option>Calico</option>
+                <option>Sphynx</option>
+            </select>
+
+            <div class="breed-preview">
+                Your ninja cat will be randomly generated at minting
+            </div>
+
+            <div id="bengal-info" class="breed-info active">
+                <h4>Bengal Ninja</h4>
+                <p>The stealthy Bengal ninjas are known for their spotted patterns and exceptional agility. They excel at infiltration missions and can leap across great distances silently.</p>
+            </div>
+
+            <div id="siamese-info" class="breed-info">
+                <h4>Siamese Ninja</h4>
+                <p>Masters of psychological warfare, Siamese ninjas use their hypnotic blue eyes and distinctive voice to confuse enemies. They're especially skilled at night operations.</p>
+            </div>
+
+            <div id="mainecoon-info" class="breed-info">
+                <h4>Maine Coon Ninja</h4>
+                <p>The largest of ninja cats, Maine Coons combine raw power with unexpected stealth. Their thick fur allows them to operate in harsh conditions, and they're renowned for their loyalty.</p>
+            </div>
+
+            <div id="calico-info" class="breed-info">
+                <h4>Calico Ninja</h4>
+                <p>With their multi-colored coats, Calico ninjas are masters of disguise and deception. They're believed to bring good fortune to their allies and misfortune to their enemies.</p>
+            </div>
+
+            <div id="sphynx-info" class="breed-info">
+                <h4>Sphynx Ninja</h4>
+                <p>The enigmatic hairless Sphynx ninjas are immune to detection by conventional means. Their unique appearance conceals their true power - an unmatched sensitivity to energy flows.</p>
+            </div>
+
+            <p class="price" id="price"><span class="spinner"></span> Fetching price…</p>
+
+            <button id="mintBtn" disabled>Mint Your Ninja Cat</button><div id="status"></div>
+
+            <p class="disclaimer">By minting, you'll receive a completely unique AI-generated Ninja Cat NFT with randomly assigned traits, colors and abilities.</p>
+        </section>
+
+        <!-- FUN FACTS -->
+        <section class="facts">
+            <h3>Ninja-Kitty Lore &amp; Trivia</h3>
+            <ul id="factList">
+                <li>Each katana is forged from fallen star-iron that landed during the blockchain genesis event.</li>
+                <li>A ninja cat's whiskers can detect incoming gas spikes three blocks before they happen.</li>
+                <li>Maine Coon ninjas are twice as fluffy yet just as silent as their sleeker counterparts.</li>
+                <li>Calico clan masters perfected the "silent meow" - a technique that paralizes enemy smart contracts.</li>
+                <li>The ancient Felidae Shinobi scrolls pre-date ERC-721 by thousands of digital cycles.</li>
+                <li>Bengal ninjas once patched a rogue contract bug mid-battle, saving countless wallets.</li>
+                <li>Siamese ninjas can communicate telepathically with other cats across different blockchains.</li>
+                <li>Sphynx ninjas can phase through digital walls by temporarily converting to pure hexadecimal.</li>
+            </ul>
+        </section>
+    </div>
+
+    <script>
+        // facts rotator
+        const facts = [...document.querySelectorAll('#factList li')]; let i = 0;
+        facts.forEach((f, n) => n && (f.style.display = 'none'));
+        setInterval(() => {
+            facts[i].style.display = 'none'; i = (i + 1) % facts.length;
+            facts[i].style.display = 'list-item';
+        }, 6000);
+
+        // Breed selector functionality
+        const breedSelect = document.getElementById('breed');
+        const breedInfos = document.querySelectorAll('.breed-info');
+
+        breedSelect.addEventListener('change', function () {
+            breedInfos.forEach(info => info.classList.remove('active'));
+            const selectedBreed = this.value.toLowerCase().replace(' ', '');
+            document.getElementById(selectedBreed + '-info').classList.add('active');
+        });
+    </script>
+</body>
+</html>

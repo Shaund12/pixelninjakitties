@@ -1,0 +1,11 @@
+{
+  "name": "Pixel Ninja Bengal #7",
+  "description": "AI-generated pixel ninja cat.",
+  "attributes": [
+    {
+      "trait_type": "Breed",
+      "value": "Bengal"
+    }
+  ],
+  "image": "http://localhost:5000/images/7.png"
+}

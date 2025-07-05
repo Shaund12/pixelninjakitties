@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Stake your Pixel Ninja Cats</title>
+
+    <!-- styles -->
+    <link rel="stylesheet" href="stake.css" />
+
+    <!-- ethers v6 UMD -->
+    <script defer src="https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js"></script>
+
+    <!-- app -->
+    <script defer src="stake.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>🐱 Pixel Ninja Cats × Staking</h1>
+        <button id="connectBtn">Connect Wallet</button>
+    </header>
+
+    <main class="grid">
+
+        <!-- balances card -->
+        <section class="card">
+            <h2>Your Balances</h2>
+            <p>Ninja Cats owned : <span id="ownedCount">–</span></p>
+            <p>Ninja Cats staked: <span id="stakedCount">–</span></p>
+            <p>PIX token balance: <span id="pixBalance">–</span></p>
+        </section>
+
+        <!-- unstaked -->
+        <section class="card">
+            <h2>Un-staked Cats</h2>
+            <div id="ownedList" class="catList"></div>
+            <button id="stakeBtn" disabled>Stake Selected</button>
+        </section>
+
+        <!-- staked -->
+        <section class="card">
+            <h2>Staked Cats</h2>
+            <div id="stakedList" class="catList"></div>
+            <div class="row">
+                <button id="claimBtn" disabled>Claim Rewards</button>
+                <button id="unstakeBtn" disabled>Un-stake Selected</button>
+            </div>
+        </section>
+
+        <!-- activity -->
+        <section class="card" id="logBox">
+            <h2>Activity</h2>
+            <div id="log"></div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Contracts & UI © 2025 Pixel Ninja Cats</p>
+    </footer>
+</body>
+</html>

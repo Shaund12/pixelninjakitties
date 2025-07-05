@@ -1,0 +1,11 @@
+{
+  "name": "Pixel Ninja Calico #6",
+  "description": "AI-generated pixel ninja cat.",
+  "attributes": [
+    {
+      "trait_type": "Breed",
+      "value": "Calico"
+    }
+  ],
+  "image": "https://i.imgur.com/YkeRgec.png"
+}

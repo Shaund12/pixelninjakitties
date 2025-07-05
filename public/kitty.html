@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pixel Ninja Cat</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" href="assets/detailed_ninja_cat_64.png">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <style>
+        /* Kitty Detail Page Styles */
+        .kitty-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .kitty-image-container {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .kitty-image {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            background: rgba(0,0,0,0.03);
+        }
+
+        .rarity-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: linear-gradient(135deg, #6e45e2, #88d3ce);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .kitty-info {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .kitty-name {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid rgba(0,0,0,0.1);
+        }
+
+        .kitty-tagline {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+            .info-table tr {
+                border-bottom: 1px solid rgba(0,0,0,0.05);
+            }
+
+                .info-table tr:last-child {
+                    border-bottom: none;
+                }
+
+            .info-table td {
+                padding: 0.75rem 0;
+            }
+
+                .info-table td:first-child {
+                    font-weight: bold;
+                    width: 35%;
+                    color: #555;
+                }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 0.75rem 1.5rem;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .action-btn:hover {
+                background: #ebebeb;
+                transform: translateY(-2px);
+            }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #6e45e2, #88d3ce);
+            color: white;
+        }
+
+            .primary-btn:hover {
+                background: linear-gradient(135deg, #5b36d1, #76c6c0);
+            }
+
+        .tabs {
+            margin: 2rem 0;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .tab-btn.active {
+                border-bottom: 3px solid #6e45e2;
+                color: #6e45e2;
+            }
+
+        .tab-content {
+            display: none;
+        }
+
+            .tab-content.active {
+                display: block;
+            }
+
+        .attribute-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .attribute-card {
+            background: rgba(0,0,0,0.03);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .attribute-type {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .attribute-value {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .attribute-rarity {
+            margin-top: auto;
+            font-size: 0.8rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .skill-bar {
+            height: 6px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 3px;
+            margin-top: 0.5rem;
+        }
+
+        .skill-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #6e45e2, #88d3ce);
+            border-radius: 3px;
+        }
+
+        .lore-block {
+            background: rgba(0,0,0,0.02);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #6e45e2;
+        }
+
+        .transaction-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .transaction-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tx-type {
+            background: rgba(0,0,0,0.03);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .tx-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .share-options {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .share-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .share-btn:hover {
+                transform: translateY(-2px);
+                background: #ebebeb;
+            }
+
+        .property-pill {
+            display: inline-block;
+            background: rgba(110, 69, 226, 0.1);
+            color: #6e45e2;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+        }
+
+        .address-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .copy-address {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+            .copy-address:hover {
+                opacity: 1;
+            }
+
+        .eth-logo {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+            vertical-align: middle;
+        }
+
+        /* Animation for image */
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .floating {
+            animation: float 5s ease-in-out infinite;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .kitty-showcase {
+                flex-direction: column;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <img src="assets/detailed_ninja_cat_64.png"><a href="index.html">Mint</a>
+        <a href="lore.html">Lore</a><a href="my-kitties.html">My Kitties</a>
+        <span class="spacer"></span><button id="connectBtn">Connect</button>
+    </nav>
+
+    <div class="wrapper">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state" style="text-align: center; padding: 3rem;">
+            <div style="width: 50px; height: 50px; border: 5px solid rgba(0,0,0,0.1); border-left-color: #6e45e2; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <p>Summoning your ninja cat from the blockchain...</p>
+            <style>
+                @keyframes spin {
+                    to {
+                        transform: rotate(360deg);
+                    }
+                }
+            </style>
+        </div>
+
+        <!-- Main Content -->
+        <div id="kittyContent" style="display: none;">
+            <div class="kitty-showcase">
+                <div class="kitty-image-container">
+                    <img id="catImg" class="kitty-image pixel floating" src="" alt="Ninja Cat">
+                    <div class="rarity-badge" id="rarityBadge">Legendary</div>
+                </div>
+
+                <div class="kitty-info">
+                    <h1 class="kitty-name" id="catName">Loading...</h1>
+                    <p class="kitty-tagline" id="catTagline">Master of the shadow arts</p>
+
+                    <div class="action-buttons">
+                        <button class="action-btn primary-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Download Image
+                        </button>
+                        <button class="action-btn" id="shareBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 6.65685 16.3431 8 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M6 15C7.65685 15 9 13.6569 9 12C9 10.3431 7.65685 9 6 9C4.34315 9 3 10.3431 3 12C3 13.6569 4.34315 15 6 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M18 22C19.6569 22 21 20.6569 21 19C21 17.3431 19.6569 16 18 16C16.3431 16 15 17.3431 15 19C15 20.6569 16.3431 22 18 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M8.59 13.51L15.42 17.49" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M15.41 6.51L8.59 10.49" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Share
+                        </button>
+                        <button class="action-btn" id="viewOnEtherscanBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 13V19C18 19.5304 17.7893 20.0391 17.4142 20.4142C17.0391 20.7893 16.5304 21 16 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V8C3 7.46957 3.21071 6.96086 3.58579 6.58579C3.96086 6.21071 4.46957 6 5 6H11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M15 3H21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            View on Etherscan
+                        </button>
+                    </div>
+
+                    <table class="info-table">
+                        <tr>
+                            <td>Token ID</td>
+                            <td id="catId"></td>
+                        </tr>
+                        <tr>
+                            <td>Breed</td>
+                            <td id="catBreed"></td>
+                        </tr>
+                        <tr>
+                            <td>Rarity Score</td>
+                            <td id="catRarityScore">92.7 / 100</td>
+                        </tr>
+                        <tr>
+                            <td>Owner</td>
+                            <td>
+                                <div class="address-display">
+                                    <span id="catOwner"></span>
+                                    <svg class="copy-address" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M20 9H11C9.89543 9 9 9.89543 9 11V20C9 21.1046 9.89543 22 11 22H20C21.1046 22 22 21.1046 22 20V11C22 9.89543 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        <path d="M5 15H4C3.46957 15 2.96086 14.7893 2.58579 14.4142C2.21071 14.0391 2 13.5304 2 13V4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2H13C13.5304 2 14.0391 2.21071 14.4142 2.58579C14.7893 2.96086 15 3.46957 15 4V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Minted On</td>
+                            <td id="mintDate"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="attributes">Attributes</button>
+                    <button class="tab-btn" data-tab="story">Ninja Story</button>
+                    <button class="tab-btn" data-tab="history">History</button>
+                </div>
+
+                <!-- Attributes Tab -->
+                <div class="tab-content active" id="attributes-tab">
+                    <h3>Ninja Attributes</h3>
+                    <div class="attribute-grid" id="attributesGrid">
+                        <!-- Attributes will be loaded dynamically -->
+                        <div class="attribute-card">
+                            <div class="attribute-type">Whisker Style</div>
+                            <div class="attribute-value">Thunderstrike</div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 82%"></div>
+                            </div>
+                            <div class="attribute-rarity">Rare (8.2% have this)</div>
+                        </div>
+                        <div class="attribute-card">
+                            <div class="attribute-type">Blade Type</div>
+                            <div class="attribute-value">Star-Iron Katana</div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                            <div class="attribute-rarity">Legendary (1.5% have this)</div>
+                        </div>
+                        <div class="attribute-card">
+                            <div class="attribute-type">Stealth Level</div>
+                            <div class="attribute-value">Ghost Walker</div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 88%"></div>
+                            </div>
+                            <div class="attribute-rarity">Epic (3.8% have this)</div>
+                        </div>
+                    </div>
+
+                    <h3>Combat Skills</h3>
+                    <div class="attribute-grid">
+                        <div class="attribute-card">
+                            <div class="attribute-type">Agility</div>
+                            <div class="attribute-value">93/100</div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 93%"></div>
+                            </div>
+                        </div>
+                        <div class="attribute-card">
+                            <div class="attribute-type">Stealth</div>
+                            <div class="attribute-value">87/100</div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 87%"></div>
+                            </div>
+                        </div>
+                        <div class="attribute-card">
+                            <div class="attribute-type">Power</div>
+                            <div class="attribute-value">79/100</div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 79%"></div>
+                            </div>
+                        </div>
+                        <div class="attribute-card">
+                            <div class="attribute-type">Intelligence</div>
+                            <div class="attribute-value">92/100</div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 92%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Story Tab -->
+                <div class="tab-content" id="story-tab">
+                    <h3>The Legend of <span id="catNameInStory"></span></h3>
+
+                    <div class="lore-block">
+                        <p id="catStoryPart1">Born during the third moon of the Great Bit-Eclipse, this ninja cat showed exceptional promise from the earliest days of training. Whispers spread through the Emerald Paw dojo of a young feline with reflexes unlike any seen before.</p>
+
+                        <p id="catStoryPart2">Master Kiyoto recognized the potential immediately, taking the kitten under his direct tutelage. Years of rigorous training in the ancient art of Paw-Hash-Do forged both mind and body into the perfect infiltration instrument.</p>
+
+                        <p id="catStoryPart3">Now a full-fledged Ninja, this cat specializes in network infiltration and smart contract protection, using the legendary Star-Iron katana to slice through malicious code with surgical precision.</p>
+                    </div>
+
+                    <h3>Special Abilities</h3>
+                    <ul id="specialAbilities">
+                        <li>Can detect potential blockchain threats three blocks before manifestation</li>
+                        <li>Master of the "Nine-Block Leap" technique, allowing rapid traversal of the digital landscape</li>
+                        <li>Developed a unique whisker-sensing ability that can decode encrypted messages</li>
+                    </ul>
+                </div>
+
+                <!-- History Tab -->
+                <div class="tab-content" id="history-tab">
+                    <h3>Blockchain History</h3>
+
+                    <ul class="transaction-list" id="transactionList">
+                        <li class="transaction-item">
+                            <div>
+                                <span class="tx-type">Mint</span>
+                                <a href="#" class="tx-hash">0x81a9...6c42</a>
+                            </div>
+                            <span class="tx-date">June 15, 2023</span>
+                        </li>
+                        <li class="transaction-item">
+                            <div>
+                                <span class="tx-type">Transfer</span>
+                                <a href="#" class="tx-hash">0x72b1...9f31</a>
+                            </div>
+                            <span class="tx-date">August 3, 2023</span>
+                        </li>
+                    </ul>
+
+                    <h3>Share Your Ninja Cat</h3>
+                    <p>Show off your rare ninja companion to the world!</p>
+
+                    <div class="share-options">
+                        <div class="share-btn" title="Share on Twitter">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M23 3.00005C22.0424 3.67552 20.9821 4.19216 19.86 4.53005C19.2577 3.83756 18.4573 3.34674 17.567 3.12397C16.6767 2.90121 15.7395 2.95724 14.8821 3.2845C14.0247 3.61176 13.2884 4.19445 12.773 4.95376C12.2575 5.71308 11.9877 6.61238 12 7.53005V8.53005C10.2426 8.57561 8.50127 8.18586 6.93101 7.39549C5.36074 6.60513 4.01032 5.43868 3 4.00005C3 4.00005 -1 13 8 17C5.94053 18.398 3.48716 19.099 1 19C10 24 21 19 21 7.50005C20.9991 7.2215 20.9723 6.94364 20.92 6.67005C21.9406 5.66354 22.6608 4.39276 23 3.00005Z" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="share-btn" title="Share on Discord">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" stroke="#333333" stroke-width="0.5" />
+                            </svg>
+                        </div>
+                        <div class="share-btn" title="Copy Link">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.5309C19.5521 2.60386 18.298 2.07802 16.987 2.06663C15.676 2.05523 14.413 2.55921 13.47 3.47L11.75 5.18" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M14 11C13.5705 10.4259 13.0226 9.95083 12.3935 9.60706C11.7643 9.2633 11.0685 9.05889 10.3534 9.00768C9.63822 8.95646 8.92037 9.05964 8.24861 9.31023C7.57685 9.56082 6.96684 9.95294 6.46 10.46L3.46 13.46C2.54921 14.403 2.04524 15.666 2.05663 16.977C2.06803 18.288 2.59387 19.5421 3.52091 20.4691C4.44795 21.3961 5.70201 21.922 7.013 21.9334C8.32398 21.9448 9.587 21.4408 10.53 20.53L12.24 18.82" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 3rem; text-align: center; padding: 2rem 0; border-top: 1px solid rgba(0,0,0,0.05);">
+                <p style="font-size: 0.9rem; color: #666;">
+                    Each Ninja Cat is uniquely generated using OpenAI's DALL-E. Your cat is one-of-a-kind!
+                </p>
+                <a href="my-kitties.html" class="action-btn" style="display: inline-block; margin-top: 1rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 0.5rem;">
+                        <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Back to Your Collection
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            // Tab functionality
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and tabs
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+                    // Add active class to clicked button and corresponding tab
+                    button.classList.add('active');
+                    document.getElementById(`${button.dataset.tab}-tab`).classList.add('active');
+                });
+            });
+
+            // Copy address functionality
+            document.querySelector('.copy-address').addEventListener('click', function () {
+                const address = document.getElementById('catOwner').textContent;
+                navigator.clipboard.writeText(address)
+                    .then(() => {
+                        alert('Address copied to clipboard!');
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy address: ', err);
+                    });
+            });
+
+            // Share button functionality
+            document.getElementById('shareBtn').addEventListener('click', function () {
+                if (navigator.share) {
+                    navigator.share({
+                        title: document.getElementById('catName').textContent,
+                        text: 'Check out my awesome Pixel Ninja Cat NFT!',
+                        url: window.location.href
+                    })
+                        .catch(console.error);
+                } else {
+                    alert('Web Share API not supported in your browser. Use the share icons below.');
+                }
+            });
+        });
+    </script>
+
+    <script src="js/kitty.js"></script>
+</body>
+</html>

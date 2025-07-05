@@ -1,0 +1,244 @@
+﻿/* ───────────────────────────────────────────────
+   style.css  –  Pixel Ninja Cats
+   ─────────────────────────────────────────────── */
+
+/* ===== global palette & font ===== */
+:root {
+    --bg: #0d0d0d; /* page background   */
+    --fg: #e9e9e9; /* primary text      */
+    --accent: #00c5ff; /* cyan highlight    */
+    --accent2: #ff26a6; /* magenta highlight */
+    font-family: "Segoe UI",Tahoma,sans-serif;
+}
+
+*, *:before, *:after {
+    box-sizing: border-box
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    scroll-behavior: smooth
+}
+
+/* ===== sticky NAV-BAR ===== */
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .8rem 1.4rem;
+    background: #111;
+    position: sticky;
+    top: 0;
+    z-index: 20
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-weight: 600
+}
+
+    .brand img {
+        width: 28px;
+        height: 28px;
+        image-rendering: pixelated
+    }
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0
+}
+
+nav a {
+    color: var(--fg);
+    text-decoration: none;
+    font-size: .9rem
+}
+
+    nav a:hover {
+        color: var(--accent)
+    }
+
+nav button {
+    padding: .45rem .9rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: linear-gradient(45deg,var(--accent),var(--accent2));
+    color: #000;
+    font-weight: 700
+}
+
+/* ===== universal headings & hero ===== */
+section, header.hero {
+    max-width: 880px;
+    margin-inline: auto;
+    padding: 3rem 1.25rem;
+    text-align: center
+}
+
+h1 {
+    margin: .3rem 0 .8rem;
+    font-size: 2rem;
+    color: var(--accent);
+    font-weight: 700
+}
+
+h2 {
+    margin: .25rem 0 1.2rem;
+    font-size: 1.1rem;
+    color: var(--accent2);
+    font-weight: 500
+}
+
+.small {
+    font-size: .85rem;
+    opacity: .8
+}
+
+.sprite {
+    width: 96px;
+    height: 96px;
+    image-rendering: pixelated
+}
+
+/* ===== MINT CARD ===== */
+.card {
+    background: #111;
+    padding: 2rem 2.5rem;
+    border: 1px solid #222;
+    border-radius: 12px;
+    box-shadow: 0 0 25px rgba(0,0,0,.55);
+    width: 340px;
+    margin-inline: auto;
+    text-align: center
+}
+
+select, button {
+    width: 100%;
+    padding: .75rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700
+}
+
+select {
+    margin-top: .45rem;
+    background: #1e1e1e;
+    color: var(--fg)
+}
+
+button {
+    margin-top: 1rem;
+    cursor: pointer;
+    color: #000;
+    background: linear-gradient(45deg,var(--accent),var(--accent2));
+    transition: opacity .25s
+}
+
+    button:disabled {
+        opacity: .4;
+        cursor: not-allowed
+    }
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--accent);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+#status {
+    margin-top: 1rem;
+    min-height: 1.2rem;
+    font-size: .9rem
+}
+
+    #status a {
+        color: var(--accent2);
+        text-decoration: none
+    }
+
+/* ===== GALLERY (My Cats) ===== */
+#gallery.grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill,minmax(128px,1fr))
+}
+
+.tile {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: .6rem;
+    transition: transform .15s ease
+}
+
+    .tile:hover {
+        transform: translateY(-3px)
+    }
+
+    .tile img {
+        width: 100%;
+        image-rendering: pixelated;
+        border-radius: 4px
+    }
+
+.tokenId {
+    margin-top: .3rem;
+    font-size: .75rem;
+    opacity: .8
+}
+
+/* ===== FUN-FACTS / LORE ===== */
+.facts {
+    max-width: 640px;
+    margin-inline: auto;
+    line-height: 1.45;
+    background: #111;
+    padding: 1.5rem 2rem;
+    border: 1px solid #222;
+    border-radius: 12px;
+    text-align: left
+}
+
+    .facts h3 {
+        margin: 0 0 .45rem;
+        color: var(--accent);
+        font-weight: 600
+    }
+
+    .facts li {
+        margin: .35rem 0
+    }
+
+/* ===== FOOTER ===== */
+footer {
+    text-align: center;
+    font-size: .8rem;
+    padding: 2.5rem 0;
+    opacity: .6
+}
+
+/* ===== responsive tweak ===== */
+@media(max-width:460px) {
+    .card {
+        width: 95%
+    }
+}
