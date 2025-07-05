@@ -6,26 +6,76 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" href="assets/detailed_ninja_cat_64.png">
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
     <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .wrapper {
+            background-color: #121212;
+        }
+
+        h1, h2, h3 {
+            color: #ffffff;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #8a65ff, #7067CF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
         .lore-section {
             margin: 2rem 0;
             padding: 1.5rem;
-            background: rgba(0,0,0,0.05);
-            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            line-height: 1.6;
         }
+
+            .lore-section h2 {
+                border-bottom: 2px solid #8a65ff;
+                padding-bottom: 0.5rem;
+                margin-top: 0;
+                margin-bottom: 1.25rem;
+            }
+
+            .lore-section p {
+                margin-bottom: 1rem;
+                color: #d0d0d0;
+            }
+
+            .lore-section ul {
+                padding-left: 1.5rem;
+                color: #d0d0d0;
+            }
+
+                .lore-section ul li {
+                    margin-bottom: 0.5rem;
+                }
 
         .image-note {
             font-style: italic;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             margin-top: 2rem;
-            padding: 0.5rem;
-            background: rgba(0,0,0,0.03);
-            border-radius: 4px;
+            padding: 1rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            color: #9e9e9e;
+            border: 1px solid #333;
+            text-align: center;
         }
 
         .clan-section {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
             display: flex;
             flex-direction: column;
             gap: 1rem;
@@ -43,9 +93,246 @@
         }
 
         .clan-card {
+            padding: 1.5rem;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+
+            .clan-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+                background: rgba(255,255,255,0.04);
+            }
+
+            .clan-card h3 {
+                margin-top: 0;
+                margin-bottom: 0.75rem;
+                color: #8a65ff;
+            }
+
+        /* NFT Showcase Carousel */
+        .nft-showcase {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            border: 1px solid #333;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+            .nft-showcase h2 {
+                color: #ffffff;
+                margin-top: 0;
+                margin-bottom: 1.5rem;
+                position: relative;
+                display: inline-block;
+            }
+
+                .nft-showcase h2::after {
+                    content: '';
+                    position: absolute;
+                    width: 80%;
+                    height: 3px;
+                    bottom: -10px;
+                    left: 10%;
+                    background: linear-gradient(to right, transparent, #8a65ff, transparent);
+                }
+
+        .carousel-container {
+            position: relative;
+            max-width: 1000px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            height: 350px;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.5s ease;
+            height: 100%;
+            background: #1a1a1a;
+        }
+
+        .carousel-item {
+            min-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 1rem;
-            border-radius: 6px;
-            background: rgba(0,0,0,0.03);
+        }
+
+        .carousel-image {
+            max-height: 220px;
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            object-fit: contain;
+        }
+
+        .carousel-caption {
+            margin-top: 1rem;
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .carousel-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45px;
+            height: 45px;
+            background: rgba(0,0,0,0.7);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .carousel-nav:hover {
+                opacity: 1;
+                background: rgba(0,0,0,0.9);
+            }
+
+            .carousel-nav.prev {
+                left: 10px;
+            }
+
+            .carousel-nav.next {
+                right: 10px;
+            }
+
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 1.5rem;
+        }
+
+        .carousel-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #333;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+            .carousel-dot.active {
+                background: #8a65ff;
+            }
+
+            .carousel-dot:hover {
+                transform: scale(1.2);
+            }
+
+        .carousel-counter {
+            margin-top: 1rem;
+            color: #9e9e9e;
+            font-size: 0.9rem;
+        }
+
+        .carousel-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .auto-play {
+            background: #2c2c2e;
+            color: #e0e0e0;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .auto-play:hover {
+                background: #3a3a3c;
+            }
+
+            .auto-play svg {
+                width: 12px;
+                height: 12px;
+            }
+
+        .loading-spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 4px solid #8a65ff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .view-all-btn {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #8a65ff, #7067CF);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+            .view-all-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 15px rgba(138, 101, 255, 0.4);
+            }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .nft-showcase {
+                padding: 1.5rem 1rem;
+            }
+
+            .carousel-container {
+                height: 280px;
+            }
+
+            .carousel-image {
+                max-height: 180px;
+            }
+
+            .carousel-nav {
+                width: 35px;
+                height: 35px;
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
@@ -64,6 +351,33 @@
             <h2>Ancient Beginnings</h2>
             <p>Long before ERC-721 there was the secret order of Felidae Shinobi… In the shadowy valleys between digital and physical realms, a mysterious breed of warriors emerged. Neither fully feline nor entirely human, these nimble guardians began as ordinary house cats, transformed by an ancient blockchain incantation during the Great Bit-Eclipse.</p>
             <p>For centuries, they have protected the cryptographic barriers that separate our reality from the chaotic void beyond. Now, as the metaverse expands, they've decided to reveal themselves to worthy collectors who can carry their legacy forward.</p>
+        </div>
+
+        <!-- NFT Showcase Carousel Section -->
+        <div class="nft-showcase">
+            <h2>The Legendary Warriors</h2>
+            <div class="carousel-container">
+                <div class="carousel-track" id="nftCarousel">
+                    <!-- Loading state -->
+                    <div class="carousel-item">
+                        <div class="loading-spinner"></div>
+                        <p>Summoning ninja cats from the blockchain...</p>
+                    </div>
+                </div>
+                <button class="carousel-nav prev" id="prevBtn">❮</button>
+                <button class="carousel-nav next" id="nextBtn">❯</button>
+            </div>
+            <div class="carousel-controls">
+                <div class="carousel-dots" id="carouselDots"></div>
+                <button class="auto-play" id="autoPlayBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Auto-Play
+                </button>
+                <span class="carousel-counter" id="carouselCounter">0 Ninja Cats Found</span>
+            </div>
+            <a href="all-kitties.html" class="view-all-btn">View All Ninja Cats</a>
         </div>
 
         <div class="lore-section">
@@ -122,12 +436,261 @@
             <p>Collectors whisper that certain rare combinations of traits might signal the arrival of this prophesied hero. Those who help discover this special cat may be rewarded with powers beyond imagination.</p>
         </div>
 
-        <img src="assets/detailed_ninja_cat_64.png" class="pixel" alt="Pixel Ninja Cat">
-
-        <p class="image-note">Note: All Pixel Ninja Cat images are uniquely and randomly generated using OpenAI DALL-E, creating one-of-a-kind digital warriors for each collector. No two ninja cats share the same destiny.</p>
+        <p class="image-note">All Pixel Ninja Cat images are uniquely and randomly generated using OpenAI DALL-E, creating one-of-a-kind digital warriors for each collector. No two ninja cats share the same destiny.</p>
     </div>
 
-    <!-- load wallet bootstrap **as a module** -->
+    <!-- Import config first as a module -->
+    <script type="module">
+        import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI } from './js/config.js';
+
+        // Make these available to the non-module script
+        window.NFT_CONFIG = {
+            RPC_URL,
+            CONTRACT_ADDRESS,
+            NFT_ABI
+        };
+    </script>
+
+    <!-- NFT Carousel functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            // NFT Carousel setup
+            async function setupNFTCarousel() {
+                const carouselTrack = document.getElementById('nftCarousel');
+                const dotsContainer = document.getElementById('carouselDots');
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const autoPlayBtn = document.getElementById('autoPlayBtn');
+                const counterEl = document.getElementById('carouselCounter');
+
+                // Get contract config from window global set by module script
+                const config = window.NFT_CONFIG;
+                if (!config) {
+                    console.error("Contract configuration not loaded");
+                    carouselTrack.innerHTML = '<div class="carousel-item"><p>Error loading ninja cats</p></div>';
+                    return;
+                }
+
+                try {
+                    const provider = new ethers.JsonRpcProvider(config.RPC_URL);
+                    const contract = new ethers.Contract(config.CONTRACT_ADDRESS, config.NFT_ABI, provider);
+
+                    // Get total supply
+                    const totalSupply = await contract.totalSupply();
+                    const tokenCount = Number(totalSupply);
+
+                    if (tokenCount <= 0) {
+                        carouselTrack.innerHTML = `
+                                <div class="carousel-item">
+                                    <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
+                                    <p>No ninja cats have been minted yet.<br>Be the first to summon a warrior!</p>
+                                </div>`;
+                        return;
+                    }
+
+                    // Update counter
+                    counterEl.textContent = `${tokenCount} Ninja Cats Found`;
+
+                    // We'll get up to 10 random cats to showcase
+                    const catsToShow = Math.min(10, tokenCount);
+                    const selectedTokens = [];
+
+                    // If we have few cats, show them all
+                    if (tokenCount <= 10) {
+                        for (let i = 0; i < tokenCount; i++) {
+                            selectedTokens.push(i);
+                        }
+                    } else {
+                        // Otherwise select some random ones (with a bias toward newer ones)
+                        // Always include the newest 3
+                        for (let i = 0; i < 3 && i < tokenCount; i++) {
+                            selectedTokens.push(tokenCount - 1 - i);
+                        }
+
+                        // Then add some random ones
+                        while (selectedTokens.length < catsToShow) {
+                            const randomIndex = Math.floor(Math.random() * tokenCount);
+                            if (!selectedTokens.includes(randomIndex)) {
+                                selectedTokens.push(randomIndex);
+                            }
+                        }
+                    }
+
+                    // Clear loading indicator
+                    carouselTrack.innerHTML = '';
+
+                    // Create a fallback image
+                    const fallbackImage = "assets/detailed_ninja_cat_64.png";
+
+                    // Create carousel items
+                    for (let i = 0; i < selectedTokens.length; i++) {
+                        const idx = selectedTokens[i];
+
+                        // Create placeholder item while we load the data
+                        const item = document.createElement('div');
+                        item.className = 'carousel-item';
+                        item.innerHTML = `
+                                <div class="loading-spinner"></div>
+                                <p>Loading Ninja Cat...</p>
+                            `;
+                        carouselTrack.appendChild(item);
+
+                        // Create dot
+                        const dot = document.createElement('div');
+                        dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+                        dot.addEventListener('click', () => goToSlide(i));
+                        dotsContainer.appendChild(dot);
+
+                        try {
+                            // Get token ID for this index
+                            const tokenId = await contract.tokenByIndex(idx);
+
+                            // Get token URI and metadata
+                            const uri = await contract.tokenURI(tokenId);
+                            let metadata;
+
+                            if (uri.startsWith('ipfs://')) {
+                                const ipfsHash = uri.replace('ipfs://', '');
+                                const ipfsUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
+                                const response = await fetch(ipfsUrl);
+                                metadata = await response.json();
+                            } else {
+                                const response = await fetch(uri);
+                                metadata = await response.json();
+                            }
+
+                            // Update the carousel item with the fetched data
+                            if (metadata && metadata.image) {
+                                // Fix IPFS links
+                                const imageUrl = metadata.image.startsWith('ipfs://')
+                                    ? metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
+                                    : metadata.image;
+
+                                // Get breed for display
+                                let breed = "Ninja Cat";
+                                if (metadata.attributes) {
+                                    const breedAttr = metadata.attributes.find(a => a.trait_type === "Breed");
+                                    if (breedAttr) breed = breedAttr.value;
+                                }
+
+                                item.innerHTML = `
+                                        <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image"
+                                             onerror="this.src='${fallbackImage}'">
+                                        <div class="carousel-caption">
+                                            ${metadata.name}
+                                            <div style="font-size: 0.8rem; color: #9e9e9e; margin-top: 0.3rem;">
+                                                ${breed} · Token #${tokenId}
+                                            </div>
+                                        </div>
+                                    `;
+
+                                // Add click to view details
+                                item.style.cursor = 'pointer';
+                                item.addEventListener('click', () => {
+                                    window.location.href = `kitty.html?id=${tokenId}`;
+                                });
+                            }
+                        } catch (err) {
+                            console.error("Error loading token:", err);
+                            item.innerHTML = `
+                                    <img src="${fallbackImage}" alt="Ninja Cat" class="carousel-image">
+                                    <div class="carousel-caption">Mysterious Ninja Cat</div>
+                                `;
+                        }
+                    }
+
+                    // Set up carousel functionality
+                    let currentSlide = 0;
+                    const slides = document.querySelectorAll('.carousel-item');
+                    const dots = document.querySelectorAll('.carousel-dot');
+
+                    function goToSlide(n) {
+                        currentSlide = n;
+                        carouselTrack.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+                        // Update dots
+                        dots.forEach((dot, i) => {
+                            dot.classList.toggle('active', i === currentSlide);
+                        });
+                    }
+
+                    // Add event listeners for navigation
+                    prevBtn.addEventListener('click', () => {
+                        currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+                        goToSlide(currentSlide);
+                    });
+
+                    nextBtn.addEventListener('click', () => {
+                        currentSlide = (currentSlide + 1) % slides.length;
+                        goToSlide(currentSlide);
+                    });
+
+                    // Auto-play functionality
+                    let interval;
+                    let isPlaying = false;
+
+                    function toggleAutoPlay() {
+                        if (isPlaying) {
+                            clearInterval(interval);
+                            autoPlayBtn.innerHTML = `
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                    Auto-Play`;
+                        } else {
+                            interval = setInterval(() => {
+                                currentSlide = (currentSlide + 1) % slides.length;
+                                goToSlide(currentSlide);
+                            }, 4000);
+                            autoPlayBtn.innerHTML = `
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="6" y="4" width="4" height="16"></rect>
+                                        <rect x="14" y="4" width="4" height="16"></rect>
+                                    </svg>
+                                    Pause`;
+                        }
+                        isPlaying = !isPlaying;
+                    }
+
+                    // Start autoplay by default
+                    toggleAutoPlay();
+
+                    // Add click handler for autoplay button
+                    autoPlayBtn.addEventListener('click', toggleAutoPlay);
+
+                    // Pause on hover
+                    carouselTrack.addEventListener('mouseenter', () => {
+                        if (isPlaying) {
+                            clearInterval(interval);
+                        }
+                    });
+
+                    carouselTrack.addEventListener('mouseleave', () => {
+                        if (isPlaying) {
+                            clearInterval(interval);
+                            interval = setInterval(() => {
+                                currentSlide = (currentSlide + 1) % slides.length;
+                                goToSlide(currentSlide);
+                            }, 4000);
+                        }
+                    });
+
+                } catch (error) {
+                    console.error("Error setting up NFT carousel:", error);
+                    carouselTrack.innerHTML = `
+                            <div class="carousel-item">
+                                <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
+                                <p>Error loading ninja cats.<br>The ancient scrolls are currently unreadable.</p>
+                            </div>`;
+                }
+            }
+
+            // Initialize carousel
+            setupNFTCarousel();
+        });
+    </script>
+
+    <!-- Load wallet connection script -->
     <script type="module" src="js/connect-only.js"></script>
 </body>
 </html>
