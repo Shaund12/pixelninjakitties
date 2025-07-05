@@ -350,3 +350,135 @@ header.hero {
         font-size: 1.8rem
     }
 }
+
+
+/* Footer Styles */
+footer {
+    margin-top: 4rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid #333;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem 1.5rem 2rem;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.footer-section h3 {
+    margin-top: 0.5rem;
+    font-size: 1.3rem;
+    color: #fff;
+}
+
+.footer-section h4 {
+    color: #8a65ff;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.footer-section p {
+    color: #b0b0b0;
+    line-height: 1.5;
+}
+
+.footer-logo {
+    width: 48px;
+    height: 48px;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .footer-links li {
+        margin-bottom: 0.75rem;
+    }
+
+    .footer-links a {
+        color: #e0e0e0;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+        .footer-links a:hover {
+            color: #8a65ff;
+        }
+
+.social-links {
+    display: flex;
+    gap: 1rem;
+}
+
+.social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    color: #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+    .social-icon:hover {
+        background: #8a65ff;
+        color: #ffffff;
+        transform: translateY(-3px);
+    }
+
+.footer-disclaimer {
+    padding: 1.25rem;
+    background: rgba(30,30,30,0.5);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-align: center;
+    border: 1px solid #444;
+}
+
+    .footer-disclaimer p {
+        color: #b0b0b0;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .footer-disclaimer a {
+        color: #8a65ff;
+        text-decoration: underline;
+    }
+
+.footer-copyright {
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #333;
+    color: #777;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer-section:first-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+}

@@ -65,14 +65,16 @@ function generateTraits(breed, tokenId) {
             .digest('hex');
     }
 
-    // Trait options with rarity scores
+    // Expanded trait options with more rarity tiers
     const weapons = [
         { value: "Katana", rarity: "Common", rarityScore: 25 },
         { value: "Shuriken", rarity: "Uncommon", rarityScore: 15 },
         { value: "Nunchucks", rarity: "Rare", rarityScore: 10 },
         { value: "Kunai", rarity: "Epic", rarityScore: 7 },
         { value: "Sai", rarity: "Legendary", rarityScore: 3 },
-        { value: "Bo Staff", rarity: "Mythic", rarityScore: 2 }
+        { value: "Bo Staff", rarity: "Mythic", rarityScore: 2 },
+        { value: "Twin Blades", rarity: "Ultra Rare", rarityScore: 1 },
+        { value: "Ghost Dagger", rarity: "Divine", rarityScore: 0.5 }
     ];
 
     const stances = [
@@ -81,7 +83,9 @@ function generateTraits(breed, tokenId) {
         { value: "Stealth", rarity: "Uncommon", rarityScore: 15 },
         { value: "Agility", rarity: "Rare", rarityScore: 12 },
         { value: "Focus", rarity: "Epic", rarityScore: 8 },
-        { value: "Shadow", rarity: "Legendary", rarityScore: 5 }
+        { value: "Shadow", rarity: "Legendary", rarityScore: 5 },
+        { value: "Void", rarity: "Ultra Rare", rarityScore: 1.5 },
+        { value: "Ethereal", rarity: "Divine", rarityScore: 0.5 }
     ];
 
     const elements = [
@@ -90,7 +94,9 @@ function generateTraits(breed, tokenId) {
         { value: "Earth", rarity: "Uncommon", rarityScore: 16 },
         { value: "Wind", rarity: "Rare", rarityScore: 13 },
         { value: "Shadow", rarity: "Epic", rarityScore: 6 },
-        { value: "Lightning", rarity: "Legendary", rarityScore: 4 }
+        { value: "Lightning", rarity: "Legendary", rarityScore: 4 },
+        { value: "Cosmic", rarity: "Ultra Rare", rarityScore: 1 },
+        { value: "Quantum", rarity: "Divine", rarityScore: 0.3 }
     ];
 
     const ranks = [
@@ -99,7 +105,9 @@ function generateTraits(breed, tokenId) {
         { value: "Skilled", rarity: "Rare", rarityScore: 15 },
         { value: "Elite", rarity: "Epic", rarityScore: 10 },
         { value: "Master", rarity: "Legendary", rarityScore: 5 },
-        { value: "Legendary", rarity: "Mythic", rarityScore: 1 }
+        { value: "Legendary", rarity: "Mythic", rarityScore: 1 },
+        { value: "Grandmaster", rarity: "Ultra Rare", rarityScore: 0.5 },
+        { value: "Immortal", rarity: "Divine", rarityScore: 0.1 }
     ];
 
     const accessories = [
@@ -108,30 +116,68 @@ function generateTraits(breed, tokenId) {
         { value: "Cape", rarity: "Epic", rarityScore: 8 },
         { value: "Gauntlets", rarity: "Rare", rarityScore: 12 },
         { value: "Scarf", rarity: "Uncommon", rarityScore: 18 },
-        { value: "None", rarity: "Common", rarityScore: 40 }
+        { value: "None", rarity: "Common", rarityScore: 40 },
+        { value: "Ancient Amulet", rarity: "Legendary", rarityScore: 3 },
+        { value: "Phantom Cloak", rarity: "Ultra Rare", rarityScore: 1 },
+        { value: "Celestial Crown", rarity: "Divine", rarityScore: 0.2 }
     ];
 
-    // Improved trait selection with better distribution
-    const getTraitFromArray = (arr, traitType) => {
-        // Use a proper hash for this specific trait
+    // Weighted selection function based on rarityScore
+    const getWeightedTrait = (arr, traitType) => {
         const hash = getTraitHash(traitType, seed);
-        // Take first 8 chars of hash and convert to integer
-        const hashValue = parseInt(hash.substring(0, 8), 16);
-        // Use modulo to get index within array bounds
-        const index = hashValue % arr.length;
+        const hashValue = parseInt(hash.substring(0, 8), 16) / (2 ** 32);
 
-        console.log(`TokenId ${tokenId} - Selected ${traitType}: ${arr[index].value} (index: ${index})`);
-        return arr[index];
+        // Calculate total weight (inverse of rarityScore so lower scores are rarer)
+        const totalWeight = arr.reduce((sum, item) => sum + (1 / item.rarityScore), 0);
+
+        // Generate a target value from the hash
+        let target = hashValue * totalWeight;
+        let cumulativeWeight = 0;
+
+        // Find the item that corresponds to the target value
+        for (const item of arr) {
+            cumulativeWeight += (1 / item.rarityScore);
+            if (target <= cumulativeWeight) {
+                console.log(`TokenId ${tokenId} - Selected ${traitType}: ${item.value} (${item.rarity})`);
+                return item;
+            }
+        }
+
+        // Fallback
+        return arr[0];
     };
 
-    // Selected traits - each uses its own type string for better variation
-    const weaponTrait = getTraitFromArray(weapons, "weapon");
-    const stanceTrait = getTraitFromArray(stances, "stance");
-    const elementTrait = getTraitFromArray(elements, "element");
-    const rankTrait = getTraitFromArray(ranks, "rank");
-    const accessoryTrait = getTraitFromArray(accessories, "accessory");
+    // Check for ultra-special combinations (1 in 1000 chance)
+    const isUltraSpecial = parseInt(getTraitHash("special", seed).substring(0, 6), 16) % 1000 === 0;
 
-    // Generate the basic attributes
+    // Selected traits with weighted distribution
+    let weaponTrait = getWeightedTrait(weapons, "weapon");
+    let stanceTrait = getWeightedTrait(stances, "stance");
+    let elementTrait = getWeightedTrait(elements, "element");
+    let rankTrait = getWeightedTrait(ranks, "rank");
+    let accessoryTrait = getWeightedTrait(accessories, "accessory");
+
+    // Special combination check
+    if (isUltraSpecial) {
+        // Override with ultra-rare combination
+        console.log(`TokenId ${tokenId} - 🌟 ULTRA SPECIAL COMBINATION DETECTED! 🌟`);
+        weaponTrait = weapons.find(w => w.rarity === "Divine") || weaponTrait;
+        elementTrait = elements.find(e => e.rarity === "Divine") || elementTrait;
+        rankTrait = ranks.find(r => r.rarity === "Divine") || rankTrait;
+    }
+
+    // Special breed-specific traits
+    if (breed === "Sphynx" && parseInt(getTraitHash("sphynx-special", seed).substring(0, 4), 16) % 100 === 0) {
+        elementTrait = { value: "Astral", rarity: "Unique", rarityScore: 0.1 };
+        console.log(`TokenId ${tokenId} - 🌌 UNIQUE SPHYNX ELEMENT: Astral! 🌌`);
+    }
+
+    if (breed === "Maine Coon" && parseInt(getTraitHash("coon-special", seed).substring(0, 4), 16) % 100 === 0) {
+        weaponTrait = { value: "Ancestral Claws", rarity: "Unique", rarityScore: 0.1 };
+        console.log(`TokenId ${tokenId} - ⚔️ UNIQUE MAINE COON WEAPON: Ancestral Claws! ⚔️`);
+    }
+
+    // Generate basic attributes
     const attributes = [
         { trait_type: "Breed", value: breed },
         { trait_type: "Weapon", value: weaponTrait.value, rarity: weaponTrait.rarity },
@@ -140,6 +186,28 @@ function generateTraits(breed, tokenId) {
         { trait_type: "Rank", value: rankTrait.value, rarity: rankTrait.rarity },
         { trait_type: "Accessory", value: accessoryTrait.value, rarity: accessoryTrait.rarity }
     ];
+
+    // Special chance for bonus traits (approximately 1 in 200)
+    const bonusTraitChance = parseInt(getTraitHash("bonus", seed).substring(0, 6), 16) % 200;
+
+    if (bonusTraitChance === 0) {
+        const bonusTraits = [
+            { trait_type: "Aura", value: "Spectral", rarity: "Unique" },
+            { trait_type: "Companion", value: "Shadow Kitten", rarity: "Unique" },
+            { trait_type: "Blessing", value: "Ancient One's Favor", rarity: "Unique" },
+            { trait_type: "Mark", value: "Celestial Sigil", rarity: "Unique" }
+        ];
+
+        const bonusIndex = parseInt(getTraitHash("bonus-type", seed).substring(0, 4), 16) % bonusTraits.length;
+        attributes.push(bonusTraits[bonusIndex]);
+        console.log(`TokenId ${tokenId} - 🎁 BONUS TRAIT ADDED: ${bonusTraits[bonusIndex].trait_type}: ${bonusTraits[bonusIndex].value}! 🎁`);
+    }
+
+    // Super rare perfect cat (approximately 1 in 10000)
+    if (parseInt(getTraitHash("perfect", seed).substring(0, 6), 16) % 10000 === 0) {
+        console.log(`TokenId ${tokenId} - 🔱 PERFECT NINJA CAT DETECTED! ALL STATS MAXIMIZED! 🔱`);
+        attributes.push({ trait_type: "Perfect", value: "True", rarity: "Mythical" });
+    }
 
     // Generate combat stats based on traits
     const combatStats = generateCombatStats(tokenId, attributes);
@@ -318,72 +386,262 @@ function generateSpecialAbilities(tokenId, attributes) {
     return abilities;
 }
 
-// Generate backstory based on traits
+// Generate backstory based on traits with greater variety
 function generateBackstory(tokenId, breed, attributes) {
     // Get trait values
     const weaponValue = attributes.find(attr => attr.trait_type === "Weapon")?.value;
     const elementValue = attributes.find(attr => attr.trait_type === "Element")?.value;
     const rankValue = attributes.find(attr => attr.trait_type === "Rank")?.value;
     const stanceValue = attributes.find(attr => attr.trait_type === "Stance")?.value;
+    const accessoryValue = attributes.find(attr => attr.trait_type === "Accessory")?.value;
 
-    // Create a name for consistency in the story
+    // Create a more varied name with more possibilities
     const seed = parseInt(tokenId);
     const hash = createHash('sha256').update(`${seed}-name`).digest('hex');
-    const nameFirstParts = ["Shadow", "Whisker", "Paw", "Claw", "Silent", "Midnight", "Swift", "Stealth"];
-    const nameSecondParts = ["Walker", "Runner", "Master", "Hunter", "Blade", "Strike", "Fang", "Protocol"];
 
+    // Expanded name parts for more variety
+    const nameFirstParts = [
+        "Shadow", "Whisker", "Paw", "Claw", "Silent", "Midnight", "Swift", "Stealth",
+        "Moon", "Dusk", "Ember", "Jade", "Storm", "Crimson", "Iron", "Ghost",
+        "Phantom", "Lotus", "Zen", "Onyx", "Sage", "Frost", "Thunder", "Razor",
+        "Echo", "Dawn", "Twilight", "Cipher", "Void", "Nimble", "Mystic", "Feral"
+    ];
+
+    const nameSecondParts = [
+        "Walker", "Runner", "Master", "Hunter", "Blade", "Strike", "Fang", "Protocol",
+        "Shadow", "Whisper", "Slash", "Spirit", "Claw", "Stalker", "Guardian", "Sentinel",
+        "Watcher", "Prowler", "Shinobi", "Ronin", "Phantom", "Viper", "Dragon", "Tiger",
+        "Phoenix", "Assassin", "Agent", "Warrior", "Knight", "Scout", "Specter", "Wraith"
+    ];
+
+    // More variety in naming with occasional honorifics or titles
     const firstIndex = parseInt(hash.substring(0, 2), 16) % nameFirstParts.length;
     const secondIndex = parseInt(hash.substring(2, 4), 16) % nameSecondParts.length;
-    const ninjaName = `${nameFirstParts[firstIndex]} ${nameSecondParts[secondIndex]}`;
 
-    // Generate origin story based on breed
+    // Sometimes add an honorific based on rank
+    let ninjaName = `${nameFirstParts[firstIndex]} ${nameSecondParts[secondIndex]}`;
+    const nameStyle = parseInt(hash.substring(4, 6), 16) % 20;
+
+    if (nameStyle === 0 && rankValue === "Master") {
+        ninjaName = `Master ${ninjaName}`;
+    } else if (nameStyle === 1 && rankValue === "Legendary") {
+        ninjaName = `The Legendary ${ninjaName}`;
+    } else if (nameStyle === 2) {
+        ninjaName = `${ninjaName} of the ${elementValue || "Shadow"} Path`;
+    } else if (nameStyle === 3) {
+        ninjaName = `${ninjaName}, the ${weaponValue || "Blade"} Wielder`;
+    }
+
+    // Generate detailed origin story with more diverse possibilities
+    const originPatterns = parseInt(hash.substring(6, 8), 16) % 10;
+    const locations = [
+        "hidden valleys of the Eastern Digital Realm",
+        "secret dojo beneath the Cryptographic Mountains",
+        "floating islands of the Virtual Archipelago",
+        "ancient temples of the Segmented Forest",
+        "bustling port city of Hash Harbor",
+        "underground catacombs of the Binary Labyrinth",
+        "mist-shrouded cliffs of the Recursive Heights",
+        "nomadic caravans crossing the Protocol Plains",
+        "forbidden district of the Quantum Capital",
+        "endless Data Sea where blockchain meets reality"
+    ];
+
+    const birthCircumstances = [
+        "during a rare solar eclipse",
+        "as twin blockchains merged",
+        "during the Great Network Partition",
+        "when the Protocol Comet passed overhead",
+        "in the aftermath of the Hash War",
+        "as the Digital Oracle made its prophecy",
+        "while the blockchain aurora painted the night sky",
+        "during the Consensus Festival",
+        "as the old Cryptographic Order collapsed",
+        "when the first NFT contract was deployed"
+    ];
+
+    const earlyTraits = [
+        "exceptional tracking abilities",
+        "unmatched reflexes",
+        "uncanny intuition for cryptographic weaknesses",
+        "the ability to see digital anomalies invisible to others",
+        "remarkable pattern recognition",
+        "perfect memory for code sequences",
+        "natural talent for stealth operations",
+        "extraordinary balance and agility",
+        "the rare gift of blockchain communication",
+        "legendary focus and patience"
+    ];
+
+    // Breed-specific traits woven with varied elements
+    const breedIndex = parseInt(hash.substring(8, 10), 16) % 10;
+    const locationIndex = parseInt(hash.substring(10, 12), 16) % locations.length;
+    const circumstanceIndex = parseInt(hash.substring(12, 14), 16) % birthCircumstances.length;
+    const traitIndex = parseInt(hash.substring(14, 16), 16) % earlyTraits.length;
+
     let origin;
     switch (breed) {
         case "Bengal":
-            origin = `Born in the hidden valleys of the Eastern Digital Realm, this Bengal ninja was recognized for exceptional tracking abilities from an early age. The distinctive spotted coat pattern provides perfect camouflage during network infiltration missions.`;
+            if (originPatterns < 3) {
+                origin = `Born in the ${locations[locationIndex]}, this Bengal ninja ${birthCircumstances[circumstanceIndex]}. The distinctive spotted coat pattern provides perfect camouflage during network infiltration missions, while their ${earlyTraits[traitIndex]} marked them for greatness from their first training session.`;
+            } else if (originPatterns < 7) {
+                origin = `When the digital storms ravaged the ${locations[locationIndex]}, only one Bengal kitten survived, showing ${earlyTraits[traitIndex]}. Their spotted coat, resembling fragmented code patterns, became symbolic of their destiny as a bridge between the old and new cryptographic orders.`;
+            } else {
+                origin = `From the moment they opened their eyes ${birthCircumstances[circumstanceIndex]} in the ${locations[locationIndex]}, this Bengal's spotted pattern glowed with unusual code sequences. Adopted by a wandering cyber-monk who recognized ${earlyTraits[traitIndex]}, they were raised with ancient blockchain knowledge thought lost to time.`;
+            }
             break;
         case "Siamese":
-            origin = `Emerging from the mysterious Fog Protocol with piercing blue eyes that can see through the most complex encryption, this Siamese ninja possesses vocal abilities that can disrupt enemy communications across the blockchain.`;
+            if (originPatterns < 4) {
+                origin = `Emerging from the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this Siamese ninja possesses piercing blue eyes that can see through the most complex encryption. Their ${earlyTraits[traitIndex]} and haunting vocal abilities can disrupt enemy communications across the blockchain.`;
+            } else if (originPatterns < 8) {
+                origin = `Descended from the royal line of Siam Protocol Guardians, this ninja was smuggled away from the ${locations[locationIndex]} during the great Consensus Attack. Their distinctive blue eyes contain fragments of the original encryption algorithm, giving them ${earlyTraits[traitIndex]} beyond ordinary cats.`;
+            } else {
+                origin = `Neither fully of the physical nor digital realm, this Siamese ninja first manifested in the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}. Their dual-toned fur represents the balance between code and reality, while their ${earlyTraits[traitIndex]} make them the perfect bridge between worlds.`;
+            }
             break;
         case "Maine Coon":
-            origin = `From the frozen northern shards of the blockchain, this Maine Coon ninja grew to be one of the most formidable digital warriors. Revered for impressive size and a thick coat that shields against even the harshest network conditions.`;
+            if (originPatterns < 3) {
+                origin = `From the frozen ${locations[locationIndex]}, this Maine Coon ninja grew to be one of the most formidable digital warriors ${birthCircumstances[circumstanceIndex]}. Revered for impressive size and a thick coat that shields against even the harshest network conditions, their ${earlyTraits[traitIndex]} became legendary among allies and enemies alike.`;
+            } else if (originPatterns < 7) {
+                origin = `When the great Firewall fell, this Maine Coon emerged from the ${locations[locationIndex]}, already fully grown and battle-hardened. Their enormous paws could crush encryption keys with a single swipe, while their ${earlyTraits[traitIndex]} allowed them to navigate security systems thought impenetrable.`;
+            } else {
+                origin = `Born to a lineage of guardian cats who protected the ${locations[locationIndex]} for generations, this Maine Coon inherited not just their magnificent size but also ${earlyTraits[traitIndex]} that manifested ${birthCircumstances[circumstanceIndex]}. Their distinctive M marking on their forehead is said to be the mark of the original Metadata Masters.`;
+            }
             break;
         case "Calico":
-            origin = `Born during a rare triple-fork event, this Calico ninja was blessed with a multi-colored coat that marks the most elusive of digital guardians. Calico ninjas bring prosperity to their allies and confusion to their enemies.`;
+            if (originPatterns < 4) {
+                origin = `Born ${birthCircumstances[circumstanceIndex]} in the ${locations[locationIndex]}, this Calico ninja was blessed with a multi-colored coat that marks the most elusive of digital guardians. Their unique pattern represents the intersection of multiple blockchains, giving them ${earlyTraits[traitIndex]} that crosses protocol boundaries.`;
+            } else if (originPatterns < 8) {
+                origin = `The product of a forbidden merge between opposing code repositories, this Calico ninja first appeared in the ${locations[locationIndex]} displaying ${earlyTraits[traitIndex]}. Their tri-colored pattern represents the successful integration of conflicting systems, making them natural mediators in the digital ecosystem.`;
+            } else {
+                origin = `When three rival coding houses united ${birthCircumstances[circumstanceIndex]}, this Calico ninja was the living embodiment of their alliance. Raised in the ${locations[locationIndex]} by master programmers from each house, they developed ${earlyTraits[traitIndex]} and an innate understanding of disparate systems.`;
+            }
             break;
         case "Sphynx":
-            origin = `Appearing from the Null Vector space, this hairless Sphynx ninja confounds conventional blockchain tracking systems. Operating on a different frequency than other cats, their bare skin is sensitive to the subtle energy flows of digital networks.`;
+            if (originPatterns < 3) {
+                origin = `Appearing from the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this hairless Sphynx ninja confounds conventional blockchain tracking systems. Operating on a different frequency than other cats, their bare skin is sensitive to the subtle energy flows of digital networks, giving them ${earlyTraits[traitIndex]} that borders on the supernatural.`;
+            } else if (originPatterns < 7) {
+                origin = `Not born but compiled in the ${locations[locationIndex]}, this Sphynx ninja represents a new evolution in digital consciousness. Their lack of fur allows direct interface with the blockchain through their skin, while their ${earlyTraits[traitIndex]} makes them perfect for missions where even a shadow would be detected.`;
+            } else {
+                origin = `When the ancient source code was exposed ${birthCircumstances[circumstanceIndex]}, this Sphynx emerged fully formed from the ${locations[locationIndex]}. Without the protection of fur, they developed ${earlyTraits[traitIndex]} as compensation, learning to feel the flows of data like others feel the wind.`;
+            }
             break;
         default:
-            origin = `Trained in the ancient arts of the blockchain ninjas, this cat showed remarkable aptitude for digital stealth and cryptographic combat from an early age.`;
+            origin = `Emerging from the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this ninja showed ${earlyTraits[traitIndex]} from an early age, marking them for special training in the ancient arts of blockchain protection.`;
     }
 
-    // Training story based on rank and element
-    let training = `Under the guidance of ${rankValue === "Master" || rankValue === "Legendary" ? "the Grand Masters" : "Master Kiyoto"}, `;
+    // Generate varied training narratives
+    const mentors = [
+        "the Grand Masters of the Recursive Order",
+        "Master Kiyoto, last of the Hardware Whisperers",
+        "the mysterious Blind Compiler, who sees only in pure code",
+        "the Twin Oracles of the Eastern and Western shards",
+        "Sensei Nakamoto, whose true identity remains hidden",
+        "the Blockchain Sages of the Distributed Mountain",
+        "Lady Elliptic, mistress of cryptographic curves",
+        "the Ghost Protocol, an AI that achieved consciousness",
+        "the Council of Nine Keys, each holding part of the sacred knowledge",
+        "the legendary White Hat, whose exploits saved the first blockchain"
+    ];
 
-    if (elementValue && rankValue) {
-        training += `${ninjaName} spent years mastering the ${elementValue} techniques, achieving the rank of ${rankValue} after passing the Trial of ${stanceValue || "Balance"}.`;
+    const trainingEvents = [
+        "surviving the Trial of a Thousand Nodes",
+        "spending seven years in digital meditation",
+        "crossing the uncrossable Bridge of Broken Protocols",
+        "defeating the notorious Red Hat hackers in single combat",
+        "solving the Consensus Riddle that had stumped masters for generations",
+        "recovering from a near-fatal buffer overflow attack",
+        "discovering a zero-day exploit that could have destroyed the network",
+        "mastering every stance in the ancient Cryptographic Codex",
+        "achieving perfect harmony between hardware and software understanding",
+        "creating a new defensive technique previously thought impossible"
+    ];
+
+    const trainingLocations = [
+        "the shifting sands of the Data Desert",
+        "the frozen fortresses of the Cold Storage Mountains",
+        "the echo chambers of the Recursive Caverns",
+        "the ancient Library of Forgotten Protocols",
+        "the floating dojos of the Virtual Archipelago",
+        "the underground networks beneath the Digital City",
+        "the isolated Terminal Island where no connections are permitted",
+        "the legendary Proof of Work mines",
+        "the perilous Validation Gauntlet",
+        "the secret Consensus Chambers hidden from public knowledge"
+    ];
+
+    // Create more varied training stories
+    const mentorIndex = parseInt(hash.substring(16, 18), 16) % mentors.length;
+    const trainingIndex = parseInt(hash.substring(18, 20), 16) % trainingEvents.length;
+    const locationTrainingIndex = parseInt(hash.substring(20, 22), 16) % trainingLocations.length;
+    const trainingPattern = parseInt(hash.substring(22, 24), 16) % 10;
+
+    let training;
+    if (trainingPattern < 3) {
+        training = `Under the guidance of ${mentors[mentorIndex]}, ${ninjaName} spent years mastering the ${elementValue || "fundamental"} techniques in ${trainingLocations[locationTrainingIndex]}. The rank of ${rankValue || "Adept"} was earned after ${trainingEvents[trainingIndex]}, a feat few believed possible.`;
+    } else if (trainingPattern < 6) {
+        training = `${ninjaName}'s path crossed with ${mentors[mentorIndex]} after a devastating breach in the ${trainingLocations[locationTrainingIndex]}. Together they developed a unique approach to the ${elementValue || "traditional"} arts, eventually leading to ${ninjaName} attaining the rank of ${rankValue || "Skilled"} by ${trainingEvents[trainingIndex]}.`;
+    } else if (trainingPattern < 9) {
+        training = `Orphaned and alone, ${ninjaName} was discovered by ${mentors[mentorIndex]} while ${trainingEvents[trainingIndex]}. Their natural affinity for the ${elementValue || "cryptographic"} arts blossomed in the harsh environment of ${trainingLocations[locationTrainingIndex]}, earning them the rank of ${rankValue || "Elite"} at an unprecedented young age.`;
     } else {
-        training += `${ninjaName} developed unique techniques that combine traditional ninja skills with cutting-edge blockchain technology.`;
+        training = `Rejecting traditional teachings, ${ninjaName} sought out ${mentors[mentorIndex]} in ${trainingLocations[locationTrainingIndex]}. Through unorthodox methods and ${trainingEvents[trainingIndex]}, they mastered techniques others deemed impossible, eventually being recognized with the rank of ${rankValue || "Adept"} despite their rebellious path.`;
     }
 
-    // Current role based on weapon and stance
-    let currentRole = `Now a ${rankValue || "skilled"} ninja, `;
+    // Create diverse current roles and missions
+    const missions = [
+        "hunting down rogue AI that threaten blockchain stability",
+        "protecting high-value NFT collections from sophisticated thieves",
+        "negotiating treaties between competing protocol factions",
+        "recovering lost private keys from the most secure vaults",
+        "infiltrating centralized systems to plant decentralization seeds",
+        "hunting the notorious Phantom Hacker collective across networks",
+        "guarding the sacred Genesis Block from corruption attempts",
+        "mapping the unexplored regions of the expanding metaverse",
+        "training the next generation of digital defenders",
+        "seeking the mythical Perfect Oracle that never lies"
+    ];
 
-    if (weaponValue && stanceValue) {
-        currentRole += `${ninjaName} specializes in the ${stanceValue} stance while wielding a ${weaponValue}, `;
-    } else if (weaponValue) {
-        currentRole += `${ninjaName} wields the ${weaponValue} with unmatched precision, `;
-    } else if (stanceValue) {
-        currentRole += `${ninjaName} has mastered the ${stanceValue} stance, `;
-    } else {
-        currentRole += `${ninjaName} moves silently through the digital landscape, `;
-    }
+    const specialties = [
+        "untraceable movements across multiple blockchains",
+        "cryptographic attacks that leave no trace",
+        "instant protocol adaptation to any network environment",
+        "digital camouflage that fools even the most advanced scanning systems",
+        "neural-level interface with consensus mechanisms",
+        "perfect mimicry of any digital signature",
+        "emotion-based encryption that responds only to the creator's intent",
+        "time-locked execution of complex security protocols",
+        "zero-knowledge verification of even the most complex transactions",
+        "parallel processing that allows simultaneous presence across networks"
+    ];
 
-    if (elementValue) {
-        currentRole += `channeling the power of ${elementValue} to secure the blockchain against those who would disrupt its harmony.`;
+    const reputations = [
+        "a silent guardian who never seeks recognition",
+        "a controversial figure whose methods divide the community",
+        "a legendary hero whose exploits inspire countless young ninjas",
+        "a mysterious operator who may not even exist according to official records",
+        "a feared enforcer whose mere presence deters most attacks",
+        "a diplomatic bridge between warring protocol factions",
+        "an innovative creator whose techniques are studied in every dojo",
+        "a lone wolf who refuses all alliances yet always appears when needed most",
+        "a tactical genius whose battle plans have never failed",
+        "a cryptographic artist whose defenses are considered masterpieces"
+    ];
+
+    // Current role with more variety
+    const missionIndex = parseInt(hash.substring(24, 26), 16) % missions.length;
+    const specialtyIndex = parseInt(hash.substring(26, 28), 16) % specialties.length;
+    const reputationIndex = parseInt(hash.substring(28, 30), 16) % reputations.length;
+    const rolePattern = parseInt(hash.substring(30, 32), 16) % 10;
+
+    let currentRole;
+    if (rolePattern < 3) {
+        currentRole = `Now a ${rankValue || "respected"} ninja, ${ninjaName} specializes in ${weaponValue || "traditional weapon"} techniques combined with the ${stanceValue || "balanced"} stance. Currently ${missions[missionIndex]}, they are known for ${specialties[specialtyIndex]} and have become ${reputations[reputationIndex]}.`;
+    } else if (rolePattern < 6) {
+        currentRole = `After achieving the rank of ${rankValue || "Skilled"}, ${ninjaName} dedicated themselves to mastering the ${stanceValue || "ancient"} stance with their trusted ${weaponValue || "weapon"}. While ${missions[missionIndex]}, they have developed ${specialties[specialtyIndex]}, earning a reputation as ${reputations[reputationIndex]}.`;
+    } else if (rolePattern < 8) {
+        currentRole = `Few understand the true purpose of ${ninjaName}'s work as a ${rankValue || "dedicated"} ninja. Behind their public mission of ${missions[missionIndex]} lies a secret agenda known only to the highest councils. Their ${specialties[specialtyIndex]} makes them ideally suited for this work, while most know them merely as ${reputations[reputationIndex]}.`;
     } else {
-        currentRole += `protecting users and their digital assets from those who would exploit vulnerabilities in the system.`;
+        currentRole = `The path of a ${rankValue || "true"} ninja is never straight, and ${ninjaName}'s journey led them from wielding the ${weaponValue || "traditional weapons"} to embracing the ${stanceValue || "unconventional"} stance that perfectly complements their unique abilities. Though currently ${missions[missionIndex]}, their legacy of ${specialties[specialtyIndex]} has already established them as ${reputations[reputationIndex]}.`;
     }
 
     return {

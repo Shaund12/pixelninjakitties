@@ -1,4 +1,4 @@
-import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
+﻿import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
 
 // Constants
 const MARKETPLACE_ADDRESS = "0x0191A91B7F7E8c9E97bDB8566D0AAEbc48A81187";
@@ -203,7 +203,7 @@ async function fetchTokenMetadata(tokenId) {
     }
 }
 
-// Load all marketplace listings
+// Modify loadListings to call calculateMarketplaceStats
 async function loadListings() {
     try {
         listingsLoading.style.display = 'flex';
@@ -213,6 +213,16 @@ async function loadListings() {
 
         // Filter out inactive listings
         allListings = allListings.filter(listing => listing.active);
+
+        // Initialize the stats display
+        if (window.updateMarketplaceStats) {
+            window.updateMarketplaceStats(); // Show loading state
+        }
+
+        // Calculate and update marketplace stats
+        calculateMarketplaceStats().catch(err => {
+            console.error("Error updating marketplace stats:", err);
+        });
 
         if (allListings.length === 0) {
             noListings.style.display = 'block';
@@ -243,7 +253,7 @@ async function loadListings() {
     }
 }
 
-// Apply filters and sorting to listings
+// Modify the applyListingFiltersAndSort function to pass the VTRU price to renderListings
 async function applyListingFiltersAndSort() {
     const currency = currencyFilter.value;
     const sort = sortListings.value;
@@ -285,12 +295,15 @@ async function applyListingFiltersAndSort() {
             break;
     }
 
-    // Render the filtered and sorted listings
-    await renderListings(filteredListings);
+    // Get the latest VTRU/USDC price for display
+    const vtruPriceInUsdc = await getVtruUsdcPrice();
+
+    // Render the filtered and sorted listings with the price info
+    await renderListings(filteredListings, vtruPriceInUsdc);
 }
 
-// Render marketplace listings
-async function renderListings(listings) {
+// Update the renderListings function to show USDC equivalent
+async function renderListings(listings, vtruPriceInUsdc = 0.1) {
     listingsGrid.innerHTML = '';
 
     if (listings.length === 0) {
@@ -309,12 +322,20 @@ async function renderListings(listings) {
         const formattedPrice = formatPrice(listing.price, listing.currency);
         const currencyName = getCurrencyName(listing.currency);
         const sellerAddress = listing.seller;
+        const isNativeCurrency = listing.currency === ethers.ZeroAddress;
 
         // Calculate fees
         const price = parseFloat(formattedPrice);
         const platformFee = price * 0.025; // 2.5% platform fee
         const gasFee = 0.001; // Estimated gas fee
         const totalCost = price + platformFee + gasFee;
+
+        // Calculate USDC equivalent if this is a VTRU listing
+        let usdcEquivalent = '';
+        if (isNativeCurrency && vtruPriceInUsdc > 0) {
+            const priceInUsdc = price * vtruPriceInUsdc;
+            usdcEquivalent = `<div class="usdc-equivalent">≈ ${priceInUsdc.toFixed(2)} USDC</div>`;
+        }
 
         const card = document.createElement('div');
         card.className = 'listing-card';
@@ -329,6 +350,7 @@ async function renderListings(listings) {
                 <div class="listing-seller">Seller: ${shortenAddress(sellerAddress)}</div>
                 <div class="listing-price">
                     ${formattedPrice} <span class="listing-price-currency">${currencyName}</span>
+                    ${usdcEquivalent}
                 </div>
                 
                 <!-- Price Breakdown -->
@@ -346,7 +368,7 @@ async function renderListings(listings) {
                     </div>
                     <div class="price-row">
                         <span class="tooltip">
-                            Gas (est.)
+                            Gas Fee (est.)
                             <span class="tooltiptext">Estimated network fee for processing your transaction</span>
                         </span>
                         <span>${gasFee.toFixed(4)} ${currencyName}</span>
@@ -354,6 +376,8 @@ async function renderListings(listings) {
                     <div class="total-price">
                         <span>Total Cost:</span>
                         <span>${totalCost.toFixed(4)} ${currencyName}</span>
+                        ${isNativeCurrency && vtruPriceInUsdc > 0 ?
+                `<div class="usdc-total">≈ ${(totalCost * vtruPriceInUsdc).toFixed(2)} USDC</div>` : ''}
                     </div>
                 </div>
                 
@@ -378,7 +402,8 @@ async function renderListings(listings) {
                 price: formattedPrice,
                 rawPrice: listing.price.toString(),
                 currency: currencyName,
-                currencyAddress: listing.currency
+                currencyAddress: listing.currency,
+                usdcEquivalent: isNativeCurrency ? (price * vtruPriceInUsdc).toFixed(2) : null
             };
 
             // Show the purchase modal
@@ -1111,6 +1136,213 @@ async function init() {
         showToast("Error initializing marketplace. Please refresh the page.", 'error');
     }
 }
+
+// Add this function after the init() function in marketplace.js:
+
+async function getVtruUsdcPrice() {
+    try {
+        // Contract addresses
+        const SWAP_ROUTER_ADDRESS = "0x3295fd27D6e44529c51Ef05a5d16Ca17Fb9e10A8";
+        const LP_ADDRESS = "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba";
+
+        // Simplified LP ABI just for querying reserves
+        const LP_ABI = [
+            "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)"
+        ];
+
+        // Create contract instance
+        const lpContract = new ethers.Contract(LP_ADDRESS, LP_ABI, provider);
+
+        // Get reserves
+        const reserves = await lpContract.getReserves();
+
+        // Assuming reserve0 is VTRU and reserve1 is USDC
+        // If it's the other way around, you'll need to swap these
+        const vtruReserve = parseFloat(ethers.formatEther(reserves[0]));
+        const usdcReserve = parseFloat(ethers.formatUnits(reserves[1], 6)); // USDC has 6 decimals
+
+        // Calculate price (USDC per VTRU)
+        const vtruPriceInUsdc = usdcReserve / vtruReserve;
+
+        console.log(`VTRU/USDC Price: 1 VTRU = ${vtruPriceInUsdc.toFixed(6)} USDC`);
+        return vtruPriceInUsdc;
+    } catch (error) {
+        console.error("Error fetching VTRU/USDC price:", error);
+        // Fallback price if we can't get the actual price
+        return 0.1; // Assume 1 VTRU = 0.1 USDC as fallback
+    }
+}
+
+// Modify the calculateMarketplaceStats function to include price conversion
+async function calculateMarketplaceStats() {
+    try {
+        console.log("Calculating marketplace stats from blockchain data");
+
+        // Get VTRU/USDC price for volume conversion
+        const vtruPriceInUsdc = await getVtruUsdcPrice();
+
+        // Get all listings directly from the contract
+        const listings = await marketplace.getListings();
+        console.log(`Raw listings from contract:`, listings);
+
+        // Filter for active listings only
+        const activeListings = listings.filter(listing => listing.active);
+        const activeListingCount = activeListings.length;
+        console.log(`Found ${activeListingCount} active listings`);
+
+        // Track floor prices by currency type
+        let lowestNativeListing = null;
+        let lowestUSDCListing = null;
+
+        // Track if we found any listings by currency
+        let hasNativeListings = false;
+        let hasUSDCListings = false;
+
+        // Process each active listing
+        for (const listing of activeListings) {
+            const price = listing.price;
+            const tokenId = listing.tokenId;
+            const currency = listing.currency;
+            const isNative = currency === ethers.ZeroAddress;
+
+            // Format the price for display in logs
+            const formattedPrice = isNative
+                ? ethers.formatEther(price) + " VTRU"
+                : ethers.formatUnits(price, 6) + " USDC";
+
+            console.log(`Listing: Token #${tokenId} - ${formattedPrice} - Currency: ${isNative ? "Native VTRU" : "USDC"}`);
+
+            if (isNative) {
+                hasNativeListings = true;
+                if (lowestNativeListing === null || price < lowestNativeListing.price) {
+                    lowestNativeListing = listing;
+                }
+            } else if (currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
+                hasUSDCListings = true;
+                if (lowestUSDCListing === null || price < lowestUSDCListing.price) {
+                    lowestUSDCListing = listing;
+                }
+            }
+        }
+
+        console.log(`Has native listings: ${hasNativeListings}, Has USDC listings: ${hasUSDCListings}`);
+
+        // Determine the absolute floor price by comparing both currencies
+        let floorPrice = null;
+        let floorPriceCurrency = null;
+        let floorPriceTokenId = null;
+
+        // Get lowest VTRU price if available
+        let nativeFloorPriceUSD = Infinity;
+        if (lowestNativeListing) {
+            const nativePrice = parseFloat(ethers.formatEther(lowestNativeListing.price));
+            // Convert VTRU to USDC equivalent for comparison
+            nativeFloorPriceUSD = nativePrice * vtruPriceInUsdc;
+            console.log(`Lowest native price: ${nativePrice} VTRU (≈$${nativeFloorPriceUSD.toFixed(2)} USDC equiv.)`);
+        }
+
+        // Get lowest USDC price if available
+        let usdcFloorPriceUSD = Infinity;
+        if (lowestUSDCListing) {
+            const usdcPrice = parseFloat(ethers.formatUnits(lowestUSDCListing.price, 6));
+            usdcFloorPriceUSD = usdcPrice; // USDC is already USD equivalent
+            console.log(`Lowest USDC price: ${usdcPrice} USDC`);
+        }
+
+        // Choose the lowest price as the floor price based on USD equivalent
+        if (usdcFloorPriceUSD <= nativeFloorPriceUSD && lowestUSDCListing) {
+            floorPrice = parseFloat(ethers.formatUnits(lowestUSDCListing.price, 6));
+            floorPriceCurrency = 'USDC';
+            floorPriceTokenId = lowestUSDCListing.tokenId;
+            console.log(`USDC is the floor price: ${floorPrice} ${floorPriceCurrency}`);
+        } else if (lowestNativeListing) {
+            floorPrice = parseFloat(ethers.formatEther(lowestNativeListing.price));
+            floorPriceCurrency = 'VTRU';
+            floorPriceTokenId = lowestNativeListing.tokenId;
+            console.log(`VTRU is the floor price: ${floorPrice} ${floorPriceCurrency}`);
+        }
+
+        // Get sales data by querying past events
+        const currentBlock = await provider.getBlockNumber();
+        const fromBlock = Math.max(0, currentBlock - 100000); // Look back ~2 weeks
+
+        const soldFilter = marketplace.filters.ItemSold();
+        const soldEvents = await marketplace.queryFilter(soldFilter, fromBlock, 'latest');
+
+        console.log(`Found ${soldEvents.length} sales events`);
+
+        // Calculate total sales and volume
+        const totalSalesCount = soldEvents.length;
+
+        let totalVolumeNative = BigInt(0);
+        let totalVolumeUSDC = BigInt(0);
+
+        for (const event of soldEvents) {
+            if (event.args) {
+                const price = event.args.price;
+                const currency = event.args.currency;
+
+                if (currency === ethers.ZeroAddress) {
+                    totalVolumeNative += price;
+                } else if (currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
+                    totalVolumeUSDC += price;
+                }
+            }
+        }
+
+        // Convert volumes to human-readable format
+        const volumeNative = parseFloat(ethers.formatEther(totalVolumeNative));
+        const volumeUSDC = parseFloat(ethers.formatUnits(totalVolumeUSDC, 6));
+
+        // Calculate total volume in USDC equivalent
+        const nativeVolumeInUsdc = volumeNative * vtruPriceInUsdc;
+        const totalVolumeInUsdc = nativeVolumeInUsdc + volumeUSDC;
+
+        console.log(`Native volume: ${volumeNative} VTRU (≈${nativeVolumeInUsdc.toFixed(2)} USDC)`);
+        console.log(`USDC volume: ${volumeUSDC} USDC`);
+        console.log(`Combined volume: ≈${totalVolumeInUsdc.toFixed(2)} USDC`);
+
+        // Construct stats object with all real data
+        const stats = {
+            totalVolume: volumeNative,
+            volumeUSDC: volumeUSDC,
+            totalVolumeInUsdc: totalVolumeInUsdc,
+            vtruPriceInUsdc: vtruPriceInUsdc,
+            activeListings: activeListingCount,
+            floorPrice: floorPrice,
+            floorPriceCurrency: floorPriceCurrency,
+            floorPriceTokenId: floorPriceTokenId,
+            totalSales: totalSalesCount,
+            hasNativeListings: hasNativeListings,
+            hasUSDCListings: hasUSDCListings
+        };
+
+        console.log("Final marketplace stats:", stats);
+
+        // Update the UI with real data
+        if (window.updateMarketplaceStats) {
+            window.updateMarketplaceStats(stats);
+        }
+
+        return stats;
+    } catch (error) {
+        console.error("Error querying blockchain for marketplace stats:", error);
+        return {
+            totalVolume: 0,
+            volumeUSDC: 0,
+            totalVolumeInUsdc: 0,
+            vtruPriceInUsdc: 0.1, // Fallback price
+            activeListings: 0,
+            floorPrice: null,
+            floorPriceCurrency: null,
+            floorPriceTokenId: null,
+            totalSales: 0,
+            hasNativeListings: false,
+            hasUSDCListings: false
+        };
+    }
+}
+
 
 // Start the app when DOM is ready
 document.addEventListener('DOMContentLoaded', init);

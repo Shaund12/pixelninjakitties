@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Terms of Use - Pixel Ninja Cats</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" href="assets/detailed_ninja_cat_64.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .wrapper {
+            background-color: #121212;
+            padding: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            color: #ffffff;
+        }
+
+        .terms-content {
+            background: rgba(30, 30, 30, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border: 1px solid #333;
+        }
+
+        .terms-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+            .terms-section:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+            }
+
+            .terms-section h2 {
+                color: #8a65ff;
+                margin-top: 0;
+                font-size: 1.5rem;
+            }
+
+            .terms-section p {
+                line-height: 1.6;
+                margin-bottom: 1rem;
+            }
+
+            .terms-section ul, .terms-section ol {
+                padding-left: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+                .terms-section ul li, .terms-section ol li {
+                    margin-bottom: 0.5rem;
+                }
+
+        .last-updated {
+            color: #b0b0b0;
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
+
+        .important-notice {
+            background: rgba(138, 101, 255, 0.1);
+            border: 1px solid rgba(138, 101, 255, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <img src="assets/detailed_ninja_cat_64.png"><a href="index.html">Mint</a>
+        <a href="lore.html">Lore</a><a href="my-kitties.html">My Kitties</a>
+        <a href="all-kitties.html">Gallery</a><a href="marketplace.html">Marketplace</a>
+        <span class="spacer"></span><button id="connectBtn">Connect Wallet</button>
+    </nav>
+
+    <div class="wrapper">
+        <h1>Terms of Use</h1>
+        <p class="last-updated">Last Updated: <span id="last-update-date">Loading...</span></p>
+
+        <script>
+            // Option 2: Get the file's last modified date from the server
+            document.addEventListener('DOMContentLoaded', function () {
+                fetch('terms.html', { method: 'HEAD' })
+                    .then(response => {
+                        const lastModified = response.headers.get('Last-Modified');
+                        if (lastModified) {
+                            const lastUpdateDate = new Date(lastModified);
+                            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                            document.getElementById('last-update-date').textContent = lastUpdateDate.toLocaleDateString('en-US', options);
+                        } else {
+                            document.getElementById('last-update-date').textContent = 'December 2023';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching last update date:', error);
+                        document.getElementById('last-update-date').textContent = 'December 2023';
+                    });
+            });
+        </script>
+
+        <div class="important-notice">
+            <p>Please read these Terms of Use carefully before using the Pixel Ninja Cats website and services. By accessing or using our site, connecting your wallet, or minting NFTs, you agree to be bound by these Terms.</p>
+        </div>
+
+        <div class="terms-content">
+            <div class="terms-section">
+                <h2>1. Acceptance of Terms</h2>
+                <p>These Terms of Use constitute a legally binding agreement between you and Pixel Ninja Cats ("we," "us," or "our") regarding your access to and use of the website, application, and related services (collectively, the "Services"), including the minting, purchase, sale, or display of Pixel Ninja Cats non-fungible tokens ("NFTs").</p>
+                <p>By accessing or using our Services, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, you must not access or use our Services.</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>2. Eligibility</h2>
+                <p>By using our Services, you represent and warrant that:</p>
+                <ul>
+                    <li>You are at least 18 years of age, or the age of legal majority in your jurisdiction, whichever is higher;</li>
+                    <li>You have the full right, power, and authority to agree to these Terms;</li>
+                    <li>You are not subject to sanctions or otherwise designated on any list of prohibited or restricted parties; and</li>
+                    <li>You are not accessing the Services from a jurisdiction where the Services are prohibited.</li>
+                </ul>
+            </div>
+
+            <div class="terms-section">
+                <h2>3. NFT Ownership and Rights</h2>
+                <p>When you purchase a Pixel Ninja Cat NFT, you own the NFT (the non-fungible token) that represents your digital collectible on the blockchain. This ownership grants you certain rights, but with important limitations:</p>
+
+                <h3>3.1 What You Own:</h3>
+                <ul>
+                    <li>The NFT itself, which points to the associated metadata and image</li>
+                    <li>The right to sell, trade, or transfer the NFT</li>
+                    <li>A personal, non-commercial license to display the associated artwork</li>
+                </ul>
+
+                <h3>3.2 What You Don't Own:</h3>
+                <ul>
+                    <li>The copyright, trademark, or other intellectual property rights to the artwork or Pixel Ninja Cats brand</li>
+                    <li>The right to create derivative works based on the artwork</li>
+                    <li>The right to use the artwork for commercial purposes without explicit permission</li>
+                    <li>The right to reproduce and distribute the artwork outside of personal use</li>
+                </ul>
+
+                <p>You acknowledge that the Pixel Ninja Cat artwork and character designs are procedurally generated through AI technology, and we maintain all intellectual property rights in the generative systems, template designs, and output artwork.</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>4. Permitted Uses</h2>
+                <p>As an owner of a Pixel Ninja Cat NFT, you may:</p>
+                <ul>
+                    <li>Display the artwork for your personal, non-commercial use;</li>
+                    <li>Use the artwork as a profile picture in digital environments;</li>
+                    <li>Display the artwork on personal websites or social media accounts to indicate ownership;</li>
+                    <li>Sell, trade, or transfer the NFT to others, subject to these Terms and any applicable platform terms; and</li>
+                    <li>Include the artwork in third-party digital galleries or marketplaces where NFTs can be bought, sold, or displayed.</li>
+                </ul>
+            </div>
+
+            <div class="terms-section">
+                <h2>5. Prohibited Uses</h2>
+                <p>You may not, without express written permission:</p>
+                <ul>
+                    <li>Use the Pixel Ninja Cats artwork for commercial purposes, including merchandise;</li>
+                    <li>Modify, adapt, or create derivative works based on the artwork;</li>
+                    <li>Use the artwork in connection with media that depicts hatred, intolerance, violence, cruelty, or anything else that could reasonably be found to constitute hate speech or otherwise infringe upon the rights of others;</li>
+                    <li>Use the artwork in movies, videos, or other forms of media for commercial purposes;</li>
+                    <li>Use the artwork in any way that violates any applicable laws or regulations; or</li>
+                    <li>Sell, license, or otherwise commercialize the artwork separated from the NFT.</li>
+                </ul>
+            </div>
+
+            <div class="terms-section">
+                <h2>6. User Conduct</h2>
+                <p>When using our Services, you agree not to:</p>
+                <ul>
+                    <li>Use the Services in any manner that could disable, overburden, damage, or impair the site;</li>
+                    <li>Use any robot, spider, or other automatic device to access the Services;</li>
+                    <li>Introduce any viruses, trojan horses, worms, or other malicious code;</li>
+                    <li>Attempt to gain unauthorized access to any part of the Services;</li>
+                    <li>Interfere with or circumvent security features of the Services; or</li>
+                    <li>Engage in any activity that disrupts or interferes with the Services.</li>
+                </ul>
+            </div>
+
+            <div class="terms-section">
+                <h2>7. Marketplace and Transactions</h2>
+                <p>Pixel Ninja Cats NFTs may be bought, sold, or transferred on third-party marketplaces. When using such marketplaces:</p>
+                <ul>
+                    <li>You are subject to the terms and conditions of those marketplaces;</li>
+                    <li>We do not guarantee the availability, reliability, or security of any marketplace;</li>
+                    <li>We are not responsible for the actions of buyers, sellers, or other users;</li>
+                    <li>We do not guarantee any secondary market value for Pixel Ninja Cat NFTs; and</li>
+                    <li>You are solely responsible for paying any applicable taxes on your transactions.</li>
+                </ul>
+            </div>
+
+            <div class="terms-section">
+                <h2>8. Fees and Payments</h2>
+                <p>The minting and trading of NFTs may involve various fees:</p>
+                <ul>
+                    <li>Initial minting price for new Pixel Ninja Cat NFTs;</li>
+                    <li>Gas fees required by the blockchain network for transactions;</li>
+                    <li>Platform fees charged by marketplaces or exchanges; and</li>
+                    <li>Secondary royalties which may be applied to resales.</li>
+                </ul>
+                <p>You acknowledge that these fees are set by various parties, including blockchain networks and third-party platforms, and we do not control all of these fees. All payments and transactions are final and non-refundable.</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>9. AI-Generated Content</h2>
+                <p>You acknowledge and agree that:</p>
+                <ul>
+                    <li>Pixel Ninja Cat artwork is created using artificial intelligence technology, specifically OpenAI's DALL-E-3;</li>
+                    <li>While each Ninja Cat is procedurally generated to be unique, similarities may exist between different cats due to the nature of AI generation;</li>
+                    <li>We cannot guarantee absolute uniqueness in visual elements across all generated cats;</li>
+                    <li>The generation process is subject to technical constraints and dependencies; and</li>
+                    <li>The metadata and traits are generated programmatically and may be subject to the limitations of the algorithms used.</li>
+                </ul>
+            </div>
+
+            <div class="terms-section">
+                <h2>10. Disclaimers and Limitations of Liability</h2>
+                <p>THE SERVICES AND ALL CONTENT ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO, FITNESS FOR A PARTICULAR PURPOSE, TITLE, OR NON-INFRINGEMENT.</p>
+                <p>WE DO NOT GUARANTEE CONTINUOUS, UNINTERRUPTED, OR SECURE ACCESS TO OUR SERVICES, AND OPERATION OF THE WEBSITE MAY BE INTERFERED WITH BY NUMEROUS FACTORS OUTSIDE OUR CONTROL.</p>
+                <p>IN NO EVENT SHALL WE BE LIABLE FOR ANY INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF OR RELATING TO THESE TERMS OR YOUR USE OF, OR INABILITY TO USE, THE SERVICES.</p>
+                <p>OUR TOTAL LIABILITY FOR ANY CLAIMS UNDER THESE TERMS, INCLUDING FOR ANY IMPLIED WARRANTIES, IS LIMITED TO THE AMOUNT YOU PAID US TO MINT YOUR PIXEL NINJA CAT NFT.</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>11. Indemnification</h2>
+                <p>You agree to defend, indemnify, and hold harmless Pixel Ninja Cats and its licensors, service providers, and their respective officers, directors, employees, contractors, agents, licensors, suppliers, successors, and assigns from and against any claims, liabilities, damages, judgments, awards, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising out of or relating to your violation of these Terms or your use of the Services.</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>12. Changes to Terms</h2>
+                <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.</p>
+                <p>By continuing to access or use our Services after those revisions become effective, you agree to be bound by the revised terms.</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>13. Governing Law</h2>
+                <p>These Terms shall be governed by the laws of [Your Jurisdiction], without regard to its conflict of law provisions.</p>
+                <p>Any legal suit, action, or proceeding arising out of or related to these Terms or the Services shall be instituted exclusively in the courts of [Your Jurisdiction].</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>14. Severability</h2>
+                <p>If any provision of these Terms is held to be invalid or unenforceable by a court, the remaining provisions of these Terms will remain in effect.</p>
+            </div>
+
+            <div class="terms-section">
+                <h2>15. Contact Information</h2>
+                <p>If you have any questions about these Terms, please contact us at:</p>
+                <p>contact@pixelninjacats.com</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the footer -->
+    <footer id="footer"></footer>
+
+    <script src="js/footer.js"></script>
+    <script type="module" src="js/connect-only.js"></script>
+</body>
+</html>
