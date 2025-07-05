@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Ninja Cats Gallery</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" href="assets/detailed_ninja_cat_64.png">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <style>
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            background: rgba(0,0,0,0.03);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        #kittiesGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .cat-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+            .cat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            }
+
+        .cat-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            display: block;
+        }
+
+        .cat-info {
+            padding: 1rem;
+        }
+
+        .cat-name {
+            font-weight: bold;
+            margin: 0 0 0.5rem;
+        }
+
+        .cat-owner {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .rarity-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: white;
+            font-weight: bold;
+        }
+
+        .legendary {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+        }
+
+        .epic {
+            background: linear-gradient(135deg, #9370DB, #6A5ACD);
+        }
+
+        .rare {
+            background: linear-gradient(135deg, #6495ED, #4169E1);
+        }
+
+        .common {
+            background: linear-gradient(135deg, #90EE90, #3CB371);
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0,0,0,0.1);
+            border-left-color: #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 2rem 0;
+        }
+
+            .pagination button {
+                padding: 0.5rem 1rem;
+                border: 1px solid #ddd;
+                background: white;
+                cursor: pointer;
+            }
+
+                .pagination button.active {
+                    background: #f0f0f0;
+                    font-weight: bold;
+                }
+    </style>
+</head>
+<body>
+    <nav>
+        <img src="assets/detailed_ninja_cat_64.png"><a href="index.html">Mint</a>
+        <a href="lore.html">Lore</a><a href="my-kitties.html">My Kitties</a>
+        <a href="all-kitties.html">Gallery</a><a href="marketplace.html">Marketplace</a>
+        <span class="spacer"></span><button id="connectBtn">Connect</button>
+    </nav>
+
+    <div class="wrapper">
+        <div class="gallery-header">
+            <h1>Ninja Cat Gallery</h1>
+            <div>
+                <span id="totalCount">0</span> cats discovered
+            </div>
+        </div>
+
+        <div class="filter-controls">
+            <div>
+                <label for="sortBy">Sort by:</label>
+                <select id="sortBy">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="rarity">Rarity</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="rarityFilter">Rarity:</label>
+                <select id="rarityFilter">
+                    <option value="">All Rarities</option>
+                    <option value="legendary">Legendary</option>
+                    <option value="epic">Epic</option>
+                    <option value="rare">Rare</option>
+                    <option value="common">Common</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="breedFilter">Breed:</label>
+                <select id="breedFilter">
+                    <option value="">All Breeds</option>
+                    <option value="Bengal">Bengal</option>
+                    <option value="Siamese">Siamese</option>
+                    <option value="Maine Coon">Maine Coon</option>
+                    <option value="Calico">Calico</option>
+                    <option value="Sphynx">Sphynx</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="loadingState" class="loading">
+            <div class="spinner"></div>
+            <p>Loading ninja cats from the blockchain...</p>
+        </div>
+
+        <div id="kittiesGrid"></div>
+
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <script type="module" src="js/connect-only.js"></script>
+    <script type="module" src="js/all-kitties.js"></script>
+</body>
+</html>

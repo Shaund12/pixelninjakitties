@@ -1,0 +1,313 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ninja Cats Marketplace</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" href="assets/detailed_ninja_cat_64.png">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <style>
+        .marketplace-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            font-size: 1rem;
+        }
+
+            .tab-btn.active {
+                font-weight: bold;
+                color: #6e45e2;
+            }
+
+                .tab-btn.active::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -1px;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: #6e45e2;
+                }
+
+        .tab-content {
+            display: none;
+        }
+
+            .tab-content.active {
+                display: block;
+            }
+
+        .marketplace-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .listing-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+            .listing-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            }
+
+        .listing-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+
+        .listing-info {
+            padding: 1.5rem;
+        }
+
+        .listing-price {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .listing-price-currency {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .listing-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+            .listing-actions button {
+                flex: 1;
+                padding: 0.75rem 0;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+
+        .buy-btn {
+            background: linear-gradient(135deg, #6e45e2, #88d3ce);
+            color: white;
+            font-weight: bold;
+        }
+
+        .cancel-btn {
+            background: #f0f0f0;
+        }
+
+        .rarity-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: white;
+            font-weight: bold;
+        }
+
+        .legendary {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+        }
+
+        .epic {
+            background: linear-gradient(135deg, #9370DB, #6A5ACD);
+        }
+
+        .rare {
+            background: linear-gradient(135deg, #6495ED, #4169E1);
+        }
+
+        .common {
+            background: linear-gradient(135deg, #90EE90, #3CB371);
+        }
+
+        .my-cats-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(0,0,0,0.03);
+            border-radius: 12px;
+        }
+
+        .list-form {
+            margin-top: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .empty-notice {
+            text-align: center;
+            padding: 3rem;
+            background: rgba(0,0,0,0.02);
+            border-radius: 8px;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0,0,0,0.1);
+            border-left-color: #6e45e2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .currency-selector {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <img src="assets/detailed_ninja_cat_64.png"><a href="index.html">Mint</a>
+        <a href="lore.html">Lore</a><a href="my-kitties.html">My Kitties</a>
+        <a href="all-kitties.html">Gallery</a><a href="marketplace.html">Marketplace</a>
+        <span class="spacer"></span><button id="connectBtn">Connect Wallet</button>
+    </nav>
+
+    <div class="wrapper">
+        <h1>Ninja Cat Marketplace</h1>
+
+        <div class="marketplace-tabs">
+            <button class="tab-btn active" data-tab="browse">Browse Listings</button>
+            <button class="tab-btn" data-tab="sell">Sell Your Cats</button>
+        </div>
+
+        <!-- Browse Listings Tab -->
+        <div class="tab-content active" id="browse-tab">
+            <div class="filter-bar">
+                <select id="currencyFilter">
+                    <option value="all">All Currencies</option>
+                    <option value="native">Native (VITO)</option>
+                    <option value="usdc">USDC</option>
+                </select>
+
+                <select id="sortListings">
+                    <option value="newest">Newest Listings</option>
+                    <option value="oldest">Oldest Listings</option>
+                    <option value="priceAsc">Price: Low to High</option>
+                    <option value="priceDesc">Price: High to Low</option>
+                    <option value="rarity">Rarity</option>
+                </select>
+            </div>
+
+            <div id="listingsLoading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading marketplace listings...</p>
+            </div>
+
+            <div id="listingsGrid" class="marketplace-grid"></div>
+
+            <div id="noListings" class="empty-notice" style="display: none;">
+                <h3>No listings available</h3>
+                <p>Be the first to list your ninja cat for sale!</p>
+            </div>
+        </div>
+
+        <!-- Sell Your Cats Tab -->
+        <div class="tab-content" id="sell-tab">
+            <div id="walletPrompt" style="display: block;">
+                <p>Connect your wallet to list your ninja cats for sale.</p>
+            </div>
+
+            <div id="sellContent" style="display: none;">
+                <div class="my-cats-section">
+                    <h2>Your Ninja Cats</h2>
+                    <p id="userCatsCount">Loading your cats...</p>
+
+                    <div id="userCatsLoading" class="loading">
+                        <div class="spinner"></div>
+                    </div>
+
+                    <div id="userCatsGrid" class="marketplace-grid"></div>
+
+                    <div id="noUserCats" class="empty-notice" style="display: none;">
+                        <h3>You don't own any ninja cats yet</h3>
+                        <p>Mint your first ninja cat to start trading!</p>
+                        <a href="index.html" class="btn">Mint a Ninja Cat</a>
+                    </div>
+                </div>
+
+                <div id="listingForm" class="list-form" style="display: none;">
+                    <h3>List Cat for Sale</h3>
+                    <div class="selected-cat"></div>
+
+                    <form id="createListingForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="listingPrice">Price</label>
+                                <input type="number" id="listingPrice" step="0.01" min="0" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="listingCurrency">Currency</label>
+                                <select id="listingCurrency" class="currency-selector">
+                                    <option value="native">Native (VITO)</option>
+                                    <option value="usdc">USDC</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn primary-btn">Create Listing</button>
+                        <button type="button" id="cancelListingForm" class="btn">Cancel</button>
+                    </form>
+                </div>
+
+                <div id="userListings" class="my-cats-section">
+                    <h2>Your Active Listings</h2>
+                    <div id="userListingsGrid" class="marketplace-grid"></div>
+                    <div id="noUserListings" class="empty-notice" style="display: none;">
+                        <h3>You don't have any active listings</h3>
+                        <p>Select a cat above to create your first listing!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/connect-only.js"></script>
+    <script type="module" src="js/marketplace.js"></script>
+</body>
+</html>
