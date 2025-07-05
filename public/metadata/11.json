@@ -1,0 +1,58 @@
+{
+  "name": "Pixel Ninja Siamese #11",
+  "description": "AI-generated pixel ninja cat. A Common Siamese ninja with Katana skills.",
+  "attributes": [
+    {
+      "trait_type": "Breed",
+      "value": "Siamese"
+    },
+    {
+      "trait_type": "Weapon",
+      "value": "Katana",
+      "rarity": "Common"
+    },
+    {
+      "trait_type": "Stance",
+      "value": "Focus",
+      "rarity": "Epic"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Fire",
+      "rarity": "Uncommon"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "Adept",
+      "rarity": "Uncommon"
+    },
+    {
+      "trait_type": "Accessory",
+      "value": "Cape",
+      "rarity": "Epic"
+    }
+  ],
+  "image": "https://ipfs.io/ipfs/bafybeialufrqtoq4hskervz2std2kmqasvphhwswpx53dg2aimpfpssnue/detailed_ninja_cat_64.png",
+  "ninja_data": {
+    "backstory": {
+      "name": "Silent Protocol",
+      "origin": "Emerging from the mysterious Fog Protocol with piercing blue eyes that can see through the most complex encryption, this Siamese ninja possesses vocal abilities that can disrupt enemy communications across the blockchain.",
+      "training": "Under the guidance of Master Kiyoto, Silent Protocol spent years mastering the Fire techniques, achieving the rank of Adept after passing the Trial of Focus.",
+      "currentRole": "Now a Adept ninja, Silent Protocol specializes in the Focus stance while wielding a Katana, channeling the power of Fire to secure the blockchain against those who would disrupt its harmony."
+    },
+    "special_abilities": [
+      "Blockchain Slice - Can cut through complex smart contracts with surgical precision",
+      "Burn Trace - Leaves no transaction history behind, perfect for covert operations"
+    ],
+    "combat_stats": {
+      "agility": 77,
+      "stealth": 58,
+      "power": 97,
+      "intelligence": 79
+    },
+    "rarity": {
+      "score": 55,
+      "tier": "Common"
+    }
+  }
+}

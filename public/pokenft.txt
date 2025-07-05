@@ -1,0 +1,186 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+/// @title  PokeMon NFT Collection
+/// @author —
+/// @notice ERC721Enumerable + ERC2981 royalties + updatable metadata + pausability
+contract PokeMonNFT is ERC721Enumerable, ERC2981, Ownable, Pausable, ReentrancyGuard {
+    using Strings for uint256;
+
+    // Base URI for token metadata (e.g. "https://api.example.com/metadata/")
+    string private _baseTokenURI;
+
+    // Contract-level metadata URI for marketplaces (OpenSea)
+    // This JSON should include name, description, image, external_link, seller_fee_basis_points, fee_recipient, etc.
+    string public contractURI;
+
+    // Auto-increment token IDs
+    uint256 private _nextTokenId = 1;
+
+    /// @param name_   Collection name
+    /// @param symbol_ Collection symbol
+    /// @param baseURI_  Initial base URI for token metadata
+    /// @param contractURI_ Initial contract URI JSON location
+    /// @param royaltyReceiver Address to receive royalties
+    /// @param royaltyBasisPoints  Fee in basis points (e.g. 500 = 5%)
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        string memory baseURI_,
+        string memory contractURI_,
+        address royaltyReceiver,
+        uint96 royaltyBasisPoints
+    ) ERC721(name_, symbol_) {
+        _baseTokenURI = baseURI_;
+        contractURI   = contractURI_;
+
+        // Set default royalty for all tokens
+        _setDefaultRoyalty(royaltyReceiver, royaltyBasisPoints);
+
+        // Pause minting until unpaused
+        _pause();
+    }
+
+    // ====================
+    //    MINTING
+    // ====================
+
+    /// @notice Mint a single NFT to `to`. Only owner can call.
+    function mint(address to) external onlyOwner whenNotPaused nonReentrant {
+        uint256 tokenId = _nextTokenId;
+        _nextTokenId++;
+        _safeMint(to, tokenId);
+    }
+
+    /// @notice Batch-mint `quantity` tokens to `to`. Only owner.
+    function batchMint(address to, uint256 quantity) external onlyOwner whenNotPaused nonReentrant {
+        require(quantity > 0, "Quantity must be > 0");
+        for (uint256 i = 0; i < quantity; i++) {
+            uint256 tokenId = _nextTokenId;
+            _nextTokenId++;
+            _safeMint(to, tokenId);
+        }
+    }
+
+    // ====================
+    //    PAUSABILITY
+    // ====================
+
+    /// @notice Pause minting and transfers.
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Unpause minting and transfers.
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    // ====================
+    //    METADATA URIs
+    // ====================
+
+    /// @notice Owner can update the base token URI for metadata.
+    function setBaseURI(string calldata newBaseURI) external onlyOwner {
+        _baseTokenURI = newBaseURI;
+    }
+
+    /// @notice Owner can update the contract-level metadata URI (for marketplace fees, etc).
+    function setContractURI(string calldata newContractURI) external onlyOwner {
+        contractURI = newContractURI;
+    }
+
+    /// @inheritdoc ERC721
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    /// @notice Returns token metadata URI.  
+    /// By default: `baseURI + tokenId.toString() + ".json"`.
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        string memory base = _baseURI();
+        return bytes(base).length > 0
+            ? string(abi.encodePacked(base, tokenId.toString(), ".json"))
+            : "";
+    }
+
+    // ====================
+    //    ROYALTIES
+    // ====================
+
+    /// @notice Set default royalty info (applies to all tokens without individual override)
+    function setDefaultRoyalty(address receiver, uint96 feeBasisPoints) external onlyOwner {
+        _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    /// @notice Delete default royalty
+    function deleteDefaultRoyalty() external onlyOwner {
+        _deleteDefaultRoyalty();
+    }
+
+    /// @notice Set per-token royalty info, overriding default
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint96 feeBasisPoints
+    ) external onlyOwner {
+        require(_exists(tokenId), "Nonexistent token");
+        _setTokenRoyalty(tokenId, receiver, feeBasisPoints);
+    }
+
+    /// @notice Reset per-token royalty to default
+    function resetTokenRoyalty(uint256 tokenId) external onlyOwner {
+        _resetTokenRoyalty(tokenId);
+    }
+
+    // ====================
+    //    WITHDRAWALS
+    // ====================
+
+    /// @notice Withdraw entire contract ETH balance to owner
+    function withdraw() external onlyOwner nonReentrant {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "Nothing to withdraw");
+        payable(owner()).transfer(balance);
+    }
+
+    // Accept ETH (e.g., if you add payable minting)
+    receive() external payable {}
+    fallback() external payable {}
+
+    // ====================
+    //    OVERRIDES
+    // ====================
+
+    /// @dev Prevent transfers when paused
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
+        internal
+        override(ERC721Enumerable)
+    {
+        super._beforeTokenTransfer(from, to, tokenId);
+        require(!paused(), "Token transfer while paused");
+    }
+
+    /// @dev Clean up royalty info on burn
+    function _burn(uint256 tokenId) internal override(ERC721, ERC2981) {
+        super._burn(tokenId);
+        _resetTokenRoyalty(tokenId);
+    }
+
+    /// @inheritdoc ERC165
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721Enumerable, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+}

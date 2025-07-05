@@ -1,0 +1,59 @@
+{
+  "name": "Pixel Ninja Calico #9",
+  "description": "AI-generated pixel ninja cat. A Legendary Calico ninja with Sai skills.",
+  "attributes": [
+    {
+      "trait_type": "Breed",
+      "value": "Calico"
+    },
+    {
+      "trait_type": "Weapon",
+      "value": "Sai",
+      "rarity": "Legendary"
+    },
+    {
+      "trait_type": "Stance",
+      "value": "Shadow",
+      "rarity": "Legendary"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Lightning",
+      "rarity": "Legendary"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "Legendary",
+      "rarity": "Mythic"
+    },
+    {
+      "trait_type": "Accessory",
+      "value": "Cape",
+      "rarity": "Epic"
+    }
+  ],
+  "image": "https://ipfs.io/ipfs/bafybeialufrqtoq4hskervz2std2kmqasvphhwswpx53dg2aimpfpssnue/detailed_ninja_cat_64.png",
+  "ninja_data": {
+    "backstory": {
+      "name": "Shadow Master",
+      "origin": "Born during a rare triple-fork event, this Calico ninja was blessed with a multi-colored coat that marks the most elusive of digital guardians. Calico ninjas bring prosperity to their allies and confusion to their enemies.",
+      "training": "Under the guidance of the Grand Masters, Shadow Master spent years mastering the Lightning techniques, achieving the rank of Legendary after passing the Trial of Shadow.",
+      "currentRole": "Now a Legendary ninja, Shadow Master specializes in the Shadow stance while wielding a Sai, channeling the power of Lightning to secure the blockchain against those who would disrupt its harmony."
+    },
+    "special_abilities": [
+      "Fork Defense - Expert at detecting and neutralizing hard fork attempts",
+      "Hash Acceleration - Dramatically speeds up mining and validation processes",
+      "Dark Web Navigation - Expert at tracking threats to their source"
+    ],
+    "combat_stats": {
+      "agility": 89,
+      "stealth": 97,
+      "power": 92,
+      "intelligence": 83
+    },
+    "rarity": {
+      "score": 90,
+      "tier": "Legendary"
+    }
+  }
+}

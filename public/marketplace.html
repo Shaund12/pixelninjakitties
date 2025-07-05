@@ -6,11 +6,27 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" href="assets/detailed_ninja_cat_64.png">
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .wrapper {
+            background-color: #121212;
+        }
+
+        h1, h2, h3 {
+            color: #ffffff;
+        }
+
+        /* Marketplace Tabs */
         .marketplace-tabs {
             display: flex;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #333;
             margin-bottom: 1.5rem;
         }
 
@@ -21,11 +37,12 @@
             cursor: pointer;
             position: relative;
             font-size: 1rem;
+            color: #b0b0b0;
         }
 
             .tab-btn.active {
                 font-weight: bold;
-                color: #6e45e2;
+                color: #8a65ff;
             }
 
                 .tab-btn.active::after {
@@ -35,7 +52,7 @@
                     left: 0;
                     right: 0;
                     height: 2px;
-                    background: #6e45e2;
+                    background: #8a65ff;
                 }
 
         .tab-content {
@@ -46,33 +63,72 @@
                 display: block;
             }
 
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+            .filter-bar select {
+                background: #2c2c2e;
+                color: #ffffff;
+                border: 1px solid #444;
+                padding: 0.5rem 1rem;
+                border-radius: 4px;
+            }
+
+        /* Listing Grid */
         .marketplace-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
+            gap: 1.75rem;
         }
 
         .listing-card {
-            background: white;
+            background: #1e1e1e;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+            border: 1px solid #333;
+            position: relative;
         }
 
             .listing-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+                transform: translateY(-6px);
+                box-shadow: 0 12px 20px rgba(0,0,0,0.6), 0 0 15px rgba(138, 101, 255, 0.3);
             }
 
         .listing-image {
             width: 100%;
             aspect-ratio: 1;
             object-fit: cover;
+            border-bottom: 1px solid #333;
         }
 
         .listing-info {
             padding: 1.5rem;
+            background: linear-gradient(to bottom, #1e1e1e, #252525);
+        }
+
+        .listing-name {
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .listing-breed {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .listing-seller {
+            color: #9e9e9e;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            word-break: break-all;
         }
 
         .listing-price {
@@ -82,11 +138,12 @@
             margin-top: 1rem;
             font-weight: bold;
             font-size: 1.2rem;
+            color: #ffffff;
         }
 
         .listing-price-currency {
             font-size: 0.9rem;
-            color: #666;
+            color: #8a65ff;
         }
 
         .listing-actions {
@@ -101,27 +158,42 @@
                 border: none;
                 border-radius: 6px;
                 cursor: pointer;
+                transition: all 0.2s ease;
             }
 
         .buy-btn {
-            background: linear-gradient(135deg, #6e45e2, #88d3ce);
+            background: linear-gradient(135deg, #8a65ff, #7067CF);
             color: white;
             font-weight: bold;
         }
 
+            .buy-btn:hover {
+                background: linear-gradient(135deg, #9973ff, #817AE2);
+                transform: translateY(-2px);
+            }
+
         .cancel-btn {
-            background: #f0f0f0;
+            background: #2c2c2e;
+            color: #e0e0e0;
         }
 
+            .cancel-btn:hover {
+                background: #3a3a3c;
+                transform: translateY(-2px);
+            }
+
+        /* Rarity Badges */
         .rarity-badge {
             position: absolute;
             top: 10px;
             right: 10px;
-            padding: 0.25rem 0.75rem;
+            padding: 0.3rem 0.8rem;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: white;
-            font-weight: bold;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         .legendary {
@@ -140,47 +212,91 @@
             background: linear-gradient(135deg, #90EE90, #3CB371);
         }
 
+        /* My Cats Section */
         .my-cats-section {
             margin-bottom: 2rem;
             padding: 1.5rem;
-            background: rgba(0,0,0,0.03);
+            background: rgba(255,255,255,0.05);
             border-radius: 12px;
+            border: 1px solid #333;
         }
 
+        /* Form Elements */
         .list-form {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
+            background: #1e1e1e;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #333;
         }
 
         .form-row {
             display: flex;
             gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-group {
             flex: 1;
         }
 
+            .form-group label {
+                display: block;
+                margin-bottom: 0.5rem;
+                color: #b0b0b0;
+            }
+
+            .form-group input,
+            .form-group select {
+                width: 100%;
+                padding: 0.75rem;
+                background: #2c2c2e;
+                border: 1px solid #444;
+                border-radius: 6px;
+                color: #ffffff;
+            }
+
+        /* Empty States */
         .empty-notice {
             text-align: center;
             padding: 3rem;
-            background: rgba(0,0,0,0.02);
+            background: rgba(255,255,255,0.03);
             border-radius: 8px;
+            border: 1px dashed #444;
+            color: #9e9e9e;
         }
 
+            .empty-notice h3 {
+                color: #b0b0b0;
+                margin-bottom: 1rem;
+            }
+
+            .empty-notice .btn {
+                background: #8a65ff;
+                color: white;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: 6px;
+                margin-top: 1rem;
+                display: inline-block;
+                text-decoration: none;
+            }
+
+        /* Loading States */
         .loading {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 2.5rem;
+            color: #e0e0e0;
         }
 
         .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid rgba(0,0,0,0.1);
-            border-left-color: #6e45e2;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-left-color: #8a65ff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -191,11 +307,62 @@
             }
         }
 
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-weight: 500;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #8a65ff, #7067CF);
+            color: white;
+        }
+
+            .primary-btn:hover {
+                background: linear-gradient(135deg, #9973ff, #817AE2);
+                transform: translateY(-2px);
+            }
+
+        /* Currency Selector */
         .currency-selector {
-            padding: 0.5rem 1rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: white;
+            padding: 0.75rem 1rem;
+            background: #2c2c2e;
+            color: #ffffff;
+            border: 1px solid #444;
+            border-radius: 6px;
+        }
+
+        /* Selected Cat Display */
+        .selected-cat {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+
+            .selected-cat img {
+                width: 80px;
+                height: 80px;
+                border-radius: 6px;
+                object-fit: cover;
+            }
+
+        .selected-cat-info h4 {
+            color: #ffffff;
+            margin: 0 0 0.25rem;
+        }
+
+        .selected-cat-info p {
+            color: #b0b0b0;
+            margin: 0;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -220,7 +387,7 @@
             <div class="filter-bar">
                 <select id="currencyFilter">
                     <option value="all">All Currencies</option>
-                    <option value="native">Native (VITO)</option>
+                    <option value="native">Native (VTRU)</option>
                     <option value="usdc">USDC</option>
                 </select>
 
@@ -284,7 +451,7 @@
                             <div class="form-group">
                                 <label for="listingCurrency">Currency</label>
                                 <select id="listingCurrency" class="currency-selector">
-                                    <option value="native">Native (VITO)</option>
+                                    <option value="native">Native (VTRU)</option>
                                     <option value="usdc">USDC</option>
                                 </select>
                             </div>

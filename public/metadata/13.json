@@ -1,0 +1,58 @@
+{
+  "name": "Pixel Ninja Calico #13",
+  "description": "AI-generated pixel ninja cat. A Common Calico ninja with Kunai skills.",
+  "attributes": [
+    {
+      "trait_type": "Breed",
+      "value": "Calico"
+    },
+    {
+      "trait_type": "Weapon",
+      "value": "Kunai",
+      "rarity": "Epic"
+    },
+    {
+      "trait_type": "Stance",
+      "value": "Defense",
+      "rarity": "Common"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Wind",
+      "rarity": "Rare"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "Elite",
+      "rarity": "Epic"
+    },
+    {
+      "trait_type": "Accessory",
+      "value": "Scarf",
+      "rarity": "Uncommon"
+    }
+  ],
+  "image": "https://ipfs.io/ipfs/bafybeialufrqtoq4hskervz2std2kmqasvphhwswpx53dg2aimpfpssnue/detailed_ninja_cat_64.png",
+  "ninja_data": {
+    "backstory": {
+      "name": "Silent Blade",
+      "origin": "Born during a rare triple-fork event, this Calico ninja was blessed with a multi-colored coat that marks the most elusive of digital guardians. Calico ninjas bring prosperity to their allies and confusion to their enemies.",
+      "training": "Under the guidance of Master Kiyoto, Silent Blade spent years mastering the Wind techniques, achieving the rank of Elite after passing the Trial of Defense.",
+      "currentRole": "Now a Elite ninja, Silent Blade specializes in the Defense stance while wielding a Kunai, channeling the power of Wind to secure the blockchain against those who would disrupt its harmony."
+    },
+    "special_abilities": [
+      "Silent Deployment - Can inject security patches without disrupting the network",
+      "Transaction Acceleration - Processes operations with unmatched speed and efficiency"
+    ],
+    "combat_stats": {
+      "agility": 100,
+      "stealth": 81,
+      "power": 84,
+      "intelligence": 91
+    },
+    "rarity": {
+      "score": 59,
+      "tier": "Common"
+    }
+  }
+}

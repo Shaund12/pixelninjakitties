@@ -21,8 +21,19 @@ const sortByEl = document.getElementById('sortBy');
 const rarityFilterEl = document.getElementById('rarityFilter');
 const breedFilterEl = document.getElementById('breedFilter');
 
-// Determine rarity based on ID
-function getRarity(id) {
+// Helper function to shorten address
+function shortenAddress(address) {
+    return address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : 'Unknown';
+}
+
+// Determine rarity based on metadata or fallback to ID
+function getRarity(id, metadata) {
+    // If we have metadata with ninja_data containing rarity info, use that
+    if (metadata && metadata.ninja_data && metadata.ninja_data.rarity && metadata.ninja_data.rarity.tier) {
+        return metadata.ninja_data.rarity.tier.toLowerCase();
+    }
+
+    // Fallback to ID-based rarity
     const numId = parseInt(id);
     if (numId % 100 === 0) return 'legendary';
     if (numId % 10 === 0) return 'epic';
@@ -47,7 +58,7 @@ async function renderCatCard(tokenId) {
                 id: tokenId,
                 owner,
                 metadata,
-                rarity: getRarity(tokenId)
+                rarity: getRarity(tokenId, metadata)
             };
         }
 
@@ -55,20 +66,47 @@ async function renderCatCard(tokenId) {
         const metadata = token.metadata;
         const rarity = token.rarity;
 
-        // Create card HTML
+        // Get up to 3 interesting traits for display
+        const displayTraits = metadata.attributes
+            .filter(attr => attr.trait_type !== "Breed") // Breed already in title
+            .slice(0, 3) // Show just 3 key traits
+            .map(attr => `<span class="trait-tag">${attr.trait_type}: ${attr.value}</span>`)
+            .join('');
+
+        // Create card element
         const card = document.createElement('div');
         card.className = 'cat-card';
         card.innerHTML = `
-            <div class="rarity-badge ${rarity}">${rarity.charAt(0).toUpperCase() + rarity.slice(1)}</div>
             <img src="${metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/')}" 
-                 alt="${metadata.name}" class="cat-image">
+                 alt="${metadata.name}" class="cat-image" 
+                 onerror="this.src='assets/detailed_ninja_cat_64.png'">
+                 
+            <span class="rarity-badge ${rarity}">${rarity.charAt(0).toUpperCase() + rarity.slice(1)}</span>
+            
             <div class="cat-info">
                 <h3 class="cat-name">${metadata.name}</h3>
-                <div class="cat-breed">${metadata.attributes[0].value}</div>
-                <div class="cat-owner">Owner: ${token.owner.slice(0, 6)}...${token.owner.slice(-4)}</div>
-                <button class="view-btn" onclick="window.location.href='kitty.html?id=${tokenId}'">View Details</button>
+                
+                <div class="cat-traits">
+                    ${displayTraits}
+                </div>
+                
+                <div class="cat-owner">
+                    <span class="cat-owner-label">Owner:</span> ${shortenAddress(token.owner)}
+                </div>
+                
+                <div class="cat-actions">
+                    <button class="view-btn" onclick="window.location.href='kitty.html?id=${tokenId}'">View Details</button>
+                </div>
             </div>
         `;
+
+        // Add click handler for the whole card
+        card.addEventListener('click', (e) => {
+            // Don't navigate if they clicked the button (button has its own handler)
+            if (!e.target.closest('.view-btn')) {
+                window.location.href = `kitty.html?id=${tokenId}`;
+            }
+        });
 
         return card;
     } catch (error) {
@@ -102,7 +140,7 @@ async function fetchAllTokens() {
         console.error("Error fetching tokens:", error);
         loadingState.innerHTML = `
             <p>Error loading ninja cats: ${error.message}</p>
-            <button onclick="window.location.reload()">Try Again</button>
+            <button onclick="window.location.reload()" class="retry-btn">Try Again</button>
         `;
     }
 }
@@ -113,11 +151,22 @@ async function applyFiltersAndSort() {
     const breedFilter = breedFilterEl.value;
     const sortBy = sortByEl.value;
 
+    // Show loading state while filtering
+    loadingState.style.display = 'flex';
+    loadingState.innerHTML = `<div class="spinner"></div><p>Applying filters...</p>`;
+
     // First apply filters
     filteredTokens = [...allTokens];
 
     if (rarityFilter) {
-        filteredTokens = filteredTokens.filter(id => getRarity(id) === rarityFilter);
+        filteredTokens = filteredTokens.filter(id => {
+            // If we have cached metadata, use that for rarity
+            if (tokenCache[id] && tokenCache[id].metadata) {
+                return getRarity(id, tokenCache[id].metadata) === rarityFilter;
+            }
+            // Otherwise fall back to ID-based rarity
+            return getRarity(id) === rarityFilter;
+        });
     }
 
     if (breedFilter) {
@@ -134,7 +183,7 @@ async function applyFiltersAndSort() {
                         id,
                         owner,
                         metadata,
-                        rarity: getRarity(id)
+                        rarity: getRarity(id, metadata)
                     };
                 } catch (error) {
                     console.error(`Error fetching metadata for token #${id}:`, error);
@@ -142,7 +191,9 @@ async function applyFiltersAndSort() {
                 }
             }
 
-            return tokenCache[id]?.metadata?.attributes[0]?.value === breedFilter ? id : null;
+            // Check if breed matches filter
+            const breedAttr = tokenCache[id]?.metadata?.attributes?.find(attr => attr.trait_type === "Breed");
+            return breedAttr?.value === breedFilter ? id : null;
         }));
 
         // Remove nulls
@@ -160,7 +211,9 @@ async function applyFiltersAndSort() {
         case 'rarity':
             const rarityOrder = { 'legendary': 0, 'epic': 1, 'rare': 2, 'common': 3 };
             filteredTokens.sort((a, b) => {
-                return rarityOrder[getRarity(a)] - rarityOrder[getRarity(b)];
+                const rarityA = getRarity(a, tokenCache[a]?.metadata);
+                const rarityB = getRarity(b, tokenCache[b]?.metadata);
+                return rarityOrder[rarityA] - rarityOrder[rarityB];
             });
             break;
     }
@@ -174,6 +227,15 @@ async function applyFiltersAndSort() {
 async function renderPage() {
     grid.innerHTML = '';
     loadingState.style.display = 'flex';
+    loadingState.innerHTML = `<div class="spinner"></div><p>Loading ninja cats...</p>`;
+
+    // If no items found
+    if (filteredTokens.length === 0) {
+        grid.innerHTML = `<div class="no-results">No ninja cats match your filters. Try changing your selection.</div>`;
+        loadingState.style.display = 'none';
+        renderPagination();
+        return;
+    }
 
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, filteredTokens.length);
@@ -196,7 +258,7 @@ async function renderPage() {
 
 // Render pagination controls
 function renderPagination() {
-    const totalPages = Math.ceil(filteredTokens.length / ITEMS_PER_PAGE);
+    const totalPages = Math.max(1, Math.ceil(filteredTokens.length / ITEMS_PER_PAGE));
     paginationEl.innerHTML = '';
 
     // Previous button
@@ -207,6 +269,7 @@ function renderPagination() {
         if (currentPage > 1) {
             currentPage--;
             renderPage();
+            window.scrollTo(0, 0); // Scroll to top
         }
     });
     paginationEl.appendChild(prevBtn);
@@ -226,6 +289,7 @@ function renderPagination() {
                 pageBtn.addEventListener('click', () => {
                     currentPage = i;
                     renderPage();
+                    window.scrollTo(0, 0); // Scroll to top
                 });
                 paginationEl.appendChild(pageBtn);
             } else if (
@@ -243,6 +307,7 @@ function renderPagination() {
             pageBtn.addEventListener('click', () => {
                 currentPage = i;
                 renderPage();
+                window.scrollTo(0, 0); // Scroll to top
             });
             paginationEl.appendChild(pageBtn);
         }
@@ -256,10 +321,167 @@ function renderPagination() {
         if (currentPage < totalPages) {
             currentPage++;
             renderPage();
+            window.scrollTo(0, 0); // Scroll to top
         }
     });
     paginationEl.appendChild(nextBtn);
 }
+
+// Add these CSS styles programmatically for dark mode
+const styleEl = document.createElement('style');
+styleEl.textContent = `
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+    }
+    
+    .wrapper {
+        background-color: #121212;
+    }
+    
+    .gallery-header h1 {
+        color: #ffffff;
+    }
+    
+    .filter-controls {
+        background: rgba(255,255,255,0.05);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .filter-controls label {
+        color: #e0e0e0;
+    }
+    
+    .filter-controls select {
+        background: #2c2c2e;
+        color: #ffffff;
+        border: 1px solid #444;
+    }
+    
+    .cat-card {
+        background: #1e1e1e;
+        border: 1px solid #333;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    
+    .cat-card:hover {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 15px rgba(88, 120, 188, 0.3);
+        transform: translateY(-6px);
+    }
+    
+    .cat-info {
+        background: linear-gradient(to bottom, #1e1e1e, #252525);
+        border-top: 1px solid #333;
+    }
+    
+    .cat-name {
+        color: #ffffff;
+    }
+    
+    .cat-traits {
+        margin: 0.8rem 0;
+    }
+    
+    .trait-tag {
+        background: #2c2c2e;
+        color: #b0b0b0;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        display: inline-block;
+        margin-right: 0.4rem;
+        margin-bottom: 0.4rem;
+        border: 1px solid #444;
+    }
+    
+    .cat-owner {
+        color: #9e9e9e;
+        padding-top: 0.8rem;
+        border-top: 1px solid #333;
+        margin-top: 0.8rem;
+    }
+    
+    .cat-owner-label {
+        color: #b0b0b0;
+    }
+    
+    .cat-actions {
+        margin-top: 1rem;
+        text-align: center;
+    }
+    
+    .view-btn {
+        background: #3949ab;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+    
+    .view-btn:hover {
+        background: #5c6bc0;
+        transform: translateY(-2px);
+    }
+    
+    .pagination {
+        margin-top: 2.5rem;
+    }
+    
+    .pagination button {
+        background: #2c2c2e;
+        color: #e0e0e0;
+        border: 1px solid #444;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+    }
+    
+    .pagination button:hover:not(:disabled) {
+        background: #3a3a3c;
+    }
+    
+    .pagination button.active {
+        background: #3949ab;
+        color: white;
+        border-color: #3949ab;
+    }
+    
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .loading {
+        color: #e0e0e0;
+    }
+    
+    .spinner {
+        border: 5px solid rgba(255,255,255,0.1);
+        border-left-color: #5c6bc0;
+    }
+    
+    .no-results {
+        background: #1e1e1e;
+        color: #9e9e9e;
+        border: 1px dashed #444;
+    }
+    
+    .retry-btn {
+        background: #3949ab;
+        color: white;
+    }
+    
+    /* Keep rarity badges vibrant but add shadow for better contrast */
+    .rarity-badge {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        font-size: 0.75rem;
+    }
+`;
+document.head.appendChild(styleEl);
 
 // Set up event listeners
 document.addEventListener('DOMContentLoaded', () => {

@@ -108,7 +108,7 @@ app.get('/api/kitties', async (req, res) => {
                     id,
                     owner,
                     metadata,
-                    rarity: getRarity(id)
+                    rarity: getRarity(id, metadata)
                 });
             } catch (error) {
                 console.error(`Error with token at index ${i}:`, error);
@@ -177,7 +177,7 @@ app.get('/api/kitties/:id', async (req, res) => {
             id,
             owner,
             metadata,
-            rarity: getRarity(id),
+            rarity: getRarity(id, metadata),
             listing
         });
     } catch (error) {
@@ -211,7 +211,7 @@ app.get('/api/kitties/owner/:address', async (req, res) => {
             kitties.push({
                 id,
                 metadata,
-                rarity: getRarity(id)
+                rarity: getRarity(id, metadata)
             });
         }
 
@@ -259,7 +259,7 @@ app.get('/api/marketplace/listings', async (req, res) => {
                 }
 
                 listing.metadata = metadata;
-                listing.rarity = getRarity(listing.tokenId);
+                listing.rarity = getRarity(listing.tokenId, metadata);
             } catch (error) {
                 console.error(`Error fetching metadata for listing #${listing.tokenId}:`, error);
             }
@@ -307,7 +307,7 @@ app.get('/api/marketplace/listings/:tokenId', async (req, res) => {
             }
 
             formattedListing.metadata = metadata;
-            formattedListing.rarity = getRarity(tokenId);
+            formattedListing.rarity = getRarity(tokenId, metadata);
         } catch (error) {
             console.error(`Error fetching metadata for listing #${tokenId}:`, error);
         }
@@ -319,8 +319,14 @@ app.get('/api/marketplace/listings/:tokenId', async (req, res) => {
     }
 });
 
-// Helper function to determine rarity based on token ID
-function getRarity(id) {
+// Helper function to determine rarity based on metadata or token ID as fallback
+function getRarity(id, metadata) {
+    // If we have metadata with ninja_data containing rarity info, use that
+    if (metadata && metadata.ninja_data && metadata.ninja_data.rarity && metadata.ninja_data.rarity.tier) {
+        return metadata.ninja_data.rarity.tier.toLowerCase(); // Convert to lowercase to match existing format
+    }
+
+    // Fallback to the previous ID-based calculation for backward compatibility
     const numId = parseInt(id);
     if (numId % 100 === 0) return 'legendary';
     if (numId % 10 === 0) return 'epic';

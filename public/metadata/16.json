@@ -1,0 +1,58 @@
+{
+  "name": "Pixel Ninja Maine Coon #16",
+  "description": "AI-generated pixel ninja cat. A Common Maine Coon ninja with Katana skills.",
+  "attributes": [
+    {
+      "trait_type": "Breed",
+      "value": "Maine Coon"
+    },
+    {
+      "trait_type": "Weapon",
+      "value": "Katana",
+      "rarity": "Common"
+    },
+    {
+      "trait_type": "Stance",
+      "value": "Attack",
+      "rarity": "Common"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Fire",
+      "rarity": "Uncommon"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "Adept",
+      "rarity": "Uncommon"
+    },
+    {
+      "trait_type": "Accessory",
+      "value": "Gauntlets",
+      "rarity": "Rare"
+    }
+  ],
+  "image": "https://ipfs.io/ipfs/bafybeialufrqtoq4hskervz2std2kmqasvphhwswpx53dg2aimpfpssnue/detailed_ninja_cat_64.png",
+  "ninja_data": {
+    "backstory": {
+      "name": "Whisker Runner",
+      "origin": "From the frozen northern shards of the blockchain, this Maine Coon ninja grew to be one of the most formidable digital warriors. Revered for impressive size and a thick coat that shields against even the harshest network conditions.",
+      "training": "Under the guidance of Master Kiyoto, Whisker Runner spent years mastering the Fire techniques, achieving the rank of Adept after passing the Trial of Attack.",
+      "currentRole": "Now a Adept ninja, Whisker Runner specializes in the Attack stance while wielding a Katana, channeling the power of Fire to secure the blockchain against those who would disrupt its harmony."
+    },
+    "special_abilities": [
+      "Blockchain Slice - Can cut through complex smart contracts with surgical precision",
+      "Burn Trace - Leaves no transaction history behind, perfect for covert operations"
+    ],
+    "combat_stats": {
+      "agility": 67,
+      "stealth": 60,
+      "power": 100,
+      "intelligence": 53
+    },
+    "rarity": {
+      "score": 41,
+      "tier": "Common"
+    }
+  }
+}

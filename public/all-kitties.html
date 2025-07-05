@@ -6,8 +6,15 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" href="assets/detailed_ninja_cat_64.png">
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
         .gallery-header {
             display: flex;
             justify-content: space-between;
@@ -20,29 +27,39 @@
             flex-wrap: wrap;
             gap: 1rem;
             margin-bottom: 1.5rem;
-            background: rgba(0,0,0,0.03);
-            padding: 1rem;
-            border-radius: 8px;
+            background: rgba(0,0,0,0.05);
+            padding: 1.25rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
         }
+
+            .filter-controls select {
+                padding: 8px 12px;
+                border-radius: 6px;
+                border: 1px solid #ddd;
+                background: white;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
 
         #kittiesGrid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.75rem;
         }
 
         .cat-card {
             background: white;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
             position: relative;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
             .cat-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+                transform: translateY(-6px);
+                box-shadow: 0 12px 20px rgba(0,0,0,0.12);
             }
 
         .cat-image {
@@ -50,31 +67,65 @@
             aspect-ratio: 1;
             object-fit: cover;
             display: block;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .cat-info {
-            padding: 1rem;
+            padding: 1.25rem;
+            background: linear-gradient(to bottom, #ffffff, #f9f9f9);
         }
 
         .cat-name {
-            font-weight: bold;
-            margin: 0 0 0.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 0 0 0.6rem;
+            color: #1a1a2e;
+            letter-spacing: 0.01em;
+        }
+
+        .cat-traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .trait-tag {
+            background: #f0f4f8;
+            color: #4a5568;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
         }
 
         .cat-owner {
             font-size: 0.8rem;
-            color: #666;
+            color: #4a5568;
+            padding-top: 0.8rem;
+            border-top: 1px dashed #eee;
+            margin-top: 0.8rem;
+            word-break: break-all;
+        }
+
+        .cat-owner-label {
+            font-weight: 500;
+            color: #2d3748;
         }
 
         .rarity-badge {
             position: absolute;
             top: 10px;
             right: 10px;
-            padding: 0.25rem 0.75rem;
+            padding: 0.3rem 0.8rem;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: white;
-            font-weight: bold;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-transform: uppercase;
         }
 
         .legendary {
@@ -98,7 +149,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 2.5rem;
         }
 
         .spinner {
@@ -120,19 +171,27 @@
             display: flex;
             justify-content: center;
             gap: 0.5rem;
-            margin: 2rem 0;
+            margin: 2.5rem 0;
         }
 
             .pagination button {
-                padding: 0.5rem 1rem;
+                padding: 0.6rem 1.2rem;
                 border: 1px solid #ddd;
                 background: white;
                 cursor: pointer;
+                border-radius: 6px;
+                transition: all 0.2s ease;
             }
 
+                .pagination button:hover {
+                    background: #f7f7f7;
+                }
+
                 .pagination button.active {
-                    background: #f0f0f0;
-                    font-weight: bold;
+                    background: #1a1a2e;
+                    color: white;
+                    font-weight: 600;
+                    border-color: #1a1a2e;
                 }
     </style>
 </head>
