@@ -146,6 +146,36 @@
             color: #8a65ff;
         }
 
+        /* Price breakdown styles */
+        .price-breakdown {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed #333;
+            font-size: 0.85rem;
+            color: #9e9e9e;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+
+        .total-price {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed #333;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .fee-info {
+            color: #8a65ff;
+            cursor: help;
+        }
+
         .listing-actions {
             display: flex;
             gap: 1rem;
@@ -364,6 +394,191 @@
             margin: 0;
             font-size: 0.9rem;
         }
+
+        /* Purchase Confirmation Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+            .modal-backdrop.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+        .modal-container {
+            width: 90%;
+            max-width: 500px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-backdrop.active .modal-container {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 1.25rem;
+            background: #252525;
+            border-bottom: 1px solid #333;
+        }
+
+            .modal-header h3 {
+                margin: 0;
+                color: #ffffff;
+            }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1.25rem;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            background: #252525;
+        }
+
+        .purchase-details {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .purchase-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1px solid #333;
+        }
+
+        .purchase-info h4 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .purchase-info p {
+            margin: 0.25rem 0;
+            color: #b0b0b0;
+        }
+
+        .purchase-cost-breakdown {
+            background: rgba(255,255,255,0.03);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid #333;
+        }
+
+        .purchase-fee-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed #333;
+            font-size: 0.9rem;
+        }
+
+        .purchase-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #333;
+            font-size: 1.1rem;
+        }
+
+        .cost-value {
+            color: #ffffff;
+        }
+
+        .note {
+            font-size: 0.85rem;
+            color: #9e9e9e;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #b0b0b0;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+            .close-modal:hover {
+                color: #ffffff;
+            }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 200px;
+                background-color: #333;
+                color: #fff;
+                text-align: center;
+                border-radius: 6px;
+                padding: 8px;
+                position: absolute;
+                z-index: 1;
+                bottom: 125%;
+                left: 50%;
+                transform: translateX(-50%);
+                opacity: 0;
+                transition: opacity 0.3s;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                font-size: 0.75rem;
+            }
+
+                .tooltip .tooltiptext::after {
+                    content: "";
+                    position: absolute;
+                    top: 100%;
+                    left: 50%;
+                    margin-left: -5px;
+                    border-width: 5px;
+                    border-style: solid;
+                    border-color: #333 transparent transparent transparent;
+                }
+
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
     </style>
 </head>
 <body>
@@ -474,7 +689,144 @@
         </div>
     </div>
 
+    <!-- Purchase Confirmation Modal -->
+    <div class="modal-backdrop" id="purchaseModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Confirm Purchase</h3>
+                <button class="close-modal" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="purchase-details">
+                    <img src="" alt="Ninja Cat" class="purchase-image" id="modalNftImage">
+                    <div class="purchase-info">
+                        <h4 id="modalNftName">Ninja Cat #123</h4>
+                        <p id="modalNftBreed">Bengal</p>
+                        <p>Seller: <span id="modalNftSeller">0x1234...5678</span></p>
+                    </div>
+                </div>
+
+                <div class="purchase-cost-breakdown">
+                    <div class="purchase-fee-row">
+                        <span>Item Price:</span>
+                        <span class="cost-value" id="modalItemPrice">0.5 VTRU</span>
+                    </div>
+                    <div class="purchase-fee-row">
+                        <span>Platform Fee (2.5%):</span>
+                        <span class="cost-value" id="modalPlatformFee">0.0125 VTRU</span>
+                    </div>
+                    <div class="purchase-fee-row">
+                        <span>Gas Fee (estimated):</span>
+                        <span class="cost-value" id="modalGasFee">0.001 VTRU</span>
+                    </div>
+                    <div class="purchase-total-row">
+                        <span>Total Cost:</span>
+                        <span class="cost-value" id="modalTotalCost">0.5135 VTRU</span>
+                    </div>
+                </div>
+
+                <p class="note">Once you confirm this purchase, a transaction will be initiated on the blockchain. This operation cannot be undone after confirmation.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn cancel-btn" id="cancelPurchaseBtn">Cancel</button>
+                <button class="btn primary-btn" id="confirmPurchaseBtn">Confirm Purchase</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="js/connect-only.js"></script>
     <script type="module" src="js/marketplace.js"></script>
+
+    <!-- Purchase modal functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const purchaseModal = document.getElementById('purchaseModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const cancelPurchaseBtn = document.getElementById('cancelPurchaseBtn');
+            const confirmPurchaseBtn = document.getElementById('confirmPurchaseBtn');
+
+            // Store the current listing being purchased
+            let currentPurchaseListing = null;
+
+            // Open modal with listing details
+            window.showPurchaseModal = function (listing) {
+                // Store the listing data for use when confirming
+                currentPurchaseListing = listing;
+
+                // Populate modal with listing details
+                document.getElementById('modalNftImage').src = listing.image;
+                document.getElementById('modalNftName').textContent = listing.name;
+                document.getElementById('modalNftBreed').textContent = listing.breed || 'Ninja Cat';
+                document.getElementById('modalNftSeller').textContent = listing.seller;
+
+                // Calculate fees
+                const price = parseFloat(listing.price);
+                const platformFee = price * 0.025; // 2.5% platform fee
+                const gasFee = 0.001; // Estimated gas fee
+                const totalCost = price + platformFee + gasFee;
+
+                // Format currency
+                const currency = listing.currency || 'VTRU';
+                document.getElementById('modalItemPrice').textContent = `${price.toFixed(4)} ${currency}`;
+                document.getElementById('modalPlatformFee').textContent = `${platformFee.toFixed(4)} ${currency}`;
+                document.getElementById('modalGasFee').textContent = `${gasFee.toFixed(4)} ${currency}`;
+                document.getElementById('modalTotalCost').textContent = `${totalCost.toFixed(4)} ${currency}`;
+
+                // Show the modal
+                purchaseModal.classList.add('active');
+
+                // Add animation class to modal
+                setTimeout(() => {
+                    purchaseModal.querySelector('.modal-container').classList.add('animate-in');
+                }, 10);
+            };
+
+            // Close modal
+            function closeModal() {
+                purchaseModal.classList.remove('active');
+                currentPurchaseListing = null;
+            }
+
+            // Confirm purchase
+            function confirmPurchase() {
+                if (!currentPurchaseListing) return;
+
+                // Here we execute the actual purchase function from marketplace.js
+                if (typeof window.executePurchase === 'function') {
+                    window.executePurchase(currentPurchaseListing);
+                } else {
+                    console.error('Purchase function not found');
+                }
+
+                // Don't close modal immediately - it will be closed after the purchase completes
+                // or will show errors if something fails
+            }
+
+            // Event listeners
+            closeModalBtn.addEventListener('click', closeModal);
+            cancelPurchaseBtn.addEventListener('click', closeModal);
+            confirmPurchaseBtn.addEventListener('click', confirmPurchase);
+
+            // Close if clicked outside the modal content
+            purchaseModal.addEventListener('click', function (e) {
+                if (e.target === purchaseModal) {
+                    closeModal();
+                }
+            });
+
+            // Make fee calculation function available to marketplace.js
+            window.calculateFees = function (price, currency) {
+                const platformFee = price * 0.025; // 2.5%
+                const gasFee = 0.001; // Estimated
+                return {
+                    price: price,
+                    platformFee: platformFee,
+                    gasFee: gasFee,
+                    totalCost: price + platformFee + gasFee,
+                    currency: currency
+                };
+            };
+        });
+    </script>
 </body>
 </html>
