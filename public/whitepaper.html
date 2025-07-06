@@ -30,9 +30,27 @@
             font-family: 'Segoe UI', Arial, sans-serif;
             background: var(--background-color);
             color: var(--text-color);
-            display: flex;
             min-height: 100vh;
+            margin: 0;
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 100vh;
+            margin-left: var(--nav-width);
             transition: margin-left .3s;
+        }
+
+        body.sidebar-collapsed .content-wrapper {
+            margin-left: var(--nav-collapsed-width);
+        }
+
+        @media (max-width: 900px) {
+            .content-wrapper {
+                margin-left: 0;
+            }
         }
 
         /* ─── Sidebar ─── */
@@ -50,7 +68,6 @@
             transition: width .3s;
         }
 
-        /* collapsed width */
         body.sidebar-collapsed .sidebar {
             width: var(--nav-collapsed-width);
         }
@@ -144,15 +161,29 @@
 
         /* ─── Main content ─── */
         .main-content {
-            margin-left: var(--nav-width);
+            flex: 1 0 auto;
             padding: 40px 32px;
             width: 100%;
             max-width: 900px;
+            margin: 0 auto;
             transition: margin-left .3s;
         }
 
-        body.sidebar-collapsed .main-content {
-            margin-left: var(--nav-collapsed-width);
+        @media (max-width: 1100px) {
+            .main-content {
+                padding: 32px 8vw;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 24px 4vw;
+            }
         }
 
         /* ─── Typography & Blocks ─── */
@@ -272,21 +303,155 @@
             margin: 40px 0;
         }
 
+        /* ─── Footer Styles ─── */
+        footer {
+            flex-shrink: 0;
+            background: var(--surface-color);
+            color: var(--muted-text);
+            text-align: center;
+            padding: 0;
+            border-top: 2px solid var(--primary-color);
+            margin-top: 40px;
+            letter-spacing: 0.02em;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.10);
+        }
+
+            footer a {
+                color: var(--primary-color);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+                footer a:hover {
+                    color: var(--secondary-color);
+                    text-decoration: underline;
+                }
+
+        /* Footer container aligns with main content */
+        .footer-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 32px 18px 32px;
+            box-sizing: border-box;
+        }
+
         @media (max-width: 1100px) {
-            .main-content {
-                padding: 32px 8vw;
+            .footer-container {
+                padding: 32px 8vw 18px 8vw;
             }
         }
 
         @media (max-width: 900px) {
-            .sidebar {
-                display: none;
+            .footer-container {
+                max-width: 100%;
+                padding: 24px 4vw 12px 4vw;
+            }
+        }
+
+        /* Footer content columns */
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 32px;
+            text-align: left;
+        }
+
+        .footer-section {
+            flex: 1 1 180px;
+            min-width: 160px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 700px) {
+            .footer-content {
+                flex-direction: column;
+                gap: 0;
             }
 
-            .main-content {
-                margin-left: 0;
-                padding: 24px 4vw;
+            .footer-section {
+                min-width: 0;
             }
+        }
+
+        /* Footer logo */
+        .footer-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #22243a;
+            margin-bottom: 8px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer links */
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+            .footer-links li {
+                margin-bottom: 8px;
+            }
+
+            .footer-links a {
+                color: var(--primary-color);
+                text-decoration: none;
+                font-size: 1em;
+                transition: color 0.2s;
+            }
+
+                .footer-links a:hover {
+                    color: var(--secondary-color);
+                    text-decoration: underline;
+                }
+
+        /* Social icons */
+        .social-links {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .social-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #22243a;
+            color: var(--primary-color);
+            transition: background 0.2s, color 0.2s;
+            font-size: 1.2em;
+        }
+
+            .social-icon:hover {
+                background: var(--primary-color);
+                color: #fff;
+            }
+
+        /* Footer disclaimer and copyright */
+        .footer-disclaimer {
+            margin: 24px 0 8px 0;
+            font-size: 0.95em;
+            color: var(--muted-text);
+            background: #201c2a;
+            border-left: 4px solid var(--secondary-color);
+            padding: 12px 18px;
+            border-radius: 4px;
+        }
+
+        .footer-copyright {
+            font-size: 0.95em;
+            color: var(--muted-text);
+            margin-bottom: 0;
+            margin-top: 8px;
         }
     </style>
 
@@ -335,206 +500,207 @@
         </nav>
     </aside>
 
-    <div class="main-content">
-        <!-- ───────── Header ───────── -->
-        <header>
-            <h1>Pixel Ninja Cats (PNCAT)</h1>
-            <p><em>A Comprehensive Technical Whitepaper</em></p>
-            <div class="disclaimer">
-                <strong>Important Disclaimer:</strong> Pixel Ninja Cats is purely a recreational and collectible NFT project.
-                These tokens are intended solely for entertainment purposes, with no investment promises or guarantees.
-                The unique digital artwork is the sole value proposition of this NFT collection.
-            </div>
-        </header>
+    <div class="content-wrapper">
+        <div class="main-content">
+            <!-- ───────── Header ───────── -->
+            <header>
+                <h1>Pixel Ninja Cats (PNCAT)</h1>
+                <p><em>A Comprehensive Technical Whitepaper</em></p>
+                <div class="disclaimer">
+                    <strong>Important Disclaimer:</strong> Pixel Ninja Cats is purely a recreational and collectible NFT project.
+                    These tokens are intended solely for entertainment purposes, with no investment promises or guarantees.
+                    The unique digital artwork is the sole value proposition of this NFT collection.
+                </div>
+            </header>
 
-        <!-- ───────── Introduction ───────── -->
-        <section id="introduction">
-            <h2>Introduction</h2>
-            <p>
-                Pixel Ninja Cats (PNCAT) combines the internet's love for cats with the iconic pixel art style and ninja aesthetics.
-                Each Pixel Ninja Cat is a unique, AI-generated piece of digital art stored on the blockchain as an ERC-721 non-fungible token.
-                The project focuses on creating genuinely unique and quirky digital collectibles that cat enthusiasts and NFT collectors can enjoy.
-            </p>
-            <p>
-                Unlike many NFT projects that promise utilities, future rewards, or metaverse integration, Pixel Ninja Cats
-                is refreshingly straightforward: it's all about the art and the joy of collecting unique digital cats.
-                We believe in transparent and honest approaches to NFTs as digital collectibles.
-            </p>
-        </section>
-
-        <div class="section-separator"></div>
-
-        <!-- ───────── Core Mechanics ───────── -->
-        <section id="mechanics">
-            <h2>Core Mechanics</h2>
-
-            <h3>The Two-Phase Minting Process</h3>
-            <p>
-                Pixel Ninja Cats employs an innovative two-phase minting process that combines on-chain transactions with off-chain AI generation:
-            </p>
-
-            <div class="feature-box">
-                <h4>Phase 1: Initial Purchase</h4>
+            <!-- ───────── Introduction ───────── -->
+            <section id="introduction">
+                <h2>Introduction</h2>
                 <p>
-                    When a collector calls the <code>buy(string breed)</code> function:
+                    Pixel Ninja Cats (PNCAT) combines the internet's love for cats with the iconic pixel art style and ninja aesthetics.
+                    Each Pixel Ninja Cat is a unique, AI-generated piece of digital art stored on the blockchain as an ERC-721 non-fungible token.
+                    The project focuses on creating genuinely unique and quirky digital collectibles that cat enthusiasts and NFT collectors can enjoy.
                 </p>
-                <ol>
-                    <li>The current price in USDC is transferred from the buyer to the treasury</li>
-                    <li>A new token ID is assigned and minted to the buyer's wallet</li>
-                    <li>The specified "breed" parameter is emitted in the <code>MintRequested</code> event</li>
-                    <li>At this point, the NFT exists but has no metadata (it's "blank")</li>
-                </ol>
-            </div>
-
-            <div class="feature-box">
-                <h4>Phase 2: AI Reveal Process</h4>
                 <p>
-                    After the on-chain mint:
+                    Unlike many NFT projects that promise utilities, future rewards, or metaverse integration, Pixel Ninja Cats
+                    is refreshingly straightforward: it's all about the art and the joy of collecting unique digital cats.
+                    We believe in transparent and honest approaches to NFTs as digital collectibles.
                 </p>
-                <ol>
-                    <li>Our off-chain AI generation system detects the <code>MintRequested</code> event</li>
-                    <li>The system generates a unique pixel cat artwork based on the specified breed parameter</li>
-                    <li>The generated metadata is stored on IPFS for permanence</li>
-                    <li>The contract owner (our reveal bot) calls <code>setTokenURI()</code> to assign the metadata URI to your token</li>
-                    <li>Your Pixel Ninja Cat is now revealed and visible in wallets and marketplaces</li>
-                </ol>
-            </div>
+            </section>
 
-            <h3>Breed Selection</h3>
-            <p>
-                The "breed" parameter allows collectors to influence (but not precisely determine) the characteristics of their Ninja Cat.
-                Some popular breed options include:
-            </p>
-            <ul>
-                <li>Tabby – classic striped patterns</li>
-                <li>Siamese – distinctive color points</li>
-                <li>Persian – fluffy appearance with round faces</li>
-                <li>Bengal – wild-looking spotted patterns</li>
-                <li>Sphynx – hairless variety with unique visual traits</li>
-                <li>Custom – experimental breeds may yield unexpected results!</li>
-            </ul>
-        </section>
+            <div class="section-separator"></div>
 
-        <div class="section-separator"></div>
+            <!-- ───────── Core Mechanics ───────── -->
+            <section id="mechanics">
+                <h2>Core Mechanics</h2>
 
-        <!-- ───────── Technical Architecture ───────── -->
-        <section id="technical">
-            <h2>Technical Architecture</h2>
+                <h3>The Two-Phase Minting Process</h3>
+                <p>
+                    Pixel Ninja Cats employs an innovative two-phase minting process that combines on-chain transactions with off-chain AI generation:
+                </p>
 
-            <h3>Smart Contract Specifications</h3>
-            <div class="tech-details">
-                <p>The Pixel Ninja Cats contract implements multiple OpenZeppelin standards:</p>
+                <div class="feature-box">
+                    <h4>Phase 1: Initial Purchase</h4>
+                    <p>
+                        When a collector calls the <code>buy(string breed)</code> function:
+                    </p>
+                    <ol>
+                        <li>The current price in USDC is transferred from the buyer to the treasury</li>
+                        <li>A new token ID is assigned and minted to the buyer's wallet</li>
+                        <li>The specified "breed" parameter is emitted in the <code>MintRequested</code> event</li>
+                        <li>At this point, the NFT exists but has no metadata (it's "blank")</li>
+                    </ol>
+                </div>
+
+                <div class="feature-box">
+                    <h4>Phase 2: AI Reveal Process</h4>
+                    <p>
+                        After the on-chain mint:
+                    </p>
+                    <ol>
+                        <li>Our off-chain AI generation system detects the <code>MintRequested</code> event</li>
+                        <li>The system generates a unique pixel cat artwork based on the specified breed parameter</li>
+                        <li>The generated metadata is stored on IPFS for permanence</li>
+                        <li>The contract owner (our reveal bot) calls <code>setTokenURI()</code> to assign the metadata URI to your token</li>
+                        <li>Your Pixel Ninja Cat is now revealed and visible in wallets and marketplaces</li>
+                    </ol>
+                </div>
+
+                <h3>Breed Selection</h3>
+                <p>
+                    The "breed" parameter allows collectors to influence (but not precisely determine) the characteristics of their Ninja Cat.
+                    Some popular breed options include:
+                </p>
                 <ul>
-                    <li><strong>ERC721Enumerable</strong>: Enables enumeration of NFTs, allowing easy listing of tokens owned by an address</li>
-                    <li><strong>ERC721URIStorage</strong>: Provides storage and retrieval of token URI metadata</li>
-                    <li><strong>ERC2981</strong>: Implements royalty standard for secondary sales</li>
-                    <li><strong>Ownable</strong>: Controls access to administrative functions</li>
-                    <li><strong>Pausable</strong>: Allows pausing transfers and minting in emergency situations</li>
-                    <li><strong>ReentrancyGuard</strong>: Prevents reentrancy attacks during minting</li>
+                    <li>Tabby – classic striped patterns</li>
+                    <li>Siamese – distinctive color points</li>
+                    <li>Persian – fluffy appearance with round faces</li>
+                    <li>Bengal – wild-looking spotted patterns</li>
+                    <li>Sphynx – hairless variety with unique visual traits</li>
+                    <li>Custom – experimental breeds may yield unexpected results!</li>
                 </ul>
-            </div>
+            </section>
 
-            <h3>Key Contract Functions</h3>
-            <table>
-                <tr>
-                    <th>Function</th>
-                    <th>Access</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td><code>buy(string calldata breed)</code></td>
-                    <td>Public</td>
-                    <td>Primary minting function. Accepts USDC payment and creates a new token.</td>
-                </tr>
-                <tr>
-                    <td><code>burn(uint256 tokenId)</code></td>
-                    <td>Token Owner</td>
-                    <td>Permanently destroys a token. Can only be called by the token owner or approved address.</td>
-                </tr>
-                <tr>
-                    <td><code>setTokenURI(uint256 tokenId, string calldata uri)</code></td>
-                    <td>Owner Only</td>
-                    <td>Sets the metadata URI for a token. Used during the reveal process.</td>
-                </tr>
-                <tr>
-                    <td><code>adminMint(address to, string[] calldata uris)</code></td>
-                    <td>Owner Only</td>
-                    <td>Allows the contract owner to mint tokens directly to a specified address.</td>
-                </tr>
-                <tr>
-                    <td><code>setPrice(uint256 newPrice)</code></td>
-                    <td>Owner Only</td>
-                    <td>Updates the minting price in USDC.</td>
-                </tr>
-                <tr>
-                    <td><code>pause()/unpause()</code></td>
-                    <td>Owner Only</td>
-                    <td>Temporarily suspends or resumes contract operations.</td>
-                </tr>
-            </table>
+            <div class="section-separator"></div>
 
-            <h3>AI Generation System</h3>
-            <p>
-                Our AI art generation system uses a specialized model trained on thousands of pixel art cats and ninja-themed imagery.
-                The system interprets the breed parameter and applies appropriate visual characteristics while ensuring each output is unique.
-            </p>
-            <p>
-                Every generated cat has procedural variations in:
-            </p>
-            <ul>
-                <li>Color palette and patterns</li>
-                <li>Ninja gear and accessories</li>
-                <li>Poses and expressions</li>
-                <li>Background elements</li>
-                <li>Special effects and highlights</li>
-            </ul>
-        </section>
+            <!-- ───────── Technical Architecture ───────── -->
+            <section id="technical">
+                <h2>Technical Architecture</h2>
 
-        <div class="section-separator"></div>
+                <h3>Smart Contract Specifications</h3>
+                <div class="tech-details">
+                    <p>The Pixel Ninja Cats contract implements multiple OpenZeppelin standards:</p>
+                    <ul>
+                        <li><strong>ERC721Enumerable</strong>: Enables enumeration of NFTs, allowing easy listing of tokens owned by an address</li>
+                        <li><strong>ERC721URIStorage</strong>: Provides storage and retrieval of token URI metadata</li>
+                        <li><strong>ERC2981</strong>: Implements royalty standard for secondary sales</li>
+                        <li><strong>Ownable</strong>: Controls access to administrative functions</li>
+                        <li><strong>Pausable</strong>: Allows pausing transfers and minting in emergency situations</li>
+                        <li><strong>ReentrancyGuard</strong>: Prevents reentrancy attacks during minting</li>
+                    </ul>
+                </div>
 
-        <!-- ───────── Tokenomics ───────── -->
-        <section id="tokenomics">
-            <h2>Tokenomics</h2>
+                <h3>Key Contract Functions</h3>
+                <table>
+                    <tr>
+                        <th>Function</th>
+                        <th>Access</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>buy(string calldata breed)</code></td>
+                        <td>Public</td>
+                        <td>Primary minting function. Accepts USDC payment and creates a new token.</td>
+                    </tr>
+                    <tr>
+                        <td><code>burn(uint256 tokenId)</code></td>
+                        <td>Token Owner</td>
+                        <td>Permanently destroys a token. Can only be called by the token owner or approved address.</td>
+                    </tr>
+                    <tr>
+                        <td><code>setTokenURI(uint256 tokenId, string calldata uri)</code></td>
+                        <td>Owner Only</td>
+                        <td>Sets the metadata URI for a token. Used during the reveal process.</td>
+                    </tr>
+                    <tr>
+                        <td><code>adminMint(address to, string[] calldata uris)</code></td>
+                        <td>Owner Only</td>
+                        <td>Allows the contract owner to mint tokens directly to a specified address.</td>
+                    </tr>
+                    <tr>
+                        <td><code>setPrice(uint256 newPrice)</code></td>
+                        <td>Owner Only</td>
+                        <td>Updates the minting price in USDC.</td>
+                    </tr>
+                    <tr>
+                        <td><code>pause()/unpause()</code></td>
+                        <td>Owner Only</td>
+                        <td>Temporarily suspends or resumes contract operations.</td>
+                    </tr>
+                </table>
 
-            <h3>Pricing Model</h3>
-            <p>
-                Pixel Ninja Cats are priced in USDC (a USD-pegged stablecoin with 6 decimals).
-                The initial mint price is set at contract deployment but can be adjusted by the contract owner
-                to reflect demand and market conditions.
-            </p>
-            <p>
-                The <code>priceHuman()</code> function provides a human-readable price format (e.g., "25.000000")
-                that applications can display to users.
-            </p>
+                <h3>AI Generation System</h3>
+                <p>
+                    Our AI art generation system uses a specialized model trained on thousands of pixel art cats and ninja-themed imagery.
+                    The system interprets the breed parameter and applies appropriate visual characteristics while ensuring each output is unique.
+                </p>
+                <p>
+                    Every generated cat has procedural variations in:
+                </p>
+                <ul>
+                    <li>Color palette and patterns</li>
+                    <li>Ninja gear and accessories</li>
+                    <li>Poses and expressions</li>
+                    <li>Background elements</li>
+                    <li>Special effects and highlights</li>
+                </ul>
+            </section>
 
-            <h3>Royalty Structure</h3>
-            <p>
-                The contract implements ERC2981, setting default royalties for secondary market sales.
-                Royalties are distributed to the treasury address and can be updated by the contract owner.
-            </p>
-            <p>
-                The royalty percentage is specified in basis points (bps), where 100 bps = 1%.
-                For example, a 250 bps royalty would result in a 2.5% fee on secondary sales.
-            </p>
+            <div class="section-separator"></div>
 
-            <h3>Token ID System</h3>
-            <p>
-                Token IDs begin at the specified <code>idOffset</code> (typically 1) and increment sequentially.
-                This allows for intuitive numbering of collectibles and makes it easy to track the total supply.
-            </p>
-        </section>
+            <!-- ───────── Tokenomics ───────── -->
+            <section id="tokenomics">
+                <h2>Tokenomics</h2>
 
-        <div class="section-separator"></div>
+                <h3>Pricing Model</h3>
+                <p>
+                    Pixel Ninja Cats are priced in USDC (a USD-pegged stablecoin with 6 decimals).
+                    The initial mint price is set at contract deployment but can be adjusted by the contract owner
+                    to reflect demand and market conditions.
+                </p>
+                <p>
+                    The <code>priceHuman()</code> function provides a human-readable price format (e.g., "25.000000")
+                    that applications can display to users.
+                </p>
 
-        <!-- ───────── Metadata Standards ───────── -->
-        <section id="metadata">
-            <h2>Metadata Standards</h2>
+                <h3>Royalty Structure</h3>
+                <p>
+                    The contract implements ERC2981, setting default royalties for secondary market sales.
+                    Royalties are distributed to the treasury address and can be updated by the contract owner.
+                </p>
+                <p>
+                    The royalty percentage is specified in basis points (bps), where 100 bps = 1%.
+                    For example, a 250 bps royalty would result in a 2.5% fee on secondary sales.
+                </p>
 
-            <h3>NFT Metadata Structure</h3>
-            <p>
-                The metadata for each Pixel Ninja Cat follows the standard ERC-721 metadata format:
-            </p>
-            <pre><code>{
+                <h3>Token ID System</h3>
+                <p>
+                    Token IDs begin at the specified <code>idOffset</code> (typically 1) and increment sequentially.
+                    This allows for intuitive numbering of collectibles and makes it easy to track the total supply.
+                </p>
+            </section>
+
+            <div class="section-separator"></div>
+
+            <!-- ───────── Metadata Standards ───────── -->
+            <section id="metadata">
+                <h2>Metadata Standards</h2>
+
+                <h3>NFT Metadata Structure</h3>
+                <p>
+                    The metadata for each Pixel Ninja Cat follows the standard ERC-721 metadata format:
+                </p>
+                <pre><code>{
   "name": "Pixel Ninja Cat #123",
   "description": "A [Breed] Ninja Cat with [Special Traits]",
   "image": "ipfs://Qm...",
@@ -547,166 +713,116 @@
     { "trait_type": "Special Ability", "value": "Shadow Clone" }
   ]
 }</code></pre>
-            <p>
-                The metadata is stored permanently on IPFS, ensuring that the artwork and attributes remain accessible
-                even if the original project website goes offline.
-            </p>
-        </section>
+                <p>
+                    The metadata is stored permanently on IPFS, ensuring that the artwork and attributes remain accessible
+                    even if the original project website goes offline.
+                </p>
+            </section>
 
-        <div class="section-separator"></div>
+            <div class="section-separator"></div>
 
-        <!-- ───────── Roadmap ───────── -->
-        <section id="roadmap">
-            <h2>Project Timeline</h2>
 
-            <div class="roadmap-item">
-                <div class="roadmap-marker">Phase 1</div>
-                <div class="roadmap-content">
-                    <strong>Initial Launch</strong>
-                    <ul>
-                        <li>Smart contract deployment</li>
-                        <li>Website launch</li>
-                        <li>First batch of Pixel Ninja Cats available for minting</li>
-                    </ul>
+
+            <!-- ───────── FAQ ───────── -->
+            <section id="faq">
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="faq-item">
+                    <div class="faq-question">How long does it take for my Ninja Cat to reveal after minting?</div>
+                    <p>
+                        Typically, the reveal process takes 5-10 minutes. Our AI generation system processes minting events in batches,
+                        and the time may vary depending on network conditions and the current queue.
+                    </p>
                 </div>
-            </div>
 
-            <div class="roadmap-item">
-                <div class="roadmap-marker">Phase 2</div>
-                <div class="roadmap-content">
-                    <strong>Community Growth</strong>
-                    <ul>
-                        <li>Social media presence expansion</li>
-                        <li>Community events and giveaways</li>
-                        <li>AI model improvements based on feedback</li>
-                    </ul>
+                <div class="faq-item">
+                    <div class="faq-question">Can I request specific traits for my Ninja Cat?</div>
+                    <p>
+                        While you can influence the general appearance by specifying a breed, the exact traits are determined by the AI generation system.
+                        This ensures each cat is unique and maintains an element of surprise.
+                    </p>
                 </div>
-            </div>
 
-            <div class="roadmap-item">
-                <div class="roadmap-marker">Phase 3</div>
-                <div class="roadmap-content">
-                    <strong>Collection Expansion</strong>
-                    <ul>
-                        <li>Introduction of new breed variations</li>
-                        <li>Special edition releases</li>
-                        <li>Potential partnerships with other NFT projects</li>
-                    </ul>
+                <div class="faq-item">
+                    <div class="faq-question">What happens if I burn my Pixel Ninja Cat?</div>
+                    <p>
+                        Burning is permanent and irreversible. The NFT is removed from circulation forever, and the metadata will no longer be accessible
+                        through the contract (though the IPFS content may still exist). Burning might be desirable if you want to reduce the total supply
+                        or remove a specific token from your collection.
+                    </p>
                 </div>
-            </div>
 
-            <div class="roadmap-item">
-                <div class="roadmap-marker">Ongoing</div>
-                <div class="roadmap-content">
-                    <strong>Continuous Improvement</strong>
-                    <ul>
-                        <li>AI algorithm refinements</li>
-                        <li>Community-suggested features</li>
-                        <li>Website and marketplace integration updates</li>
-                    </ul>
+                <div class="faq-item">
+                    <div class="faq-question">Are there any utility features planned for the future?</div>
+                    <p>
+                        No. Pixel Ninja Cats is deliberately designed as a purely collectible NFT project focused on the digital artwork itself.
+                        We believe in transparent and honest approaches to NFTs without making promises about future utilities or benefits.
+                    </p>
                 </div>
-            </div>
-        </section>
 
-        <div class="section-separator"></div>
+                <div class="faq-item">
+                    <div class="faq-question">Why is the contract pausable?</div>
+                    <p>
+                        The pause function is a standard security feature that allows us to temporarily halt minting and transfers
+                        in case a critical bug or vulnerability is discovered. This helps protect users and their assets while issues are resolved.
+                    </p>
+                </div>
+            </section>
 
-        <!-- ───────── FAQ ───────── -->
-        <section id="faq">
-            <h2>Frequently Asked Questions</h2>
+            <div class="section-separator"></div>
 
-            <div class="faq-item">
-                <div class="faq-question">How long does it take for my Ninja Cat to reveal after minting?</div>
+            <!-- ───────── Team ───────── -->
+            <section id="team">
+                <h2>Team</h2>
                 <p>
-                    Typically, the reveal process takes 5-10 minutes. Our AI generation system processes minting events in batches,
-                    and the time may vary depending on network conditions and the current queue.
+                    This is a solo project—Pixel Ninja Cats is designed, developed, and maintained entirely by me. From smart contract
+                    code to AI artwork generation, website layout, community engagement, and legal disclaimers, every aspect is handled
+                    personally to ensure quality and consistency.
                 </p>
-            </div>
+            </section>
 
-            <div class="faq-item">
-                <div class="faq-question">Can I request specific traits for my Ninja Cat?</div>
+            <div class="section-separator"></div>
+
+            <!-- ───────── Conclusion ───────── -->
+            <section id="conclusion">
+                <h2>Conclusion</h2>
                 <p>
-                    While you can influence the general appearance by specifying a breed, the exact traits are determined by the AI generation system.
-                    This ensures each cat is unique and maintains an element of surprise.
-                </p>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">What happens if I burn my Pixel Ninja Cat?</div>
-                <p>
-                    Burning is permanent and irreversible. The NFT is removed from circulation forever, and the metadata will no longer be accessible
-                    through the contract (though the IPFS content may still exist). Burning might be desirable if you want to reduce the total supply
-                    or remove a specific token from your collection.
-                </p>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Are there any utility features planned for the future?</div>
-                <p>
-                    No. Pixel Ninja Cats is deliberately designed as a purely collectible NFT project focused on the digital artwork itself.
-                    We believe in transparent and honest approaches to NFTs without making promises about future utilities or benefits.
-                </p>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Why is the contract pausable?</div>
-                <p>
-                    The pause function is a standard security feature that allows us to temporarily halt minting and transfers
-                    in case a critical bug or vulnerability is discovered. This helps protect users and their assets while issues are resolved.
-                </p>
-            </div>
-        </section>
-
-        <div class="section-separator"></div>
-
-        <!-- ───────── Team ───────── -->
-        <section id="team">
-            <h2>Team</h2>
-            <p>
-                This is a solo project—Pixel Ninja Cats is designed, developed, and maintained entirely by me. From smart contract
-                code to AI artwork generation, website layout, community engagement, and legal disclaimers, every aspect is handled
-                personally to ensure quality and consistency.
-            </p>
-        </section>
-
-        <div class="section-separator"></div>
-
-        <!-- ───────── Conclusion ───────── -->
-        <section id="conclusion">
-            <h2>Conclusion</h2>
-            <p>
-                Pixel Ninja Cats represents a return to what makes NFTs special: unique digital art with verifiable ownership.
-                By focusing on the joy of collecting rather than speculative value or utility promises, we aim to create
-                a sustainable and enjoyable collecting experience.
-            </p>
-            <p>
-                We invite you to join our community of cat-loving collectors and become the proud owner of your own unique
-                Pixel Ninja Cat!
-            </p>
-        </section>
-
-        <div class="section-separator"></div>
-
-        <!-- ───────── Disclaimer ───────── -->
-        <section id="disclaimer">
-            <h2>Legal Disclaimer</h2>
-            <div class="disclaimer">
-                <p>
-                    Pixel Ninja Cats (PNCAT) is a purely recreational NFT project. These tokens are not financial instruments,
-                    investments, securities, or currency. They carry no promises of future value, returns, or utility beyond their
-                    collectible nature and the digital artwork they represent.
+                    Pixel Ninja Cats represents a return to what makes NFTs special: unique digital art with verifiable ownership.
+                    By focusing on the joy of collecting rather than speculative value or utility promises, we aim to create
+                    a sustainable and enjoyable collecting experience.
                 </p>
                 <p>
-                    By minting or purchasing a Pixel Ninja Cat, you acknowledge that you are doing so for collecting purposes only
-                    and not as an investment. The value of NFTs can fluctuate significantly and may decrease to zero. Only spend what
-                    you can afford to lose entirely.
+                    We invite you to join our community of cat-loving collectors and become the proud owner of your own unique
+                    Pixel Ninja Cat!
                 </p>
-                <p>
-                    The Pixel Ninja Cats team reserves the right to modify aspects of the project, including but not limited to
-                    pricing, minting mechanics, and website features. However, the fundamental nature of existing NFTs as digital
-                    collectibles will not be changed.
-                </p>
-            </div>
-        </section>
-    </div><!-- /.main-content -->
+            </section>
+
+            <div class="section-separator"></div>
+
+            <!-- ───────── Disclaimer ───────── -->
+            <section id="disclaimer">
+                <h2>Legal Disclaimer</h2>
+                <div class="disclaimer">
+                    <p>
+                        Pixel Ninja Cats (PNCAT) is a purely recreational NFT project. These tokens are not financial instruments,
+                        investments, securities, or currency. They carry no promises of future value, returns, or utility beyond their
+                        collectible nature and the digital artwork they represent.
+                    </p>
+                    <p>
+                        By minting or purchasing a Pixel Ninja Cat, you acknowledge that you are doing so for collecting purposes only
+                        and not as an investment. The value of NFTs can fluctuate significantly and may decrease to zero. Only spend what
+                        you can afford to lose entirely.
+                    </p>
+                    <p>
+                        The Pixel Ninja Cats team reserves the right to modify aspects of the project, including but not limited to
+                        pricing, minting mechanics, and website features. However, the fundamental nature of existing NFTs as digital
+                        collectibles will not be changed.
+                    </p>
+                </div>
+            </section>
+        </div><!-- /.main-content -->
+        <!-- Include the footer -->
+        <footer id="footer"></footer>
+        <script src="js/footer.js"></script>
 </body>
 </html>
