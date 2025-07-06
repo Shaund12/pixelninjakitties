@@ -11,8 +11,11 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
+            background: radial-gradient(ellipse at 60% 10%, #23263a 0%, #121212 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            margin: 0;
+            letter-spacing: 0.01em;
         }
 
         .gallery-header {
@@ -20,128 +23,209 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+            color: #fff;
+            text-shadow: 0 2px 12px #6e45e2a0;
         }
+
+            .gallery-header h1 {
+                background: linear-gradient(135deg, #8a65ff, #2775ca 80%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                font-weight: 700;
+                font-size: 2.5rem;
+                letter-spacing: 0.03em;
+                margin: 0;
+            }
 
         .filter-controls {
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
             margin-bottom: 1.5rem;
-            background: rgba(0,0,0,0.05);
+            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
             padding: 1.25rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            border-radius: 14px;
+            box-shadow: 0 2px 12px #8a65ff22;
+            border: 1.5px solid #2d2d3a;
         }
+
+            .filter-controls label {
+                color: #b0b0b0;
+                font-weight: 500;
+                margin-right: 0.5rem;
+            }
 
             .filter-controls select {
                 padding: 8px 12px;
-                border-radius: 6px;
-                border: 1px solid #ddd;
-                background: white;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                border-radius: 8px;
+                border: 1.5px solid #444;
+                background: #23263a;
+                color: #fff;
+                font-family: 'Poppins', sans-serif;
+                font-size: 1em;
+                box-shadow: 0 1px 3px #8a65ff11;
+                transition: border 0.2s;
             }
+
+                .filter-controls select:focus {
+                    border: 1.5px solid #8a65ff;
+                    outline: none;
+                    box-shadow: 0 0 8px #8a65ff33;
+                }
 
         #kittiesGrid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.75rem;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 1.2s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
         }
 
         .cat-card {
-            background: white;
-            border-radius: 12px;
+            background: linear-gradient(120deg, rgba(138,101,255,0.10) 0%, rgba(39,117,202,0.08) 100%);
+            border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px #8a65ff22, 0 1.5px 8px #2775ca22;
+            transition: transform 0.35s cubic-bezier(.4,2,.6,1), box-shadow 0.3s;
             position: relative;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1.5px solid #2d2d3a;
+            animation: fadeInUp 0.7s;
         }
 
-            .cat-card:hover {
-                transform: translateY(-6px);
-                box-shadow: 0 12px 20px rgba(0,0,0,0.12);
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
             }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .cat-card:hover {
+            transform: translateY(-12px) scale(1.035);
+            box-shadow: 0 16px 40px #8a65ff44, 0 0 25px #2775ca44;
+            border-color: #8a65ff;
+            z-index: 2;
+        }
 
         .cat-image {
             width: 100%;
             aspect-ratio: 1;
             object-fit: cover;
             display: block;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1.5px solid #2d2d3a;
+            background: #23263a;
+            transition: box-shadow 0.3s;
+            box-shadow: 0 2px 12px #8a65ff22;
+        }
+
+        .cat-card:hover .cat-image {
+            box-shadow: 0 8px 32px #8a65ff55, 0 2px 12px #2775ca55;
         }
 
         .cat-info {
-            padding: 1.25rem;
-            background: linear-gradient(to bottom, #ffffff, #f9f9f9);
+            padding: 1.5rem;
+            background: linear-gradient(to bottom, #1e1e1e, #252525);
+            color: #fff;
         }
 
         .cat-name {
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin: 0 0 0.6rem;
-            color: #1a1a2e;
-            letter-spacing: 0.01em;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin: 0 0 0.7rem;
+            color: #fff;
+            letter-spacing: 0.02em;
+            text-shadow: 0 2px 8px #8a65ff33;
         }
 
         .cat-traits {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.4rem;
-            margin-bottom: 0.8rem;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
         }
 
         .trait-tag {
-            background: #f0f4f8;
-            color: #4a5568;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
+            background: linear-gradient(135deg, #23263a 60%, #8a65ff33 100%);
+            color: #b0b0b0;
+            padding: 0.28rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
             font-weight: 500;
             display: inline-block;
+            letter-spacing: 0.01em;
+            box-shadow: 0 1px 4px #8a65ff11;
         }
 
         .cat-owner {
-            font-size: 0.8rem;
-            color: #4a5568;
-            padding-top: 0.8rem;
-            border-top: 1px dashed #eee;
-            margin-top: 0.8rem;
+            font-size: 0.85rem;
+            color: #8a65ff;
+            padding-top: 1rem;
+            border-top: 1px dashed #333;
+            margin-top: 1rem;
             word-break: break-all;
+            text-align: right;
+            opacity: 0.85;
         }
 
         .cat-owner-label {
-            font-weight: 500;
-            color: #2d3748;
+            font-weight: 600;
+            color: #b0b0b0;
+            margin-right: 0.3em;
         }
 
         .rarity-badge {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 0.3rem 0.8rem;
+            top: 12px;
+            right: 12px;
+            padding: 0.35rem 1rem;
             border-radius: 20px;
-            font-size: 0.75rem;
-            color: white;
-            font-weight: 600;
-            letter-spacing: 0.03em;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 0.85rem;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            box-shadow: 0 2px 8px #8a65ff33;
+            border: 1.5px solid #fff3;
+            text-shadow: 0 1px 8px #8a65ff33;
+            z-index: 3;
             text-transform: uppercase;
         }
 
         .legendary {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
+            background: linear-gradient(135deg, #FFD700, #FFA500 80%);
+            color: #23263a;
+            border: 1.5px solid #FFD700;
+            text-shadow: 0 1px 8px #FFD70055;
         }
 
         .epic {
-            background: linear-gradient(135deg, #9370DB, #6A5ACD);
+            background: linear-gradient(135deg, #9370DB, #6A5ACD 80%);
+            border: 1.5px solid #9370DB;
         }
 
         .rare {
-            background: linear-gradient(135deg, #6495ED, #4169E1);
+            background: linear-gradient(135deg, #6495ED, #4169E1 80%);
+            border: 1.5px solid #6495ED;
         }
 
         .common {
-            background: linear-gradient(135deg, #90EE90, #3CB371);
+            background: linear-gradient(135deg, #90EE90, #3CB371 80%);
+            border: 1.5px solid #90EE90;
         }
 
         .loading {
@@ -150,15 +234,17 @@
             align-items: center;
             justify-content: center;
             padding: 2.5rem;
+            color: #e0e0e0;
         }
 
         .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid rgba(0,0,0,0.1);
-            border-left-color: #333;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-left-color: #8a65ff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
         }
 
         @keyframes spin {
@@ -176,23 +262,73 @@
 
             .pagination button {
                 padding: 0.6rem 1.2rem;
-                border: 1px solid #ddd;
-                background: white;
+                border: 1.5px solid #8a65ff33;
+                background: #23263a;
+                color: #b0b0b0;
                 cursor: pointer;
-                border-radius: 6px;
-                transition: all 0.2s ease;
+                border-radius: 8px;
+                transition: all 0.2s;
+                font-weight: 500;
+                font-family: 'Poppins', sans-serif;
+                font-size: 1em;
+                box-shadow: 0 1px 4px #8a65ff11;
             }
 
                 .pagination button:hover {
-                    background: #f7f7f7;
+                    background: linear-gradient(135deg, #8a65ff, #2775ca);
+                    color: #fff;
+                    border-color: #8a65ff;
                 }
 
                 .pagination button.active {
-                    background: #1a1a2e;
-                    color: white;
-                    font-weight: 600;
-                    border-color: #1a1a2e;
+                    background: linear-gradient(135deg, #8a65ff, #2775ca);
+                    color: #fff;
+                    font-weight: 700;
+                    border-color: #8a65ff;
+                    box-shadow: 0 2px 8px #8a65ff22;
                 }
+
+        /* Responsive adjustments */
+        @media (max-width: 1100px) {
+            #kittiesGrid {
+                gap: 1.2rem;
+            }
+
+            .gallery-header {
+                flex-direction: column;
+                gap: 0.7rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #kittiesGrid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 0.8rem;
+            }
+
+            .cat-info {
+                padding: 1rem;
+            }
+
+            .gallery-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gallery-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .cat-info {
+                padding: 0.7rem;
+            }
+
+            .cat-card {
+                border-radius: 10px;
+            }
+        }
     </style>
 </head>
 <body>

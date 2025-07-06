@@ -12,86 +12,198 @@
     <script type="module" src="js/mint.js"></script>
     <style>
         body {
-            background-color: #121212;
+            background: radial-gradient(ellipse at 60% 10%, #23263a 0%, #121212 100%);
             color: #e0e0e0;
             font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            letter-spacing: 0.01em;
         }
 
         .wrapper {
-            background-color: #121212;
+            background: transparent;
+            max-width: 980px;
+            margin: 0 auto;
+            padding-bottom: 40px;
+            flex: 1 0 auto;
         }
 
         h1, h2, h3, h4 {
-            color: #ffffff;
+            color: #fff;
         }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            align-items: center;
+            background: #18181c;
+            padding: 0.75rem 2rem;
+            border-bottom: 1px solid #23233a;
+            box-shadow: 0 2px 8px #8a65ff11;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            gap: 1.5rem;
+        }
+
+            nav img {
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                margin-right: 1rem;
+                background: #23233a;
+                box-shadow: 0 2px 8px #8a65ff22;
+            }
+
+            nav a {
+                color: #a084ff;
+                text-decoration: none;
+                font-weight: 500;
+                font-size: 1.08em;
+                transition: color 0.2s;
+                margin-right: 0.5rem;
+                letter-spacing: 0.01em;
+            }
+
+                nav a:hover, nav a.active {
+                    color: #ff9800;
+                    text-shadow: 0 2px 8px #ff980055;
+                }
+
+            nav .spacer {
+                flex: 1;
+            }
+
+        #connectBtn {
+            background: linear-gradient(135deg, #8a65ff, #7067CF);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px #8a65ff22;
+        }
+
+            #connectBtn:hover {
+                background: linear-gradient(135deg, #ff9800, #a084ff);
+                color: #fff;
+                box-shadow: 0 4px 16px #ff980044;
+            }
 
         /* Hero Section */
         .hero {
             position: relative;
-            padding: 3rem 1.5rem;
+            padding: 3.2rem 1.5rem 2.5rem 1.5rem;
             margin-bottom: 2.5rem;
             text-align: center;
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
-            border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            border: 1px solid #333;
+            background: linear-gradient(135deg, #23263a 0%, #18181c 100%);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px #8a65ff22, 0 2px 12px #2775ca22;
+            border: 1.5px solid #2d2d3a;
+            overflow: hidden;
         }
 
             .hero h1 {
                 margin-top: 1rem;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                background: linear-gradient(135deg, #8a65ff, #7067CF);
+                text-shadow: 0 2px 12px #6e45e2a0;
+                background: linear-gradient(135deg, #8a65ff, #2775ca 80%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
-                font-weight: 700;
-                font-size: 2.5rem;
+                font-weight: 800;
+                font-size: 2.8rem;
+                letter-spacing: 0.04em;
+                animation: fadeInDown 1s;
             }
 
             .hero h2 {
                 color: #b0b0b0;
                 margin-bottom: 1rem;
+                font-weight: 500;
+                font-size: 1.3rem;
             }
 
             .hero p {
-                color: #9e9e9e;
+                color: #b0b0b0;
                 max-width: 700px;
                 margin: 0 auto;
+                font-size: 1.08rem;
             }
 
             .hero img {
-                filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+                filter: drop-shadow(0 4px 16px #8a65ff55);
+                width: 72px;
+                height: 72px;
+                border-radius: 16px;
+                background: #23233a;
+                margin-bottom: 0.5rem;
+                box-shadow: 0 2px 12px #8a65ff33;
+                animation: popIn 1.2s;
             }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
 
         /* Disclaimer */
         .disclaimer {
-            background-color: rgba(20, 20, 20, 0.7);
+            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
             border-left: 4px solid #8a65ff;
             padding: 1.25rem;
             margin: 1.5rem 0;
-            font-size: 0.9rem;
-            border-radius: 8px;
+            font-size: 0.98rem;
+            border-radius: 10px;
             color: #b0b0b0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px #8a65ff11;
+            border: 1.5px solid #2d2d3a;
         }
 
             .disclaimer strong {
-                color: #ffffff;
+                color: #fff;
             }
 
         /* Breed Info */
         .breed-info {
             margin-top: 1rem;
             padding: 1.25rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
+            border-radius: 10px;
             display: none;
-            border: 1px solid #333;
-            transition: all 0.3s ease;
+            border: 1.5px solid #2d2d3a;
+            transition: all 0.3s;
         }
 
             .breed-info.active {
                 display: block;
-                animation: fadeIn 0.5s ease;
+                animation: fadeIn 0.5s;
             }
 
         @keyframes fadeIn {
@@ -102,12 +214,12 @@
 
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: none;
             }
         }
 
         .breed-info h4 {
-            color: #ffffff;
+            color: #fff;
             margin-top: 0;
         }
 
@@ -120,40 +232,51 @@
         .card {
             position: relative;
             overflow: hidden;
-            transition: all 0.3s ease;
-            background: #1e1e1e;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            border: 1px solid #333;
+            transition: all 0.3s;
+            background: linear-gradient(120deg, #1e1e1e 80%, #23263a 100%);
+            padding: 1.7rem 1.5rem 1.5rem 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px #8a65ff22, 0 2px 12px #2775ca22;
+            border: 1.5px solid #2d2d3a;
         }
 
             .card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 15px rgba(138, 101, 255, 0.2);
+                transform: translateY(-7px) scale(1.025);
+                box-shadow: 0 16px 40px #8a65ff33, 0 0 25px #2775ca44;
+                background: linear-gradient(120deg, #23263a 80%, #1e1e1e 100%);
             }
 
             .card label {
                 color: #b0b0b0;
                 margin-bottom: 0.5rem;
                 display: block;
+                font-weight: 500;
             }
 
             .card select {
                 width: 100%;
                 padding: 0.75rem;
-                background: #2c2c2e;
-                border: 1px solid #444;
-                border-radius: 6px;
-                color: #ffffff;
+                background: #23263a;
+                border: 1.5px solid #444;
+                border-radius: 8px;
+                color: #fff;
                 font-family: 'Poppins', sans-serif;
                 margin-bottom: 1rem;
+                font-size: 1.05em;
+                transition: border 0.2s;
             }
+
+                .card select:focus {
+                    border: 1.5px solid #8a65ff;
+                    outline: none;
+                    box-shadow: 0 0 8px #8a65ff33;
+                }
 
             .card .price {
                 color: #8a65ff;
-                font-weight: 600;
-                font-size: 1.1rem;
+                font-weight: 700;
+                font-size: 1.15rem;
+                letter-spacing: 0.01em;
             }
 
         /* Mint Steps */
@@ -162,6 +285,7 @@
             justify-content: space-between;
             margin: 2.5rem 0;
             padding: 0;
+            gap: 1.2rem;
         }
 
             .mint-steps li {
@@ -169,19 +293,22 @@
                 list-style: none;
                 text-align: center;
                 padding: 1.25rem 0.75rem;
-                background: rgba(255,255,255,0.05);
+                background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
                 margin: 0 0.5rem;
-                border-radius: 8px;
-                font-size: 0.9rem;
+                border-radius: 10px;
+                font-size: 1.02rem;
                 color: #b0b0b0;
-                border: 1px solid #333;
+                border: 1.5px solid #2d2d3a;
                 position: relative;
+                font-weight: 500;
+                box-shadow: 0 2px 8px #8a65ff11;
             }
 
                 .mint-steps li strong {
-                    color: #ffffff;
+                    color: #fff;
                     display: block;
                     margin-bottom: 0.5rem;
+                    font-size: 1.2em;
                 }
 
                 .mint-steps li::after {
@@ -204,15 +331,16 @@
         .facts {
             margin-top: 2.5rem;
             padding: 1.5rem;
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            border: 1px solid #333;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
+            border-radius: 14px;
+            border: 1.5px solid #2d2d3a;
+            box-shadow: 0 2px 8px #8a65ff11;
         }
 
             .facts h3 {
                 margin-top: 0;
                 margin-bottom: 1rem;
-                color: #ffffff;
+                color: #fff;
             }
 
             .facts ul {
@@ -222,27 +350,30 @@
 
             .facts li {
                 margin-bottom: 0.5rem;
-                animation: fadeIn 0.5s ease;
+                animation: fadeIn 0.5s;
             }
 
         /* Mint Button */
         #mintBtn {
             width: 100%;
-            padding: 0.85rem;
-            background: linear-gradient(135deg, #8a65ff, #7067CF);
+            padding: 0.95rem;
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 1.1rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 1rem 0;
+            transition: all 0.3s;
+            margin: 1.2rem 0 0.5rem 0;
+            box-shadow: 0 2px 8px #8a65ff22;
+            letter-spacing: 0.01em;
         }
 
             #mintBtn:not([disabled]):hover {
-                transform: translateY(-3px);
-                box-shadow: 0 8px 15px rgba(138, 101, 255, 0.4);
+                transform: translateY(-3px) scale(1.04);
+                box-shadow: 0 8px 20px #8a65ff44;
+                background: linear-gradient(135deg, #2775ca, #8a65ff);
             }
 
             #mintBtn[disabled] {
@@ -257,11 +388,12 @@
             justify-content: center;
             height: 150px;
             margin: 1.5rem 0;
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
+            border-radius: 10px;
             font-style: italic;
             color: #9e9e9e;
-            border: 1px dashed #444;
+            border: 1.5px dashed #8a65ff33;
+            box-shadow: 0 1px 4px #8a65ff11;
         }
 
         /* Status */
@@ -270,9 +402,11 @@
             text-align: center;
             border-radius: 8px;
             margin-top: 1rem;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid #333;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
+            border: 1.5px solid #2d2d3a;
             display: none;
+            color: #fff;
+            font-weight: 500;
         }
 
         /* Spinner */
@@ -298,29 +432,32 @@
         .nft-showcase {
             margin-top: 3rem;
             padding: 1.5rem;
-            background: rgba(255,255,255,0.05);
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
             border-radius: 16px;
-            border: 1px solid #333;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1.5px solid #2d2d3a;
+            box-shadow: 0 4px 12px #8a65ff22;
         }
 
             .nft-showcase h3 {
                 text-align: center;
                 margin-bottom: 1.5rem;
-                color: #ffffff;
+                color: #fff;
+                letter-spacing: 0.01em;
             }
 
         .carousel-container {
             position: relative;
             overflow: hidden;
-            border-radius: 12px;
+            border-radius: 14px;
             height: 300px;
             margin-bottom: 1rem;
+            background: #18181c;
+            box-shadow: 0 2px 8px #8a65ff11;
         }
 
         .carousel-track {
             display: flex;
-            transition: transform 0.5s ease;
+            transition: transform 0.5s cubic-bezier(.4,2,.6,1);
             height: 100%;
         }
 
@@ -335,15 +472,18 @@
 
         .carousel-image {
             max-height: 200px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            border: 1px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px #8a65ff33;
+            border: 1.5px solid #2d2d3a;
+            background: #18181c;
         }
 
         .carousel-caption {
             margin-top: 1rem;
             text-align: center;
             color: #e0e0e0;
+            font-size: 1.08rem;
+            letter-spacing: 0.01em;
         }
 
         .carousel-nav {
@@ -366,6 +506,8 @@
 
             .carousel-nav:hover {
                 opacity: 1;
+                background: linear-gradient(135deg, #8a65ff, #2775ca);
+                color: #fff;
             }
 
             .carousel-nav.prev {
@@ -394,9 +536,30 @@
 
             .carousel-dot.active {
                 background: #8a65ff;
+                box-shadow: 0 2px 8px #8a65ff44;
             }
 
         /* Responsive adjustments */
+        @media (max-width: 1100px) {
+            .wrapper {
+                padding-left: 4vw;
+                padding-right: 4vw;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .wrapper {
+                max-width: 100%;
+                padding-left: 2vw;
+                padding-right: 2vw;
+            }
+
+            nav {
+                flex-wrap: wrap;
+                padding: 0.75rem 1rem;
+            }
+        }
+
         @media (max-width: 768px) {
             .mint-steps {
                 flex-direction: column;
@@ -415,8 +578,168 @@
                     }
 
             .carousel-container {
-                height: 250px;
+                height: 220px;
             }
+
+            .hero h1 {
+                font-size: 1.7rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .wrapper {
+                padding-left: 1vw;
+                padding-right: 1vw;
+            }
+
+            .hero {
+                padding: 1.5rem 0.5rem;
+            }
+
+            .card {
+                padding: 1rem 0.5rem;
+            }
+
+            .facts {
+                padding: 1rem 0.5rem;
+            }
+        }
+
+        /* ─── Footer Styles ─── */
+        footer {
+            flex-shrink: 0;
+            background: #18181c;
+            color: #b0b0b0;
+            text-align: center;
+            padding: 0;
+            border-top: 2px solid #8a65ff;
+            margin-top: 40px;
+            letter-spacing: 0.02em;
+            box-shadow: 0 -2px 8px #8a65ff11;
+        }
+
+        .footer-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 32px 18px 32px;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1100px) {
+            .footer-container {
+                padding: 32px 8vw 18px 8vw;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .footer-container {
+                max-width: 100%;
+                padding: 24px 4vw 12px 4vw;
+            }
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 32px;
+            text-align: left;
+        }
+
+        .footer-section {
+            flex: 1 1 180px;
+            min-width: 160px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 700px) {
+            .footer-content {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .footer-section {
+                min-width: 0;
+            }
+        }
+
+        .footer-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #22243a;
+            margin-bottom: 8px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 2px 8px #8a65ff15;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+            .footer-links li {
+                margin-bottom: 8px;
+            }
+
+            .footer-links a {
+                color: #a084ff;
+                text-decoration: none;
+                font-size: 1em;
+                transition: color 0.2s;
+            }
+
+                .footer-links a:hover {
+                    color: #ff9800;
+                    text-decoration: underline;
+                }
+
+        .social-links {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .social-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #22243a;
+            color: #a084ff;
+            transition: background 0.2s, color 0.2s;
+            font-size: 1.2em;
+            box-shadow: 0 2px 8px #8a65ff11;
+        }
+
+            .social-icon:hover {
+                background: #a084ff;
+                color: #fff;
+            }
+
+        .footer-disclaimer {
+            margin: 24px 0 8px 0;
+            font-size: 0.95em;
+            color: #b0b0b0;
+            background: #201c2a;
+            border-left: 4px solid #ff9800;
+            padding: 12px 18px;
+            border-radius: 4px;
+        }
+
+        .footer-copyright {
+            font-size: 0.95em;
+            color: #b0b0b0;
+            margin-bottom: 0;
+            margin-top: 8px;
+            letter-spacing: 0.01em;
         }
     </style>
 </head>
