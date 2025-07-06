@@ -1143,48 +1143,9 @@
                 purchaseModal.classList.add('active');
             };
 
-            // Show exchange rate details modal
-            window.showExchangeRateDetails = function () {
-                document.getElementById('exchangeRateLoading').style.display = 'flex';
-                document.getElementById('exchangeRateContent').style.display = 'none';
-                exchangeRateModal.classList.add('active');
+            
 
-                // Fetch the data
-                if (window.getLpDetails) {
-                    window.getLpDetails().then(data => {
-                        if (data) {
-                            document.getElementById('modalExchangeRate').textContent = data.rate.toFixed(6);
-                            document.getElementById('vtruLiquidity').textContent = data.vtruReserve.toFixed(2);
-                            document.getElementById('usdcLiquidity').textContent = data.usdcReserve.toFixed(2);
-                            document.getElementById('totalLpValue').textContent = `$${data.totalValue.toFixed(2)}`;
-                            document.getElementById('lpLastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-
-                            document.getElementById('exchangeRateLoading').style.display = 'none';
-                            document.getElementById('exchangeRateContent').style.display = 'block';
-                        }
-                    });
-                }
-            };
-
-            // Refresh exchange rate details
-            window.refreshExchangeRateDetails = async function () {
-                document.getElementById('exchangeRateLoading').style.display = 'flex';
-                document.getElementById('exchangeRateContent').style.display = 'none';
-
-                if (window.getLpDetails) {
-                    const data = await window.getLpDetails();
-                    if (data) {
-                        document.getElementById('modalExchangeRate').textContent = data.rate.toFixed(6);
-                        document.getElementById('vtruLiquidity').textContent = data.vtruReserve.toFixed(2);
-                        document.getElementById('usdcLiquidity').textContent = data.usdcReserve.toFixed(2);
-                        document.getElementById('totalLpValue').textContent = `$${data.totalValue.toFixed(2)}`;
-                        document.getElementById('lpLastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-
-                        document.getElementById('exchangeRateLoading').style.display = 'none';
-                        document.getElementById('exchangeRateContent').style.display = 'block';
-                    }
-                }
-            };
+            
 
             // Close modal
             function closeModal() {

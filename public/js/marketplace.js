@@ -302,7 +302,7 @@ async function applyListingFiltersAndSort() {
     await renderListings(filteredListings, vtruPriceInUsdc);
 }
 
-// Update the renderListings function to show USDC equivalent
+// Update renderListings to include cancel button for owner's listings
 async function renderListings(listings, vtruPriceInUsdc = 0.1) {
     listingsGrid.innerHTML = '';
 
@@ -323,6 +323,9 @@ async function renderListings(listings, vtruPriceInUsdc = 0.1) {
         const currencyName = getCurrencyName(listing.currency);
         const sellerAddress = listing.seller;
         const isNativeCurrency = listing.currency === ethers.ZeroAddress;
+
+        // Check if current user is the seller
+        const isOwner = currentAccount && sellerAddress.toLowerCase() === currentAccount.toLowerCase();
 
         // Calculate fees
         const price = parseFloat(formattedPrice);
@@ -347,7 +350,10 @@ async function renderListings(listings, vtruPriceInUsdc = 0.1) {
             <div class="listing-info">
                 <h3 class="listing-name">${token.name}</h3>
                 <div class="listing-breed">${token.breed}</div>
-                <div class="listing-seller">Seller: ${shortenAddress(sellerAddress)}</div>
+                <div class="listing-seller">
+                    Seller: ${shortenAddress(sellerAddress)}
+                    ${isOwner ? '<span class="owner-badge">You</span>' : ''}
+                </div>
                 <div class="listing-price">
                     ${formattedPrice} <span class="listing-price-currency">${currencyName}</span>
                     ${usdcEquivalent}
@@ -382,43 +388,82 @@ async function renderListings(listings, vtruPriceInUsdc = 0.1) {
                 </div>
                 
                 <div class="listing-actions">
-                    <button class="buy-btn" data-token-id="${tokenId}">
-                        Buy Now
-                    </button>
+                    ${isOwner ?
+                `<button class="cancel-btn" data-token-id="${tokenId}">Cancel Listing</button>` :
+                `<button class="buy-btn" data-token-id="${tokenId}">Buy Now</button>`
+            }
                 </div>
             </div>
         `;
 
-        // Add buy button event listener
-        const buyBtn = card.querySelector('.buy-btn');
-        buyBtn.addEventListener('click', async () => {
-            // Prepare listing data for modal
-            const listingData = {
-                id: tokenId,
-                name: token.name,
-                image: token.image,
-                breed: token.breed,
-                seller: shortenAddress(sellerAddress),
-                price: formattedPrice,
-                rawPrice: listing.price.toString(),
-                currency: currencyName,
-                currencyAddress: listing.currency,
-                usdcEquivalent: isNativeCurrency ? (price * vtruPriceInUsdc).toFixed(2) : null
-            };
+        // Add appropriate button event listener
+        if (isOwner) {
+            const cancelBtn = card.querySelector('.cancel-btn');
+            cancelBtn.addEventListener('click', () => cancelListing(tokenId));
+        } else {
+            const buyBtn = card.querySelector('.buy-btn');
+            buyBtn.addEventListener('click', async () => {
+                // Prepare listing data for modal
+                const listingData = {
+                    id: tokenId,
+                    name: token.name,
+                    image: token.image,
+                    breed: token.breed,
+                    seller: shortenAddress(sellerAddress),
+                    price: formattedPrice,
+                    rawPrice: listing.price.toString(),
+                    currency: currencyName,
+                    currencyAddress: listing.currency,
+                    usdcEquivalent: isNativeCurrency ? (price * vtruPriceInUsdc).toFixed(2) : null
+                };
 
-            // Show the purchase modal
-            if (window.showPurchaseModal) {
-                window.showPurchaseModal(listingData);
-            } else {
-                // Fallback if modal function not available
-                const confirmed = confirm(`Do you want to buy ${token.name} for ${formattedPrice} ${currencyName}?`);
-                if (confirmed) {
-                    buyListing(tokenId, listing.price, listing.currency);
+                // Show the purchase modal
+                if (window.showPurchaseModal) {
+                    window.showPurchaseModal(listingData);
+                } else {
+                    // Fallback if modal function not available
+                    const confirmed = confirm(`Do you want to buy ${token.name} for ${formattedPrice} ${currencyName}?`);
+                    if (confirmed) {
+                        buyListing(tokenId, listing.price, listing.currency);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         listingsGrid.appendChild(card);
+    }
+
+    // Add some CSS for the owner badge
+    if (!document.getElementById('owner-badge-style')) {
+        const style = document.createElement('style');
+        style.id = 'owner-badge-style';
+        style.textContent = `
+            .owner-badge {
+                background: #8a65ff;
+                color: white;
+                padding: 0.1rem 0.5rem;
+                border-radius: 10px;
+                font-size: 0.7rem;
+                margin-left: 0.5rem;
+                vertical-align: middle;
+            }
+            
+            .cancel-btn {
+                background: #3a3a3c;
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
+                width: 100%;
+            }
+            
+            .cancel-btn:hover {
+                background: #ef4444;
+            }
+        `;
+        document.head.appendChild(style);
     }
 }
 
@@ -505,17 +550,28 @@ async function loadUserListings() {
     try {
         userListingsGrid.innerHTML = '';
 
-        // Filter for user's active listings
-        const userListings = userActiveListings;
+        // Always fetch fresh listings instead of relying on cached data
+        const allListings = await marketplace.getListings();
+        userActiveListings = []; // Reset the array
 
-        if (userListings.length === 0) {
+        // Find all active listings by this user
+        for (const listing of allListings) {
+            if (listing.seller.toLowerCase() === currentAccount.toLowerCase() && listing.active) {
+                userActiveListings.push(Number(listing.tokenId));
+            }
+        }
+
+        console.log(`Found ${userActiveListings.length} active listings for account ${shortenAddress(currentAccount)}`);
+
+        if (userActiveListings.length === 0) {
             noUserListings.style.display = 'block';
             return;
         }
 
         noUserListings.style.display = 'none';
 
-        for (const tokenId of userListings) {
+        // Render each listing
+        for (const tokenId of userActiveListings) {
             const listing = await marketplace.getListing(tokenId);
             const token = await fetchTokenMetadata(tokenId);
 
@@ -1172,6 +1228,343 @@ async function getVtruUsdcPrice() {
         return 0.1; // Assume 1 VTRU = 0.1 USDC as fallback
     }
 }
+
+// Complete replacement for exchange rate functionality
+window.showExchangeRateDetails = async function () {
+    console.log("Opening exchange rate modal");
+    const modal = document.getElementById('exchangeRateModal');
+    const loadingElement = document.getElementById('exchangeRateLoading');
+    const contentElement = document.getElementById('exchangeRateContent');
+
+    // Show modal and loading spinner
+    if (modal) modal.classList.add('active');
+    if (loadingElement) loadingElement.style.display = 'flex';
+    if (contentElement) contentElement.style.display = 'none';
+
+    try {
+        // Fetch LP data
+        console.log("Fetching initial LP data");
+        const data = await getLpDetails();
+
+        if (data && data.rate > 0) {
+            document.getElementById('modalExchangeRate').textContent = data.rate.toFixed(6);
+            document.getElementById('vtruLiquidity').textContent = data.vtruReserve.toFixed(2);
+            document.getElementById('usdcLiquidity').textContent = data.usdcReserve.toFixed(2);
+            document.getElementById('totalLpValue').textContent = `$${data.totalValue.toFixed(2)}`;
+            document.getElementById('lpLastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+            // Update ticker in header
+            const tickerElement = document.getElementById('tickerExchangeRate');
+            const lastUpdatedElement = document.getElementById('tickerLastUpdated');
+            if (tickerElement) tickerElement.textContent = data.rate.toFixed(6);
+            if (lastUpdatedElement) lastUpdatedElement.textContent = new Date().toLocaleTimeString();
+
+            // Show content, hide loading
+            loadingElement.style.display = 'none';
+            contentElement.style.display = 'block';
+        } else {
+            throw new Error("Invalid data received");
+        }
+    } catch (error) {
+        console.error("Error showing exchange rate details:", error);
+        if (loadingElement) {
+            loadingElement.innerHTML = `
+                <div style="text-align: center; padding: 1rem;">
+                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#ef4444" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h3 style="color: #ef4444; margin: 0.5rem 0;">Error Loading Data</h3>
+                    <p style="margin: 0.5rem 0;">${error.message}</p>
+                    <button onclick="window.refreshExchangeRateDetails()" 
+                            style="background: #3a3a3c; color: white; border: none; padding: 0.5rem 1rem; 
+                            border-radius: 6px; margin-top: 1rem; cursor: pointer;">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
+    }
+};
+
+// Enhanced Exchange Rate Modal with better styling and accurate token stats
+window.refreshExchangeRateDetails = async function () {
+    console.log("Enhanced modal refresh: Starting...");
+
+    try {
+        // 1. Find the modal body
+        const modalBody = document.querySelector('#exchangeRateModal .modal-body');
+        if (!modalBody) {
+            alert("Error: Modal body not found");
+            return;
+        }
+
+        // 2. Show loading state
+        modalBody.innerHTML = `
+            <div class="loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem;">
+                <div class="spinner" style="width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-left-color: #8a65ff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="color: #e0e0e0; margin-top: 1rem;">Loading market data...</p>
+            </div>
+        `;
+
+        // 3. Fetch fresh LP data
+        console.log("Fetching LP data...");
+        const lpData = await getLpDetails();
+        console.log("LP data retrieved:", lpData);
+
+        // 4. Calculate additional stats with actual supply numbers
+        const previousRate = parseFloat(localStorage.getItem('previous_vtru_rate') || lpData.rate);
+        const rateChange = lpData.rate - previousRate;
+        const rateChangePercent = (rateChange / previousRate * 100);
+
+        // Store current rate for future comparison
+        localStorage.setItem('previous_vtru_rate', lpData.rate);
+
+        // Use actual supply numbers
+        const circulatingSupply = 8358472;
+        const totalSupply = 60000000;
+        const marketCap = circulatingSupply * lpData.rate;
+
+        // 5. Create enhanced content with more stats
+        const newContent = `
+            <div style="animation: fadeIn 0.5s ease;">
+                <!-- Main Rate Display -->
+                <div style="background: linear-gradient(145deg, #1a1a1a 0%, #252525 100%); border-radius: 16px; padding: 2rem; text-align: center; margin-bottom: 1.5rem; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.25);">
+                    <h4 style="color: #9e9e9e; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.9rem;">CURRENT EXCHANGE RATE</h4>
+                    <div style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #8a65ff, #2775ca); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        1 VTRU = ${lpData.rate.toFixed(6)} USDC
+                    </div>
+                    
+                    <div style="margin-top: 1rem; display: inline-block; padding: 0.4rem 1rem; border-radius: 20px; font-weight: 600; 
+                        ${rateChange >= 0
+                ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);'
+                : 'background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);'
+            }">
+                        <span>
+                            ${rateChange >= 0 ? '↑' : '↓'} 
+                            ${Math.abs(rateChangePercent).toFixed(2)}%
+                        </span>
+                        <span style="font-size: 0.8rem; opacity: 0.7;"> since last check</span>
+                    </div>
+                </div>
+                
+                <!-- LP Stats Cards -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.25rem; text-align: center; border: 1px solid #333; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <h5 style="color: #9e9e9e; font-size: 0.8rem; text-transform: uppercase; margin: 0 0 0.5rem;">VTRU Liquidity</h5>
+                        <div style="font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; color: #ffffff;">${lpData.vtruReserve.toFixed(2)}</div>
+                        <div style="font-size: 0.8rem; color: #666;">≈ $${(lpData.vtruReserve * lpData.rate).toFixed(2)} value</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.25rem; text-align: center; border: 1px solid #333; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <h5 style="color: #9e9e9e; font-size: 0.8rem; text-transform: uppercase; margin: 0 0 0.5rem;">USDC Liquidity</h5>
+                        <div style="font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; color: #ffffff;">${lpData.usdcReserve.toFixed(2)}</div>
+                        <div style="font-size: 0.8rem; color: #666;">stable value</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.25rem; text-align: center; border: 1px solid #333; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <h5 style="color: #9e9e9e; font-size: 0.8rem; text-transform: uppercase; margin: 0 0 0.5rem;">Total Liquidity</h5>
+                        <div style="font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; color: #ffffff;">$${lpData.totalValue.toFixed(2)}</div>
+                        <div style="font-size: 0.8rem; color: #666;">combined value</div>
+                    </div>
+                </div>
+                
+                <!-- Additional Stats -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.25rem; border: 1px solid #333; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <h5 style="color: #9e9e9e; font-size: 0.8rem; text-transform: uppercase; margin: 0 0 0.5rem;">Market Cap (Circulating)</h5>
+                        <div style="font-size: 1.2rem; font-weight: 600; color: #ffffff;">$${marketCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                        <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">${circulatingSupply.toLocaleString()} of ${totalSupply.toLocaleString()} VTRU</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.25rem; border: 1px solid #333; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <h5 style="color: #9e9e9e; font-size: 0.8rem; text-transform: uppercase; margin: 0 0 0.5rem;">Price Stats</h5>
+                        <table style="width: 100%; font-size: 0.9rem; border-spacing: 0;">
+                            <tr>
+                                <td style="color: #9e9e9e; padding: 0.15rem 0;">VTRU:USDC:</td>
+                                <td style="color: #ffffff; text-align: right; font-weight: 500;">1:${lpData.rate.toFixed(4)}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #9e9e9e; padding: 0.15rem 0;">USDC:VTRU:</td>
+                                <td style="color: #ffffff; text-align: right; font-weight: 500;">${(1 / lpData.rate).toFixed(2)}:1</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Info Box -->
+                <div style="background: linear-gradient(145deg, rgba(138, 101, 255, 0.05) 0%, rgba(39, 117, 202, 0.05) 100%); border-radius: 12px; padding: 1.25rem; font-size: 0.9rem; color: #b0b0b0; margin-top: 1rem; border: 1px solid rgba(138, 101, 255, 0.2);">
+                    <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                        <div style="color: #8a65ff; margin-top: 0.1rem; flex-shrink: 0;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <p style="margin-top: 0; margin-bottom: 0.75rem;">The exchange rate is calculated from the VTRU/USDC liquidity pool. This rate is used to calculate USDC equivalents for all VTRU prices in the marketplace.</p>
+                            <p style="margin: 0; font-style: italic; font-size: 0.8rem; color: #777; text-align: right;">Last updated: ${new Date().toLocaleTimeString()}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 6. Replace the modal content
+        modalBody.innerHTML = newContent;
+
+        // 7. Update the ticker in header
+        const tickerElement = document.getElementById('tickerExchangeRate');
+        const lastUpdatedElement = document.getElementById('tickerLastUpdated');
+        if (tickerElement) tickerElement.textContent = lpData.rate.toFixed(6);
+        if (lastUpdatedElement) lastUpdatedElement.textContent = new Date().toLocaleTimeString();
+
+        // 8. Add animation styles if they don't exist
+        if (!document.getElementById('enhanced-exchange-rate-styles')) {
+            const style = document.createElement('style');
+            style.id = 'enhanced-exchange-rate-styles';
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                .modal-body > div > div:hover {
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        console.log("Enhanced exchange rate modal updated successfully");
+    } catch (error) {
+        console.error("Error updating exchange rate modal:", error);
+
+        // Show error message
+        const modalBody = document.querySelector('#exchangeRateModal .modal-body');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <svg viewBox="0 0 24 24" width="64" height="64" stroke="#ef4444" fill="none" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h2 style="color: #ef4444; margin: 1rem 0;">Error Loading Data</h2>
+                    <p style="color: #b0b0b0; margin-bottom: 1rem;">${error.message}</p>
+                    <button onclick="window.refreshExchangeRateDetails()" 
+                        style="background: linear-gradient(135deg, #8a65ff, #7067CF); color: white; border: none; 
+                        padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 500;
+                        transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(138, 101, 255, 0.25);">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        } else {
+            alert("Error: " + error.message);
+        }
+    }
+};
+
+// Also replace the show modal function to make sure it works
+window.showExchangeRateDetails = function () {
+    console.log("Opening exchange rate modal (emergency override)");
+    const modal = document.getElementById('exchangeRateModal');
+    if (modal) {
+        modal.classList.add('active');
+
+        // Add a slight delay before refreshing
+        setTimeout(() => {
+            window.refreshExchangeRateDetails();
+        }, 100);
+    } else {
+        alert("Error: Exchange rate modal not found");
+    }
+};
+
+
+// Add this function near your other LP-related functions
+async function getLpDetails() {
+    console.log("Fetching LP details - starting");
+    try {
+        // Contract addresses
+        const LP_ADDRESS = "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba";
+
+        // Create contract instance with more complete ABI
+        const lpContract = new ethers.Contract(LP_ADDRESS, [
+            "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
+            "function token0() view returns (address)",
+            "function token1() view returns (address)"
+        ], provider);
+
+        console.log("LP Contract created, getting token addresses");
+
+        // Get token addresses with timeout
+        const token0Promise = lpContract.token0();
+        const token1Promise = lpContract.token1();
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Request timed out after 5 seconds")), 5000)
+        );
+
+        // Race the contract calls with timeout
+        const token0 = await Promise.race([token0Promise, timeoutPromise]);
+        const token1 = await Promise.race([token1Promise, timeoutPromise]);
+
+        console.log("Token addresses retrieved:", { token0, token1, USDC_ADDRESS });
+
+        // Get reserves with timeout
+        const reservesPromise = lpContract.getReserves();
+        const reserves = await Promise.race([reservesPromise, timeoutPromise]);
+        console.log("Reserves retrieved:", reserves);
+
+        // Check if token0 is USDC
+        const isToken0Usdc = token0.toLowerCase() === USDC_ADDRESS.toLowerCase();
+        console.log("Is token0 USDC:", isToken0Usdc);
+
+        // Get reserve values
+        const vtruReserve = parseFloat(ethers.formatEther(isToken0Usdc ? reserves[1] : reserves[0]));
+        const usdcReserve = parseFloat(ethers.formatUnits(isToken0Usdc ? reserves[0] : reserves[1], 6));
+        console.log("Parsed reserves:", { vtruReserve, usdcReserve });
+
+        // Validate reserve values
+        if (isNaN(vtruReserve) || isNaN(usdcReserve) || vtruReserve <= 0) {
+            throw new Error("Invalid reserve values: " + JSON.stringify({ vtruReserve, usdcReserve }));
+        }
+
+        // Calculate rate and total value
+        const rate = usdcReserve / vtruReserve;
+        const totalValue = usdcReserve + (vtruReserve * rate);
+
+        console.log("LP data calculation successful:", { rate, totalValue });
+
+        return {
+            vtruReserve,
+            usdcReserve,
+            rate,
+            totalValue,
+            lastUpdated: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error("Error in getLpDetails:", error);
+        throw new Error("Failed to get LP data: " + error.message);
+    }
+}
+
+// Update function to refresh just the ticker in the header
+window.updateExchangeRateTicker = async function () {
+    try {
+        const data = await getLpDetails();
+        if (data && data.rate > 0) {
+            document.getElementById('tickerExchangeRate').textContent = data.rate.toFixed(6);
+            document.getElementById('tickerLastUpdated').textContent = new Date().toLocaleTimeString();
+        }
+    } catch (error) {
+        console.error("Error updating ticker:", error);
+    }
+};
 
 // Modify the calculateMarketplaceStats function to include price conversion
 async function calculateMarketplaceStats() {

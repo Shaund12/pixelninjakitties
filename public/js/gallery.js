@@ -995,4 +995,5 @@ function updateRarityStats() {
 }
 
 // Export for potential use in other modules
-export { loadCats, rarity };
+window.galleryLoadCats = loadCats;
+window.galleryRarity = rarity;
