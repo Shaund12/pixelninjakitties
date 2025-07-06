@@ -1,7 +1,7 @@
 ﻿import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
 
 // Constants
-const MARKETPLACE_ADDRESS = "0x0191A91B7F7E8c9E97bDB8566D0AAEbc48A81187";
+const MARKETPLACE_ADDRESS = "0x5031fc07293d574Ccbd4d12b0E7106A95502a299";
 const MARKETPLACE_ABI = [
     "function createListing(uint256 tokenId, uint256 price, address currency) external",
     "function cancelListing(uint256 tokenId) external",

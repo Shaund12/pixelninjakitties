@@ -1,7 +1,7 @@
 /*  centralised constants  */
 export const RPC_URL = 'https://rpc.vitruveo.xyz';
 
-export const CONTRACT_ADDRESS = '0xC4C8770f40e8eF17b27ddD987eCb8669b0924Fd6'; // NFT
+export const CONTRACT_ADDRESS = '0x2D732b0Bb33566A13E586aE83fB21d2feE34e906'; // NFT
 export const USDC_ADDRESS = '0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF'; // Vitruveo USDC
 
 /* minimal ABIs (read + mint only) */
@@ -104,6 +104,25 @@ export const NFT_ABI = [
             }
         ],
         "name": "BatchMetadataUpdate",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "burner",
+                "type": "address"
+            }
+        ],
+        "name": "KittyBurned",
         "type": "event"
     },
     {
@@ -293,6 +312,19 @@ export const NFT_ABI = [
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            }
+        ],
+        "name": "burn",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
