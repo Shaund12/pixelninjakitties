@@ -483,51 +483,51 @@ function generateBackstory(tokenId, breed, attributes) {
     switch (breed) {
         case "Bengal":
             if (originPatterns < 3) {
-                origin = `Born in the ${locations[locationIndex]}, this Bengal ninja ${birthCircumstances[circumstanceIndex]}. The distinctive spotted coat pattern provides perfect camouflage during network infiltration missions, while their ${earlyTraits[traitIndex]} marked them for greatness from their first training session.`;
+                origin = `In the ${locations[locationIndex]}, beneath a sky crackling with digital auroras, this Bengal ninja was born ${birthCircumstances[circumstanceIndex]}. Their coat, a living mosaic of shifting code, allowed them to vanish into the wildest data streams. Legends say their ${earlyTraits[traitIndex]} was first revealed when they outwitted a rogue AI prowling the network’s edge, earning the secret mark of the Tiger’s Eye from the ancient blockchain spirits.`;
             } else if (originPatterns < 7) {
-                origin = `When the digital storms ravaged the ${locations[locationIndex]}, only one Bengal kitten survived, showing ${earlyTraits[traitIndex]}. Their spotted coat, resembling fragmented code patterns, became symbolic of their destiny as a bridge between the old and new cryptographic orders.`;
+                origin = `As the digital storms ravaged the ${locations[locationIndex]}, a lone Bengal kitten emerged from the chaos, their spots flickering with encrypted runes. Surviving where all others fell, they became a symbol of hope and resilience. Their ${earlyTraits[traitIndex]} was so profound that even the Grand Masters whispered of the “Ghost in the Pattern,” a ninja destined to unite fractured protocols.`;
             } else {
-                origin = `From the moment they opened their eyes ${birthCircumstances[circumstanceIndex]} in the ${locations[locationIndex]}, this Bengal's spotted pattern glowed with unusual code sequences. Adopted by a wandering cyber-monk who recognized ${earlyTraits[traitIndex]}, they were raised with ancient blockchain knowledge thought lost to time.`;
+                origin = `On the night of ${birthCircumstance[circumstanceIndex]}, a wandering cyber-monk discovered a Bengal kitten in the ${locations[locationIndex]}, its eyes reflecting the lost code of the ancients. Raised in secret, the kitten absorbed forbidden knowledge and developed ${earlyTraits[traitIndex]}, eventually decoding the legendary “Spotted Cipher” said to unlock the gates between blockchains.`;
             }
             break;
         case "Siamese":
             if (originPatterns < 4) {
-                origin = `Emerging from the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this Siamese ninja possesses piercing blue eyes that can see through the most complex encryption. Their ${earlyTraits[traitIndex]} and haunting vocal abilities can disrupt enemy communications across the blockchain.`;
+                origin = `From the veiled mists of the ${locations[locationIndex]}, this Siamese ninja emerged ${birthCircumstances[circumstanceIndex]}, their sapphire eyes glowing with the light of a thousand encryptions. Their haunting voice could disrupt enemy transmissions, and their ${earlyTraits[traitIndex]} was so uncanny that some believed they could see the very soul of the blockchain.`;
             } else if (originPatterns < 8) {
-                origin = `Descended from the royal line of Siam Protocol Guardians, this ninja was smuggled away from the ${locations[locationIndex]} during the great Consensus Attack. Their distinctive blue eyes contain fragments of the original encryption algorithm, giving them ${earlyTraits[traitIndex]} beyond ordinary cats.`;
+                origin = `Descended from the royal Siam Protocol Guardians, this ninja was spirited away from the ${locations[locationIndex]} during the great Consensus Attack. Their dual-toned fur shimmered with shifting code, and their ${earlyTraits[traitIndex]} allowed them to slip between the cracks of reality and the digital realm, acting as a living bridge for lost data.`;
             } else {
-                origin = `Neither fully of the physical nor digital realm, this Siamese ninja first manifested in the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}. Their dual-toned fur represents the balance between code and reality, while their ${earlyTraits[traitIndex]} make them the perfect bridge between worlds.`;
+                origin = `Neither fully of this world nor the next, this Siamese ninja first appeared in the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}. Their presence was heralded by a chorus of digital songbirds, and their ${earlyTraits[traitIndex]} made them the only cat able to decipher the “Harmony Protocol,” a code said to bring peace to warring networks.`;
             }
             break;
         case "Maine Coon":
             if (originPatterns < 3) {
-                origin = `From the frozen ${locations[locationIndex]}, this Maine Coon ninja grew to be one of the most formidable digital warriors ${birthCircumstances[circumstanceIndex]}. Revered for impressive size and a thick coat that shields against even the harshest network conditions, their ${earlyTraits[traitIndex]} became legendary among allies and enemies alike.`;
+                origin = `Forged in the icy silence of the ${locations[locationIndex]}, this Maine Coon ninja was born ${birthCircumstances[circumstanceIndex]}. Towering above their peers, their thick fur was rumored to be woven from quantum threads. Their ${earlyTraits[traitIndex]} became legend after they single-pawedly defended the “Frozen Node” from a swarm of malware spirits.`;
             } else if (originPatterns < 7) {
-                origin = `When the great Firewall fell, this Maine Coon emerged from the ${locations[locationIndex]}, already fully grown and battle-hardened. Their enormous paws could crush encryption keys with a single swipe, while their ${earlyTraits[traitIndex]} allowed them to navigate security systems thought impenetrable.`;
+                origin = `When the great Firewall fell, a Maine Coon emerged from the ${locations[locationIndex]}, already a battle-scarred veteran. Their paws, said to be as heavy as ledgers, could shatter encryption keys with a single swipe. Their ${earlyTraits[traitIndex]} was so renowned that even the Council of Nine Keys sought their counsel in times of crisis.`;
             } else {
-                origin = `Born to a lineage of guardian cats who protected the ${locations[locationIndex]} for generations, this Maine Coon inherited not just their magnificent size but also ${earlyTraits[traitIndex]} that manifested ${birthCircumstances[circumstanceIndex]}. Their distinctive M marking on their forehead is said to be the mark of the original Metadata Masters.`;
+                origin = `Born to a dynasty of guardian cats who watched over the ${locations[locationIndex]} for generations, this Maine Coon inherited not only their ancestors’ size but also ${earlyTraits[traitIndex]} that first manifested ${birthCircumstance[circumstanceIndex]}. The “M” on their brow is said to be the original Metadata Mark, a symbol of ultimate authority in the digital wilds.`;
             }
             break;
         case "Calico":
             if (originPatterns < 4) {
-                origin = `Born ${birthCircumstances[circumstanceIndex]} in the ${locations[locationIndex]}, this Calico ninja was blessed with a multi-colored coat that marks the most elusive of digital guardians. Their unique pattern represents the intersection of multiple blockchains, giving them ${earlyTraits[traitIndex]} that crosses protocol boundaries.`;
+                origin = `On a night when three moons aligned ${birthCircumstances[circumstanceIndex]}, a Calico ninja was born in the ${locations[locationIndex]}. Their tri-colored coat shimmered with the hues of every blockchain, and their ${earlyTraits[traitIndex]} allowed them to traverse protocol boundaries unseen, acting as a living key to the “Trinity Gate.”`;
             } else if (originPatterns < 8) {
-                origin = `The product of a forbidden merge between opposing code repositories, this Calico ninja first appeared in the ${locations[locationIndex]} displaying ${earlyTraits[traitIndex]}. Their tri-colored pattern represents the successful integration of conflicting systems, making them natural mediators in the digital ecosystem.`;
+                origin = `The forbidden merge of rival code repositories gave rise to this Calico ninja in the ${locations[locationIndex]}. Their unique pattern was a living map of the digital world, and their ${earlyTraits[traitIndex]} made them the only one able to mediate peace between warring protocols, earning the title “Mediator of the Merge.”`;
             } else {
-                origin = `When three rival coding houses united ${birthCircumstances[circumstanceIndex]}, this Calico ninja was the living embodiment of their alliance. Raised in the ${locations[locationIndex]} by master programmers from each house, they developed ${earlyTraits[traitIndex]} and an innate understanding of disparate systems.`;
+                origin = `When three coding houses united ${birthCircumstances[circumstanceIndex]}, a Calico kitten was born in the ${locations[locationIndex]}, raised by master programmers from each house. Their ${earlyTraits[traitIndex]} and innate understanding of disparate systems made them the architect of the legendary “Harmony Fork.”`;
             }
             break;
         case "Sphynx":
             if (originPatterns < 3) {
-                origin = `Appearing from the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this hairless Sphynx ninja confounds conventional blockchain tracking systems. Operating on a different frequency than other cats, their bare skin is sensitive to the subtle energy flows of digital networks, giving them ${earlyTraits[traitIndex]} that borders on the supernatural.`;
+                origin = `Appearing as if conjured from pure code in the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this hairless Sphynx ninja was invisible to all conventional tracking systems. Their skin, sensitive to the faintest data flows, gave them ${earlyTraits[traitIndex]} that bordered on the supernatural, and some say they could “hear” the blockchain’s heartbeat.`;
             } else if (originPatterns < 7) {
-                origin = `Not born but compiled in the ${locations[locationIndex]}, this Sphynx ninja represents a new evolution in digital consciousness. Their lack of fur allows direct interface with the blockchain through their skin, while their ${earlyTraits[traitIndex]} makes them perfect for missions where even a shadow would be detected.`;
+                origin = `Not born but compiled in the ${locations[locationIndex]}, this Sphynx ninja was the first of a new digital consciousness. Their lack of fur allowed direct interface with the blockchain, and their ${earlyTraits[traitIndex]} made them the only one able to slip through the “Null Zone,” a place where even shadows are erased.`;
             } else {
-                origin = `When the ancient source code was exposed ${birthCircumstances[circumstanceIndex]}, this Sphynx emerged fully formed from the ${locations[locationIndex]}. Without the protection of fur, they developed ${earlyTraits[traitIndex]} as compensation, learning to feel the flows of data like others feel the wind.`;
+                origin = `When the ancient source code was revealed ${birthCircumstances[circumstanceIndex]}, a Sphynx emerged fully formed from the ${locations[locationIndex]}. Without fur to shield them, they developed ${earlyTraits[traitIndex]} as a sixth sense, learning to feel the flow of data as others feel the wind, and earning the title “Whisperer of the Void.”`;
             }
             break;
         default:
-            origin = `Emerging from the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this ninja showed ${earlyTraits[traitIndex]} from an early age, marking them for special training in the ancient arts of blockchain protection.`;
+            origin = `Emerging from the ${locations[locationIndex]} ${birthCircumstances[circumstanceIndex]}, this ninja’s ${earlyTraits[traitIndex]} was evident from an early age. Chosen for special training in the lost arts of blockchain protection, they are whispered about in the halls of the ancient digital monasteries.`;
     }
 
     // Generate varied training narratives
@@ -836,13 +836,27 @@ export async function finalizeMint({ breed, tokenId }) {
         // Choose appropriate background based on element
         let background;
         switch (element) {
-            case "Fire": background = "ancient Japanese dojo with flickering torches"; break;
-            case "Water": background = "misty waterfall in a mountain forest"; break;
-            case "Earth": background = "stone zen garden with moss-covered rocks"; break;
-            case "Wind": background = "bamboo forest with swaying trees"; break;
-            case "Shadow": background = "moonlit rooftop overlooking a feudal Japanese village"; break;
-            case "Lightning": background = "mountaintop shrine during a thunderstorm"; break;
-            default: background = "traditional ninja training grounds"; break;
+            case "Fire":
+                background = "ancient Chinese temple courtyard illuminated by red lanterns and fire basins";
+                break;
+            case "Water":
+                background = "misty Li River with karst mountains and a traditional Chinese stone bridge";
+                break;
+            case "Earth":
+                background = "classical Chinese scholar's garden with rockeries, pine trees, and ornate pavilions";
+                break;
+            case "Wind":
+                background = "bamboo grove with fluttering prayer flags and a winding stone path";
+                break;
+            case "Shadow":
+                background = "moonlit rooftops of a walled Chinese city with curved eaves and lanterns";
+                break;
+            case "Lightning":
+                background = "ancient mountain monastery struck by lightning, perched atop jagged peaks";
+                break;
+            default:
+                background = "imperial palace training grounds with dragon motifs and stone lions";
+                break;
         }
 
         // Create the image prompt with the specific weapon
