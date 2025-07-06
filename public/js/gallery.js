@@ -1,5 +1,5 @@
 /* global ethers */
-const CONTRACT = "0xC4C8770f40e8eF17b27ddD987eCb8669b0924Fd6";
+const CONTRACT = "0x2D732b0Bb33566A13E586aE83fB21d2feE34e906";
 const ABI = [
     {
         "inputs": [
