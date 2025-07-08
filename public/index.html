@@ -95,6 +95,35 @@
                 box-shadow: 0 4px 16px #ff980044;
             }
 
+        /* Price indicator in navigation */
+        .price-indicator {
+            background: rgba(34, 36, 58, 0.6);
+            color: #a084ff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            border: 1px solid #3d3a5a;
+            box-shadow: 0 2px 8px rgba(138, 101, 255, 0.15);
+            display: flex;
+            align-items: center;
+        }
+
+            .price-indicator #vtruPrice {
+                color: #ff9800;
+                font-weight: 700;
+                margin: 0 0.3rem;
+            }
+
+        @media (max-width: 768px) {
+            .price-indicator {
+                margin: 0.5rem 0;
+                font-size: 0.8rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+
         /* Hero Section */
         .hero {
             position: relative;
@@ -741,6 +770,15 @@
             margin-top: 8px;
             letter-spacing: 0.01em;
         }
+
+        /* VTRU conversion display - matching marketplace style */
+        .vtru-conversion {
+            color: #a084ff;
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+            opacity: 0.8;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -753,6 +791,7 @@
         <a href="all-kitties.html">Gallery</a>
         <a href="marketplace.html">Marketplace</a>
         <span class="spacer"></span>
+        <div class="price-indicator">VTRU: <span id="vtruPrice">--.--</span> USDC</div>
         <button id="connectBtn">Connect Wallet</button>
     </nav>
 
@@ -835,7 +874,10 @@
                 <p>The enigmatic hairless Sphynx ninjas are immune to detection by conventional means. Their unique appearance conceals their true power - an unmatched sensitivity to energy flows.</p>
             </div>
 
+            <!-- Add after the price element -->
             <p class="price" id="price"><span class="spinner"></span> Fetching price…</p>
+            <p class="vtru-conversion" id="vtruConversion">≈ <span id="vtruValue">--</span> VTRU</p>
+            <p class="vtru-conversion" id="exchangeRateDisplay">1 VTRU = <span id="exchangeRate">--</span> USDC</p>
 
             <button id="mintBtn" disabled>Mint Your Ninja Cat</button><div id="status"></div>
 
@@ -870,6 +912,8 @@
             NFT_ABI
         };
     </script>
+
+
 
     <!-- Replace the NFT Carousel script with this fixed version -->
     <script>
@@ -958,9 +1002,9 @@
                     const item = document.createElement('div');
                     item.className = 'carousel-item';
                     item.innerHTML = `
-                            <div class="spinner"></div>
-                            <p>Loading Ninja Cat #${tokenId}...</p>
-                        `;
+                                    <div class="spinner"></div>
+                                    <p>Loading Ninja Cat #${tokenId}...</p>
+                                `;
                     carouselTrack.appendChild(item);
 
                     // Create dot
@@ -999,16 +1043,16 @@
                                 : metadata.image;
 
                             item.innerHTML = `
-                                    <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image" onerror="this.src='${fallbackImage}'">
-                                    <div class="carousel-caption">${metadata.name}</div>
-                                `;
+                                            <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image" onerror="this.src='${fallbackImage}'">
+                                            <div class="carousel-caption">${metadata.name}</div>
+                                        `;
                         }
                     } catch (metadataError) {
                         console.warn(`Error loading metadata for token #${tokenId}:`, metadataError);
                         item.innerHTML = `
-                                <img src="${fallbackImage}" alt="Ninja Cat #${tokenId}" class="carousel-image">
-                                <div class="carousel-caption">Ninja Cat #${tokenId}</div>
-                            `;
+                                        <img src="${fallbackImage}" alt="Ninja Cat #${tokenId}" class="carousel-image">
+                                        <div class="carousel-caption">Ninja Cat #${tokenId}</div>
+                                    `;
                     }
                 }
 
@@ -1016,13 +1060,13 @@
                 const mintSlide = document.createElement('div');
                 mintSlide.className = 'carousel-item';
                 mintSlide.innerHTML = `
-                        <div style="text-align: center; padding: 20px;">
-                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own"
-                                style="width: 80px; height: 80px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(138,101,255,0.5));">
-                            <h3 style="margin: 0 0 10px 0;">Mint your own Ninja Cat!</h3>
-                            <p>Join the Ninja Cat collection with your unique warrior.</p>
-                        </div>
-                    `;
+                                <div style="text-align: center; padding: 20px;">
+                                    <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own"
+                                        style="width: 80px; height: 80px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(138,101,255,0.5));">
+                                    <h3 style="margin: 0 0 10px 0;">Mint your own Ninja Cat!</h3>
+                                    <p>Join the Ninja Cat collection with your unique warrior.</p>
+                                </div>
+                            `;
                 carouselTrack.appendChild(mintSlide);
 
                 // Add dot for mint slide
@@ -1078,16 +1122,319 @@
             } catch (error) {
                 console.error("Error setting up NFT carousel:", error);
                 carouselTrack.innerHTML = `
-                        <div class="carousel-item">
-                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own" style="width: 80px; height: 80px; margin-bottom: 15px;">
-                            <p>Be the first to mint a Ninja Cat!</p>
-                            <small style="display: block; margin-top: 10px; color: #666;">Error: ${error.message}</small>
-                        </div>`;
+                                <div class="carousel-item">
+                                    <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own" style="width: 80px; height: 80px; margin-bottom: 15px;">
+                                    <p>Be the first to mint a Ninja Cat!</p>
+                                    <small style="display: block; margin-top: 10px; color: #666;">Error: ${error.message}</small>
+                                </div>`;
             }
         }
 
         // Initialize carousel when page loads
         document.addEventListener('DOMContentLoaded', setupNFTCarousel);
+    </script>
+
+    <script type="module">
+        // LP Pool contract address for VTRU/USDC
+        const LP_POOL_ADDRESS = "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba";
+        const VTRU_ADDRESS = "0x3ccc3F22462cAe34766820894D04a40381201ef9";
+        const USDC_ADDRESS = "0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF";
+
+        // Minimal ABI for LP pool reserves query
+        const LP_POOL_ABI = [
+            {
+                "inputs": [],
+                "name": "getReserves",
+                "outputs": [
+                    { "internalType": "uint112", "name": "reserve0", "type": "uint112" },
+                    { "internalType": "uint112", "name": "reserve1", "type": "uint112" },
+                    { "internalType": "uint32", "name": "blockTimestampLast", "type": "uint32" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "token0",
+                "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "token1",
+                "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        // Make exchange rate fetching available globally
+        window.getExchangeRate = async function () {
+            try {
+                // Connect to blockchain
+                const provider = new ethers.JsonRpcProvider(window.NFT_CONFIG?.RPC_URL || "https://rpc.vitruveo.xyz");
+                const lpPool = new ethers.Contract(LP_POOL_ADDRESS, LP_POOL_ABI, provider);
+
+                // Get token positions in the pool (order matters for reserves)
+                const token0 = await lpPool.token0();
+                const token1 = await lpPool.token1();
+
+                // Get reserves
+                const reserves = await lpPool.getReserves();
+
+                // Determine which reserve is VTRU and which is USDC
+                let vtruReserve, usdcReserve;
+                const isVtruToken0 = token0.toLowerCase() === VTRU_ADDRESS.toLowerCase();
+
+                if (isVtruToken0) {
+                    vtruReserve = reserves[0];
+                    usdcReserve = reserves[1];
+                } else {
+                    vtruReserve = reserves[1];
+                    usdcReserve = reserves[0];
+                }
+
+                // Calculate exchange rate (VTRU price in USDC)
+                // USDC typically has 6 decimals, VTRU has 18
+                const vtruDecimals = 18;
+                const usdcDecimals = 6;
+
+                const vtruAmount = parseFloat(vtruReserve) / (10 ** vtruDecimals);
+                const usdcAmount = parseFloat(usdcReserve) / (10 ** usdcDecimals);
+
+                // Calculate exchange rate: VTRU price in USDC
+                const exchangeRate = usdcAmount / vtruAmount;
+                console.log(`LP pool exchange rate: 1 VTRU = ${exchangeRate.toFixed(6)} USDC`);
+
+                return exchangeRate;
+            } catch (error) {
+                console.error("Failed to fetch exchange rate:", error);
+                return null;
+            }
+        };
+
+        // Initialize VTRU conversion and navbar price display
+        document.addEventListener('DOMContentLoaded', async function () {
+            // Initially hide conversion
+            const vtruConversionEl = document.getElementById('vtruConversion');
+            if (vtruConversionEl) {
+                vtruConversionEl.style.display = 'none';
+            }
+
+            try {
+                // Get the current exchange rate
+                const exchangeRate = await window.getExchangeRate();
+
+                // Update navbar price indicator
+                updateNavbarPrice(exchangeRate);
+
+                // Set interval to update price every 60 seconds
+                setInterval(async () => {
+                    const latestRate = await window.getExchangeRate();
+                    updateNavbarPrice(latestRate);
+                }, 60000);
+
+                // Setup price observer to convert prices in the mint card
+                const priceElement = document.getElementById('price');
+                if (priceElement) {
+                    // Initial check of existing price
+                    const priceText = priceElement.innerText || priceElement.textContent;
+                    const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
+                    if (priceMatch && priceMatch[1]) {
+                        updateVtruConversion(priceMatch[1], exchangeRate);
+                    }
+
+                    // Monitor for price changes
+                    const observer = new MutationObserver(function (mutations) {
+                        mutations.forEach(function (mutation) {
+                            const priceText = priceElement.innerText || priceElement.textContent;
+                            const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
+                            if (priceMatch && priceMatch[1]) {
+                                updateVtruConversion(priceMatch[1], exchangeRate);
+                            }
+                        });
+                    });
+
+                    observer.observe(priceElement, {
+                        characterData: true,
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            } catch (err) {
+                console.warn("Error setting up VTRU price displays:", err);
+            }
+        });
+
+        // Function to update the navbar price display
+        function updateNavbarPrice(exchangeRate) {
+            const priceEl = document.getElementById('vtruPrice');
+            if (!priceEl) return;
+
+            if (exchangeRate && !isNaN(exchangeRate)) {
+                priceEl.textContent = exchangeRate.toFixed(4);
+            } else {
+                priceEl.textContent = "--.--";
+            }
+        }
+
+        // Function to update VTRU price conversion in the mint card
+        function updateVtruConversion(usdcPrice, exchangeRate) {
+            const vtruElement = document.getElementById('vtruValue');
+            const vtruConversionEl = document.getElementById('vtruConversion');
+            const exchangeRateEl = document.getElementById('exchangeRate');
+            const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
+
+            // Set the exchange rate display
+            if (exchangeRateEl && exchangeRateDisplayEl) {
+                if (exchangeRate && !isNaN(exchangeRate)) {
+                    exchangeRateEl.textContent = exchangeRate.toFixed(4);
+                    exchangeRateDisplayEl.style.display = 'block';
+                } else {
+                    exchangeRateDisplayEl.style.display = 'none';
+                }
+            }
+
+            if (!vtruElement || !vtruConversionEl) return;
+
+            // Rest of the existing function...
+            if (usdcPrice && !isNaN(usdcPrice)) {
+                if (exchangeRate && !isNaN(exchangeRate)) {
+                    // Calculate how many VTRU you get for the USDC price
+                    const vtruValue = (parseFloat(usdcPrice) / exchangeRate).toFixed(2);
+                    vtruElement.textContent = vtruValue;
+                    vtruConversionEl.style.display = 'block';
+
+                    // Update swap interface if it exists
+                    updateSwapInterface(exchangeRate);
+                } else {
+                    // No valid exchange rate
+                    vtruElement.textContent = "N/A - Unable to retrieve exchange rate";
+                    vtruConversionEl.style.display = 'block';
+                }
+            } else {
+                // No valid price
+                vtruConversionEl.style.display = 'none';
+            }
+        }
+
+        // Function to periodically refresh all price data
+        function startPriceUpdates() {
+            // Initial update
+            refreshPriceData();
+
+            // Set interval to update every 30 seconds
+            setInterval(refreshPriceData, 30000);
+        }
+
+        // Function to refresh all price data
+        async function refreshPriceData() {
+            try {
+                const exchangeRate = await window.getExchangeRate();
+
+                // Update navbar price
+                updateNavbarPrice(exchangeRate);
+
+                // Update conversion in mint card
+                const priceElement = document.getElementById('price');
+                if (priceElement) {
+                    const priceText = priceElement.innerText || priceElement.textContent;
+                    const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
+                    if (priceMatch && priceMatch[1]) {
+                        updateVtruConversion(priceMatch[1], exchangeRate);
+                    }
+                }
+            } catch (err) {
+                console.warn("Failed to update prices:", err);
+            }
+        }
+
+        // Function to handle swap interface
+        function updateSwapInterface(exchangeRate) {
+            const vtruInput = document.getElementById('swapVtruAmount');
+            const usdcOutput = document.getElementById('swapUsdcAmount');
+
+            if (vtruInput && usdcOutput && exchangeRate) {
+                // Update the USDC amount based on current input and rate
+                const vtruAmount = parseFloat(vtruInput.value || '0');
+                if (!isNaN(vtruAmount)) {
+                    const usdcAmount = (vtruAmount * exchangeRate).toFixed(2);
+                    usdcOutput.value = usdcAmount;
+                }
+            }
+        }
+
+        // Initialize price updates when document loads
+        document.addEventListener('DOMContentLoaded', function () {
+            // Start periodic price updates
+            startPriceUpdates();
+
+            // Set up swap interface event listeners
+            setupSwapInterface();
+        });
+
+        // Setup swap interface interactions
+        function setupSwapInterface() {
+            const vtruInput = document.getElementById('swapVtruAmount');
+            if (!vtruInput) return;
+
+            vtruInput.addEventListener('input', function () {
+                // Get current exchange rate from displayed value
+                const exchangeRateEl = document.getElementById('exchangeRate');
+                const exchangeRate = exchangeRateEl ? parseFloat(exchangeRateEl.textContent) : null;
+
+                if (exchangeRate) {
+                    updateSwapInterface(exchangeRate);
+                }
+            });
+
+            // Setup swap button
+            const swapBtn = document.getElementById('swapBtn');
+            if (swapBtn) {
+                swapBtn.addEventListener('click', async function () {
+                    // Show connecting message
+                    swapBtn.disabled = true;
+                    swapBtn.textContent = 'Connecting wallet...';
+
+                    try {
+                        // In a real implementation, this would connect to wallet and execute the swap
+                        const provider = await detectEthereumProvider();
+
+                        if (provider) {
+                            // Request account access
+                            swapBtn.textContent = 'Waiting for approval...';
+                            const accounts = await provider.request({ method: 'eth_requestAccounts' });
+
+                            // Show simulated success for now - in a real implementation this would perform the actual swap
+                            swapBtn.textContent = 'Swapping...';
+                            setTimeout(() => {
+                                alert('This is a demo interface. In a production version, this would execute the actual swap transaction.');
+                                swapBtn.disabled = false;
+                                swapBtn.textContent = 'Swap';
+                            }, 1500);
+                        } else {
+                            alert('No wallet detected! Please install MetaMask or another Ethereum wallet.');
+                            swapBtn.disabled = false;
+                            swapBtn.textContent = 'Swap';
+                        }
+                    } catch (err) {
+                        console.error('Error during swap:', err);
+                        alert('Error connecting to wallet: ' + (err.message || 'Unknown error'));
+                        swapBtn.disabled = false;
+                        swapBtn.textContent = 'Swap';
+                    }
+                });
+            }
+        }
+
+        // Helper function to detect provider
+        async function detectEthereumProvider() {
+            if (window.ethereum) {
+                return window.ethereum;
+            }
+            return null;
+        }
     </script>
 
     <!-- Include the footer -->
