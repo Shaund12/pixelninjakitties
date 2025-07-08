@@ -885,12 +885,7 @@
     </style>
 </head>
 <body>
-    <nav>
-        <img src="assets/detailed_ninja_cat_64.png"><a href="index.html">Mint</a>
-        <a href="lore.html">Lore</a><a href="my-kitties.html">My Kitties</a>
-        <a href="all-kitties.html">Gallery</a><a href="marketplace.html">Marketplace</a>
-        <span class="spacer"></span><button id="connectBtn">Connect Wallet</button>
-    </nav>
+    <div id="navbar-container"></div>
 
     <div class="wrapper">
         <h1>Ninja Cat Marketplace</h1>
@@ -1223,9 +1218,9 @@
                 purchaseModal.classList.add('active');
             };
 
-            
 
-            
+
+
 
             // Close modal
             function closeModal() {
@@ -1356,5 +1351,7 @@
     <!-- Include the footer -->
     <footer id="footer"></footer>
     <script src="js/footer.js"></script>
+    <!-- Include the navbar script -->
+    <script src="js/navbar.js"></script>
 </body>
 </html>
