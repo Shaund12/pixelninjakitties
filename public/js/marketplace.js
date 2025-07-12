@@ -25,9 +25,12 @@ if (window.ethereum) {
     browserProvider = new ethers.BrowserProvider(window.ethereum);
 }
 
+
+
 // DOM elements
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
+const tabIndicator = document.querySelector('.tab-indicator');
 const listingsGrid = document.getElementById('listingsGrid');
 const userCatsGrid = document.getElementById('userCatsGrid');
 const userListingsGrid = document.getElementById('userListingsGrid');
@@ -43,6 +46,9 @@ const noUserListings = document.getElementById('noUserListings');
 const userCatsCount = document.getElementById('userCatsCount');
 const currencyFilter = document.getElementById('currencyFilter');
 const sortListings = document.getElementById('sortListings');
+const scrollTopBtn = document.getElementById('scrollTopBtn');
+const quickPreviewModal = document.getElementById('quickPreview');
+const notificationSystem = document.getElementById('notificationSystem');
 
 // State
 let currentAccount = null;
@@ -53,12 +59,20 @@ let usdc = null;
 let allListings = [];
 let userCats = [];
 let userActiveListings = [];
+let hotItems = []; // Store the hottest items based on activity
 
 // Token cache to avoid refetching metadata
 const tokenCache = {};
 
-// Show notification toast
+// Show notification toast - enhanced version
 function showToast(message, type = 'info') {
+    // Call both the legacy toast and the enhanced notification system
+    showLegacyToast(message, type);
+    showEnhancedNotification(getNotificationTitle(type), message, type);
+}
+
+// Legacy toast function for backward compatibility
+function showLegacyToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.textContent = message;
@@ -72,6 +86,160 @@ function showToast(message, type = 'info') {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300); // Remove after fade animation
     }, 5000);
+}
+
+// Enhanced notification system
+function showEnhancedNotification(title, message, type = 'info') {
+    if (!notificationSystem) return; // Safety check
+
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+
+    let iconSvg = '';
+
+    switch (type) {
+        case 'success':
+            iconSvg = '<svg width="24" height="24" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+            break;
+        case 'error':
+            iconSvg = '<svg width="24" height="24" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+            break;
+        default:
+            iconSvg = '<svg width="24" height="24" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+    }
+
+    notification.innerHTML = `
+        <div class="notification-icon">${iconSvg}</div>
+        <div class="notification-content">
+            <div class="notification-title">${title}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+    `;
+
+    notificationSystem.appendChild(notification);
+
+    // Trigger animation
+    setTimeout(() => notification.classList.add('show'), 10);
+
+    // Remove after a delay
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 400);
+    }, 5000);
+}
+
+// Helper function to get title for notifications
+function getNotificationTitle(type) {
+    switch (type) {
+        case 'success': return 'Success';
+        case 'error': return 'Error';
+        case 'info': return 'Information';
+        default: return 'Notification';
+    }
+}
+
+// Show quick preview modal
+function showQuickPreview(token, listing = null) {
+    const previewImage = document.getElementById('previewImage');
+    const previewDetails = document.getElementById('previewDetails');
+
+    if (!previewImage || !previewDetails || !token) return;
+
+    previewImage.src = token.image;
+
+    // Prepare pricing information if available
+    let pricingHtml = '';
+    if (listing) {
+        const formattedPrice = formatPrice(listing.price, listing.currency);
+        const currencyName = getCurrencyName(listing.currency);
+
+        pricingHtml = `
+            <div class="listing-price" style="margin: 1.5rem 0; font-size: 1.6rem;">
+                ${formattedPrice} <span class="listing-price-currency">${currencyName}</span>
+            </div>
+        `;
+    }
+
+    // Prepare HTML for the details panel
+    previewDetails.innerHTML = `
+        <h2 style="margin-top: 0; color: white; font-size: 1.8rem;">${token.name}</h2>
+        <div class="token-details">
+            <div style="display: inline-block; padding: 4px 12px; background: rgba(138, 101, 255, 0.15); 
+                 color: #8a65ff; border-radius: 20px; font-size: 0.9rem; margin-bottom: 1rem; border: 1px solid rgba(138, 101, 255, 0.3);">
+                ${token.rarity.charAt(0).toUpperCase() + token.rarity.slice(1)}
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="width: 100px; color: var(--text-muted);">Breed:</span>
+                    <span style="color: white; font-weight: 500;">${token.breed}</span>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="width: 100px; color: var(--text-muted);">Token ID:</span>
+                    <span style="color: white; font-weight: 500;">#${token.id}</span>
+                </div>
+                ${listing ? `
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="width: 100px; color: var(--text-muted);">Seller:</span>
+                    <span style="color: white; font-weight: 500;">${shortenAddress(listing.seller)}</span>
+                </div>` : ''}
+            </div>
+            
+            ${pricingHtml}
+            
+            ${token.metadata.attributes ? `
+            <h3 style="margin: 1.5rem 0 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">Attributes</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem;">
+                ${token.metadata.attributes.map(attr => `
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid rgba(255,255,255,0.08);">
+                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.25rem;">${attr.trait_type}</div>
+                        <div style="color: white; font-weight: 500; font-size: 0.95rem;">${attr.value}</div>
+                    </div>
+                `).join('')}
+            </div>` : ''}
+            
+            ${listing ? `
+            <div style="margin-top: 2rem; text-align: right;">
+                <button id="quickPreviewBuyBtn" class="btn primary-btn" style="padding: 0.75rem 2rem;">
+                    Purchase Now
+                </button>
+            </div>` : ''}
+        </div>
+    `;
+
+    // Add buy button functionality if this is a listing
+    if (listing) {
+        setTimeout(() => {
+            const buyBtn = document.getElementById('quickPreviewBuyBtn');
+            if (buyBtn) {
+                buyBtn.addEventListener('click', () => {
+                    // Close the preview modal
+                    quickPreviewModal.classList.remove('active');
+
+                    // Prepare listing data for purchase modal
+                    const listingData = {
+                        id: token.id,
+                        name: token.name,
+                        image: token.image,
+                        breed: token.breed,
+                        seller: listing.seller,
+                        price: formatPrice(listing.price, listing.currency),
+                        rawPrice: listing.price.toString(),
+                        currency: getCurrencyName(listing.currency),
+                        currencyAddress: listing.currency
+                    };
+
+                    // Show the purchase modal
+                    if (window.showPurchaseModal) {
+                        window.showPurchaseModal(listingData);
+                    }
+                });
+            }
+        }, 100);
+    }
+
+    // Show the modal
+    quickPreviewModal.classList.add('active');
 }
 
 // Determine rarity based on ID or metadata
@@ -300,9 +468,20 @@ async function applyListingFiltersAndSort() {
 
     // Render the filtered and sorted listings with the price info
     await renderListings(filteredListings, vtruPriceInUsdc);
+
+    // Update hot items collection - pick top 3 from newest listings
+    updateHotItems(filteredListings.slice(0, 3));
 }
 
-// Update renderListings to include cancel button for owner's listings
+// Update hot items collection for the banner
+function updateHotItems(items) {
+    hotItems = items;
+
+    // Could update hot items banner here if needed
+    // For now we're just storing the data
+}
+
+// Update renderListings to include cancel button for owner's listings and support for the quick preview
 async function renderListings(listings, vtruPriceInUsdc = 0.1) {
     listingsGrid.innerHTML = '';
 
@@ -346,7 +525,10 @@ async function renderListings(listings, vtruPriceInUsdc = 0.1) {
 
         card.innerHTML = `
             <div class="rarity-badge ${token.rarity}">${token.rarity.charAt(0).toUpperCase() + token.rarity.slice(1)}</div>
-            <img src="${token.image}" class="listing-image" alt="${token.name}" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+            <div class="card-shine"></div>
+            <div class="listing-image-container">
+                <img src="${token.image}" class="listing-image" alt="${token.name}" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+            </div>
             <div class="listing-info">
                 <h3 class="listing-name">${token.name}</h3>
                 <div class="listing-breed">${token.breed}</div>
@@ -396,13 +578,30 @@ async function renderListings(listings, vtruPriceInUsdc = 0.1) {
             </div>
         `;
 
+        // Add click handler for the entire card to open the quick preview
+        card.addEventListener('click', (e) => {
+            // Don't trigger if the click was on a button
+            if (!e.target.closest('button')) {
+                showQuickPreview(token, {
+                    price: listing.price,
+                    currency: listing.currency,
+                    seller: sellerAddress
+                });
+            }
+        });
+
         // Add appropriate button event listener
         if (isOwner) {
             const cancelBtn = card.querySelector('.cancel-btn');
-            cancelBtn.addEventListener('click', () => cancelListing(tokenId));
+            cancelBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent card click
+                cancelListing(tokenId);
+            });
         } else {
             const buyBtn = card.querySelector('.buy-btn');
-            buyBtn.addEventListener('click', async () => {
+            buyBtn.addEventListener('click', async (e) => {
+                e.stopPropagation(); // Prevent card click
+
                 // Prepare listing data for modal
                 const listingData = {
                     id: tokenId,
@@ -432,42 +631,9 @@ async function renderListings(listings, vtruPriceInUsdc = 0.1) {
 
         listingsGrid.appendChild(card);
     }
-
-    // Add some CSS for the owner badge
-    if (!document.getElementById('owner-badge-style')) {
-        const style = document.createElement('style');
-        style.id = 'owner-badge-style';
-        style.textContent = `
-            .owner-badge {
-                background: #8a65ff;
-                color: white;
-                padding: 0.1rem 0.5rem;
-                border-radius: 10px;
-                font-size: 0.7rem;
-                margin-left: 0.5rem;
-                vertical-align: middle;
-            }
-            
-            .cancel-btn {
-                background: #3a3a3c;
-                color: white;
-                border: none;
-                padding: 0.5rem 1rem;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.3s;
-                width: 100%;
-            }
-            
-            .cancel-btn:hover {
-                background: #ef4444;
-            }
-        `;
-        document.head.appendChild(style);
-    }
 }
 
-// Load user's cats
+// Load user's cats with enhanced UI
 async function loadUserCats() {
     if (!currentAccount) return;
 
@@ -516,7 +682,10 @@ async function loadUserCats() {
 
             card.innerHTML = `
                 <div class="rarity-badge ${token.rarity}">${token.rarity.charAt(0).toUpperCase() + token.rarity.slice(1)}</div>
-                <img src="${token.image}" class="listing-image" alt="${token.name}" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+                <div class="card-shine"></div>
+                <div class="listing-image-container">
+                    <img src="${token.image}" class="listing-image" alt="${token.name}" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+                </div>
                 <div class="listing-info">
                     <h3 class="listing-name">${token.name}</h3>
                     <div class="listing-breed">${token.breed}</div>
@@ -527,14 +696,31 @@ async function loadUserCats() {
                 </div>
             `;
 
+            // Add click handler for the entire card to open the quick preview
+            card.addEventListener('click', (e) => {
+                // Don't trigger if the click was on a button
+                if (!e.target.closest('button')) {
+                    showQuickPreview(token);
+                }
+            });
+
             // Add list button event listener
             const listBtn = card.querySelector('.list-btn');
-            listBtn.addEventListener('click', () => showListingForm(token));
+            listBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent card click
+                showListingForm(token);
+            });
 
             userCatsGrid.appendChild(card);
         }
 
         userCatsLoading.style.display = 'none';
+
+        // Update wallet display
+        if (document.getElementById('walletAddress')) {
+            document.getElementById('walletAddress').textContent = shortenAddress(currentAccount);
+        }
+
     } catch (error) {
         console.error("Error loading user cats:", error);
         userCatsLoading.style.display = 'none';
@@ -543,7 +729,7 @@ async function loadUserCats() {
     }
 }
 
-// Load user's active listings
+// Load user's active listings with enhanced UI
 async function loadUserListings() {
     if (!currentAccount) return;
 
@@ -570,6 +756,9 @@ async function loadUserListings() {
 
         noUserListings.style.display = 'none';
 
+        // Get the latest VTRU/USDC price for display
+        const vtruPriceInUsdc = await getVtruUsdcPrice();
+
         // Render each listing
         for (const tokenId of userActiveListings) {
             const listing = await marketplace.getListing(tokenId);
@@ -579,6 +768,15 @@ async function loadUserListings() {
 
             const formattedPrice = formatPrice(listing.price, listing.currency);
             const currencyName = getCurrencyName(listing.currency);
+            const isNativeCurrency = listing.currency === ethers.ZeroAddress;
+
+            // Calculate USDC equivalent if this is a VTRU listing
+            let usdcEquivalent = '';
+            if (isNativeCurrency && vtruPriceInUsdc > 0) {
+                const price = parseFloat(formattedPrice);
+                const priceInUsdc = price * vtruPriceInUsdc;
+                usdcEquivalent = `<div class="usdc-equivalent">≈ ${priceInUsdc.toFixed(2)} USDC</div>`;
+            }
 
             const card = document.createElement('div');
             card.className = 'listing-card';
@@ -586,13 +784,17 @@ async function loadUserListings() {
 
             card.innerHTML = `
                 <div class="rarity-badge ${token.rarity}">${token.rarity.charAt(0).toUpperCase() + token.rarity.slice(1)}</div>
-                <img src="${token.image}" class="listing-image" alt="${token.name}" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+                <div class="card-shine"></div>
+                <div class="listing-image-container">
+                    <img src="${token.image}" class="listing-image" alt="${token.name}" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+                </div>
                 <div class="listing-info">
                     <h3 class="listing-name">${token.name}</h3>
                     <div class="listing-breed">${token.breed}</div>
                     <div>Token ID: #${tokenId}</div>
                     <div class="listing-price">
                         ${formattedPrice} <span class="listing-price-currency">${currencyName}</span>
+                        ${usdcEquivalent}
                     </div>
                     <div class="listing-actions">
                         <button class="cancel-btn">Cancel Listing</button>
@@ -600,9 +802,24 @@ async function loadUserListings() {
                 </div>
             `;
 
+            // Add click handler for the entire card to open the quick preview
+            card.addEventListener('click', (e) => {
+                // Don't trigger if the click was on a button
+                if (!e.target.closest('button')) {
+                    showQuickPreview(token, {
+                        price: listing.price,
+                        currency: listing.currency,
+                        seller: listing.seller
+                    });
+                }
+            });
+
             // Add cancel button event listener
             const cancelBtn = card.querySelector('.cancel-btn');
-            cancelBtn.addEventListener('click', () => cancelListing(tokenId));
+            cancelBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent card click
+                cancelListing(tokenId);
+            });
 
             userListingsGrid.appendChild(card);
         }
@@ -612,11 +829,64 @@ async function loadUserListings() {
     }
 }
 
+// Set up event listeners for the listing form modal
+function setupListingFormModal() {
+    const listingFormModal = document.getElementById('listingFormModal');
+    const closeBtn = document.getElementById('closeListingFormBtn');
+    const confirmBtn = document.getElementById('confirmListingBtn');
+
+    // Close button in header
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hideListingForm);
+    }
+
+    // Confirm button in footer - properly get the price from the active modal
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+            // Important: Get the price input directly from the modal, not by global ID
+            const priceInput = listingFormModal.querySelector('#listingPrice');
+            const currencySelect = listingFormModal.querySelector('#listingCurrency');
+
+            if (!priceInput || !currencySelect) {
+                showToast("Error finding form fields", 'error');
+                return;
+            }
+
+            const price = parseFloat(priceInput.value);
+            const currency = currencySelect.value;
+
+            console.log("Submitting with price:", price, "currency:", currency);
+
+            if (isNaN(price) || price <= 0) {
+                showToast("Please enter a valid price greater than 0", 'error');
+                return;
+            }
+
+            if (selectedCatForListing) {
+                createListing(selectedCatForListing.id, price, currency);
+            }
+        });
+    }
+
+    // Close when clicking outside the modal content
+    if (listingFormModal) {
+        listingFormModal.addEventListener('click', function (e) {
+            if (e.target === listingFormModal) {
+                hideListingForm();
+            }
+        });
+    }
+}
+
+// Show form to create a new listing
 // Show form to create a new listing
 function showListingForm(token) {
     selectedCatForListing = token;
 
-    const selectedCatDiv = listingForm.querySelector('.selected-cat');
+    // Get the modal elements
+    const listingFormModal = document.getElementById('listingFormModal');
+    const selectedCatDiv = listingFormModal.querySelector('.selected-cat');
+
     selectedCatDiv.innerHTML = `
         <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
             <img src="${token.image}" 
@@ -632,15 +902,30 @@ function showListingForm(token) {
         </div>
     `;
 
-    listingForm.style.display = 'block';
-    document.getElementById('listingPrice').focus();
+    // Reset form values
+    const listingPriceInput = document.getElementById('listingPrice');
+    if (listingPriceInput) {
+        listingPriceInput.value = '';
+    }
+
+    // Show the modal
+    listingFormModal.classList.add('active');
+
+    // Focus on the price input
+    setTimeout(() => {
+        if (listingPriceInput) {
+            listingPriceInput.focus();
+        }
+    }, 100);
 }
 
 // Hide listing form
 function hideListingForm() {
-    listingForm.style.display = 'none';
+    const listingFormModal = document.getElementById('listingFormModal');
+    if (listingFormModal) {
+        listingFormModal.classList.remove('active');
+    }
     selectedCatForListing = null;
-    document.getElementById('createListingForm').reset();
 }
 
 // Create a new listing
@@ -845,6 +1130,10 @@ async function buyListing(tokenId, price, currency) {
             }
         }
 
+        // Close any open modals
+        const purchaseModal = document.getElementById('purchaseModal');
+        if (purchaseModal) purchaseModal.classList.remove('active');
+
         // Reload listings and user data
         await loadListings();
         if (sellContent.style.display === 'block') {
@@ -1007,6 +1296,7 @@ window.executePurchase = async function (listing) {
 };
 
 // Initialize the marketplace
+// Initialize the marketplace
 async function init() {
     try {
         // Initialize read-only contracts for browsing
@@ -1057,20 +1347,16 @@ async function init() {
         // Load initial listings
         await loadListings();
 
-        // Set up tab switching
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const tabId = button.getAttribute('data-tab');
+        // Set up tab switching with proper animation
+        setupTabs();
 
-                // Update active tab button
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
+        // Initialize hot items
+        initHotItems();
 
-                // Show selected tab content
-                tabContents.forEach(content => content.classList.remove('active'));
-                document.getElementById(`${tabId}-tab`).classList.add('active');
-            });
-        });
+        setupListingFormModal();
+
+        // Set up scroll to top functionality
+        setupScrollToTop();
 
         // Set up filters
         currencyFilter.addEventListener('change', applyListingFiltersAndSort);
@@ -1235,8 +1521,112 @@ async function init() {
     }
 }
 
-// Add this function after the init() function in marketplace.js:
+// Initialize hot items for the banner
+function initHotItems() {
+    // This would populate the hot items banner if implemented
+    // For now it's just a placeholder
+    const hotBannerBtn = document.querySelector('.hotlist-banner .btn');
+    if (hotBannerBtn) {
+        hotBannerBtn.addEventListener('click', () => {
+            // Jump to marketplace tab and apply hot filter
+            const browseTab = document.querySelector('.tab-btn[data-tab="browse"]');
+            if (browseTab) browseTab.click();
 
+            // Could implement a specific hot filter here
+            sortListings.value = 'newest';
+            applyListingFiltersAndSort();
+
+            // Scroll to listings
+            document.getElementById('browse-tab').scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+}
+
+// Set up the wallet prompt
+// Set up the wallet prompt
+function setupWalletPrompt() {
+    const connectPromptBtn = document.getElementById('walletPromptConnectBtn');
+    if (connectPromptBtn) {
+        connectPromptBtn.addEventListener('click', async function () {
+            // Find the navbar connect button and click it to reuse the same logic
+            const navbarConnectBtn = document.getElementById('connectBtn');
+            if (navbarConnectBtn) {
+                navbarConnectBtn.click();
+            } else if (window.connectWallet) {
+                // Direct fallback to window.connectWallet if button not found
+                await window.connectWallet();
+            } else if (window.ethereum) {
+                try {
+                    // Last resort direct connection
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    connectPromptBtn.textContent = 'Connected';
+                    location.reload(); // Refresh to pick up the connection
+                } catch (error) {
+                    console.error('User denied account access', error);
+                    alert('Please install MetaMask or another Ethereum wallet');
+                }
+            } else {
+                alert('Please install MetaMask or another Ethereum wallet');
+            }
+        });
+    }
+}
+
+// Set up tab switching with smooth indicator animation
+function setupTabs() {
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabId = button.getAttribute('data-tab');
+
+            // Update active tab button
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            // Show selected tab content
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+
+            // Animate tab indicator
+            if (tabIndicator) {
+                tabIndicator.style.width = `${button.offsetWidth}px`;
+                tabIndicator.style.left = `${button.offsetLeft}px`;
+            }
+        });
+    });
+
+    // Set initial indicator position
+    if (tabIndicator) {
+        const activeTab = document.querySelector('.tab-btn.active') || tabButtons[0];
+        if (activeTab) {
+            tabIndicator.style.width = `${activeTab.offsetWidth}px`;
+            tabIndicator.style.left = `${activeTab.offsetLeft}px`;
+        }
+    }
+}
+
+// Set up scroll to top functionality
+function setupScrollToTop() {
+    if (!scrollTopBtn) return;
+
+    // Show/hide scroll button based on scroll position
+    window.addEventListener('scroll', function () {
+        if (window.pageYOffset > 300) {
+            scrollTopBtn.classList.add('visible');
+        } else {
+            scrollTopBtn.classList.remove('visible');
+        }
+    });
+
+    // Scroll to top when clicked
+    scrollTopBtn.addEventListener('click', function () {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+}
+
+// Add this function after the init() function in marketplace.js:
 async function getVtruUsdcPrice() {
     try {
         // Contract addresses
@@ -1511,21 +1901,17 @@ window.refreshExchangeRateDetails = async function () {
 };
 
 // Also replace the show modal function to make sure it works
-window.showExchangeRateDetails = function () {
-    console.log("Opening exchange rate modal (emergency override)");
-    const modal = document.getElementById('exchangeRateModal');
-    if (modal) {
-        modal.classList.add('active');
-
-        // Add a slight delay before refreshing
-        setTimeout(() => {
-            window.refreshExchangeRateDetails();
-        }, 100);
-    } else {
-        alert("Error: Exchange rate modal not found");
+window.updateExchangeRateTicker = async function () {
+    try {
+        const data = await getLpDetails();
+        if (data && data.rate > 0) {
+            document.getElementById('tickerExchangeRate').textContent = data.rate.toFixed(6);
+            document.getElementById('tickerLastUpdated').textContent = new Date().toLocaleTimeString();
+        }
+    } catch (error) {
+        console.error("Error updating ticker:", error);
     }
 };
-
 
 // Add this function near your other LP-related functions
 async function getLpDetails() {
@@ -1594,19 +1980,6 @@ async function getLpDetails() {
         throw new Error("Failed to get LP data: " + error.message);
     }
 }
-
-// Update function to refresh just the ticker in the header
-window.updateExchangeRateTicker = async function () {
-    try {
-        const data = await getLpDetails();
-        if (data && data.rate > 0) {
-            document.getElementById('tickerExchangeRate').textContent = data.rate.toFixed(6);
-            document.getElementById('tickerLastUpdated').textContent = new Date().toLocaleTimeString();
-        }
-    } catch (error) {
-        console.error("Error updating ticker:", error);
-    }
-};
 
 // Modify the calculateMarketplaceStats function to include price conversion
 async function calculateMarketplaceStats() {
@@ -1777,7 +2150,6 @@ async function calculateMarketplaceStats() {
         };
     }
 }
-
 
 // Start the app when DOM is ready
 document.addEventListener('DOMContentLoaded', init);
