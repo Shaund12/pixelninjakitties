@@ -1,14 +1,10 @@
 ﻿/* global ethers, fetch, gsap, Sortable */
-// Import the CONNECTION_KEY from connect-only.js
-const CONNECTION_KEY = 'ninja_cats_wallet';
-
-// Keep your original imports for functionality
-import './wallet.js';
+// Properly integrate with the wallet.js system
 import {
     CONTRACT_ADDRESS, NFT_ABI, RPC_URL
 } from './config.js';
 import {
-    getAddress, connectWallet, short
+    getAddress, connectWallet, short, EVENTS as WALLET_EVENTS
 } from './wallet.js';
 
 // DOM Elements
@@ -80,7 +76,7 @@ const weaponIcons = {
     'Claws': '🐾'
 };
 
-// Check for persistent wallet connection from connect-only.js
+// Check for persistent wallet connection using wallet.js
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize tooltips
     initializeTooltips();
@@ -91,21 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize GSAP animations
     initializeAnimations();
 
-    const savedAddress = localStorage.getItem(CONNECTION_KEY);
-    if (savedAddress) {
-        console.log("Using wallet from connect-only.js:", savedAddress);
-        render(savedAddress);
-
-        // Update any other UI elements if needed
-        const connectBtn = document.getElementById('connectBtn');
-        if (connectBtn) {
-            connectBtn.textContent = short(savedAddress);
-            connectBtn.classList.add('connected');
-        }
-    } else {
-        // Fall back to original connection system
-        silentBoot();
-    }
+    // Use wallet.js for connection
+    silentBoot();
 
     // Set up filter event listeners
     setupFilterListeners();
@@ -139,6 +122,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set up gallery mode
     setupGalleryMode();
+
+    // Set up wallet events listener
+    window.addEventListener(WALLET_EVENTS.CONNECTED, (e) => {
+        const address = e.detail.address;
+        if (address) {
+            render(address);
+        }
+    });
+
+    window.addEventListener(WALLET_EVENTS.DISCONNECTED, () => {
+        // Clear UI state and show empty state
+        grid.innerHTML = '';
+        detailedView.innerHTML = '';
+        allNftData = [];
+        filteredNftData = [];
+
+        loading.style.display = 'none';
+        dashboard.style.display = 'none';
+        controls.style.display = 'none';
+        emptyState.style.display = 'block';
+    });
 });
 
 // Initialize tooltips
@@ -217,10 +221,13 @@ function addContractDisplay() {
 // Set up filter listeners
 function setupFilterListeners() {
     // Main filters
-    document.getElementById('breedFilter').addEventListener('change', (e) => {
-        currentFilters.breed = e.target.value;
-        applyFiltersAndSort();
-    });
+    const breedFilter = document.getElementById('breedFilter');
+    if (breedFilter) {
+        breedFilter.addEventListener('change', (e) => {
+            currentFilters.breed = e.target.value;
+            applyFiltersAndSort();
+        });
+    }
 
     // Additional filter listeners for new filters
     const additionalFilters = ['element', 'weapon', 'rarity', 'stance', 'rank'];
@@ -276,6 +283,37 @@ function animateFilterReset() {
     }
 }
 
+// Silent boot using wallet.js
+async function silentBoot() {
+    try {
+        const address = await getAddress();
+        if (address) {
+            console.log("Using existing wallet connection:", address);
+            render(address);
+
+            // Update UI for connected state
+            const connectBtn = document.getElementById('connectBtn');
+            if (connectBtn) {
+                connectBtn.textContent = short(address);
+                connectBtn.classList.add('connected');
+            }
+        }
+    } catch (error) {
+        console.error("Silent wallet connection failed:", error);
+    }
+}
+
+// Connect button handler - simplified to use wallet.js
+document.getElementById('connectBtn')?.addEventListener('click', async () => {
+    try {
+        await connectWallet(document.getElementById('connectBtn'));
+        // The wallet connected event will trigger render
+    } catch (error) {
+        console.error("Error connecting wallet:", error);
+        showToast("Failed to connect wallet: " + error.message, "error");
+    }
+});
+
 // Set up view toggles
 function setupViewToggles() {
     const viewBtns = document.querySelectorAll('.view-btn');
@@ -330,10 +368,13 @@ function animateViewChange(view) {
 
 // Set up sorting listeners
 function setupSortingListeners() {
-    document.getElementById('sortBy').addEventListener('change', (e) => {
-        currentSortOption = e.target.value;
-        applyFiltersAndSort();
-    });
+    const sortBy = document.getElementById('sortBy');
+    if (sortBy) {
+        sortBy.addEventListener('change', (e) => {
+            currentSortOption = e.target.value;
+            applyFiltersAndSort();
+        });
+    }
 }
 
 // Set up theme switcher
@@ -390,7 +431,7 @@ function animateThemeChange(isLight) {
 // Set up drag and drop functionality
 function setupDragAndDrop() {
     // If Sortable.js is loaded, make the grid sortable
-    if (window.Sortable) {
+    if (window.Sortable && grid) {
         new Sortable(grid, {
             animation: 150,
             ghostClass: 'sortable-ghost',
@@ -419,12 +460,12 @@ function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
         // Alt+G for grid view
         if (e.altKey && e.key === 'g') {
-            document.querySelector('.view-btn[data-view="grid"]').click();
+            document.querySelector('.view-btn[data-view="grid"]')?.click();
         }
 
         // Alt+D for detailed view
         if (e.altKey && e.key === 'd') {
-            document.querySelector('.view-btn[data-view="detailed"]').click();
+            document.querySelector('.view-btn[data-view="detailed"]')?.click();
         }
 
         // Alt+F to focus on filter
@@ -530,7 +571,8 @@ function filterBySearch(searchTerm) {
     document.dispatchEvent(event);
 
     // Render first page
-    renderPage(1, parseInt(document.getElementById('itemsPerPage').value));
+    const itemsPerPage = document.getElementById('itemsPerPage')?.value || 12;
+    renderPage(1, parseInt(itemsPerPage));
 
     // Highlight search matches if we have few enough results
     if (filteredNftData.length < 20) {
@@ -647,7 +689,9 @@ function setupBatchActions() {
 
             // Update button text
             const btn = document.getElementById('selectAllCardsBtn');
-            btn.textContent = allSelected ? 'Select All' : 'Deselect All';
+            if (btn) {
+                btn.textContent = allSelected ? 'Select All' : 'Deselect All';
+            }
 
             // Update selection count
             updateSelectionCount();
@@ -777,10 +821,6 @@ function shareBatchOfNfts(selectedIds) {
     // Create share URL with all selected IDs
     const baseUrl = window.location.origin;
     const shareUrl = `${baseUrl}/ninja-gallery.html?ids=${selectedIds.join(',')}`;
-
-    // Create a shortened version for display
-    const displayUrl = shareUrl.length > 50 ?
-        shareUrl.substring(0, 47) + '...' : shareUrl;
 
     // Create modal dialog
     const modal = document.createElement('div');
@@ -1067,7 +1107,7 @@ function toggleGalleryMode() {
     galleryOverlay.querySelector('.toggle-autoplay').addEventListener('click', toggleAutoplay);
 
     // Keyboard navigation
-    document.addEventListener('keydown', function galleryKeyHandler(e) {
+    function galleryKeyHandler(e) {
         if (e.key === 'ArrowLeft') prevSlide();
         if (e.key === 'ArrowRight') nextSlide();
         if (e.key === 'Escape') {
@@ -1075,7 +1115,8 @@ function toggleGalleryMode() {
             document.removeEventListener('keydown', galleryKeyHandler);
         }
         if (e.key === ' ') toggleAutoplay(); // Space bar
-    });
+    }
+    document.addEventListener('keydown', galleryKeyHandler);
 
     // Touch navigation for mobile
     let startX, startY;
@@ -1109,26 +1150,6 @@ function toggleGalleryMode() {
         );
     }
 }
-
-// Original silent boot logic
-async function silentBoot() {
-    const addr = await getAddress();
-    if (addr) render(addr);
-}
-
-/* nav button re-uses connectWallet */
-document.getElementById('connectBtn').addEventListener('click', async () => {
-    // Check if already connected via connect-only.js
-    const savedAddress = localStorage.getItem(CONNECTION_KEY);
-    if (savedAddress) {
-        render(savedAddress);
-        return;
-    }
-
-    // Fall back to original connection
-    const { addr } = await connectWallet(document.getElementById('connectBtn'));
-    render(addr);
-});
 
 // Apply filters and sorting
 function applyFiltersAndSort() {
@@ -1207,7 +1228,8 @@ function applyFiltersAndSort() {
     document.dispatchEvent(event);
 
     // Render first page
-    renderPage(1, parseInt(document.getElementById('itemsPerPage').value));
+    const itemsPerPage = document.getElementById('itemsPerPage')?.value || 12;
+    renderPage(1, parseInt(itemsPerPage));
 
     // Update filter badges
     updateFilterBadges();
@@ -1352,10 +1374,14 @@ function updateSelectWithCounts(selectId, countData) {
 function renderNftCard(nft) {
     // Clone the template
     const template = document.getElementById('kittyCardTemplate');
+    if (!template) return;
+
     const card = template.content.cloneNode(true);
 
     // Set card class and data
     const cardElement = card.querySelector('.kitty-card');
+    if (!cardElement) return;
+
     cardElement.dataset.tokenId = nft.id;
 
     // Add drag handle for sortable functionality
@@ -1373,125 +1399,143 @@ function renderNftCard(nft) {
 
     // Set rarity badge if we have real rarity data
     const rarityBadge = card.querySelector('.kitty-rarity');
-    if (nft.rarityTier) {
-        rarityBadge.textContent = nft.rarityTier.charAt(0).toUpperCase() + nft.rarityTier.slice(1);
-        rarityBadge.classList.add(nft.rarityTier);
+    if (rarityBadge) {
+        if (nft.rarityTier) {
+            rarityBadge.textContent = nft.rarityTier.charAt(0).toUpperCase() + nft.rarityTier.slice(1);
+            rarityBadge.classList.add(nft.rarityTier);
 
-        // Add legendary styling if applicable
-        if (nft.rarityTier.toLowerCase() === 'legendary') {
-            cardElement.classList.add('legendary-card');
+            // Add legendary styling if applicable
+            if (nft.rarityTier.toLowerCase() === 'legendary') {
+                cardElement.classList.add('legendary-card');
+            }
+        } else {
+            rarityBadge.style.display = 'none';
         }
-    } else {
-        rarityBadge.style.display = 'none';
     }
 
     // Set image with error handling and loading state
     const image = card.querySelector('.kitty-image');
-    image.dataset.src = nft.image; // Use data-src for lazy loading
-    image.src = 'assets/placeholder.svg'; // Start with placeholder
-    image.alt = nft.name;
+    if (image) {
+        image.dataset.src = nft.image; // Use data-src for lazy loading
+        image.src = 'assets/placeholder.svg'; // Start with placeholder
+        image.alt = nft.name;
 
-    // Create a loading indicator
-    const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = 'image-loading-indicator';
-    loadingIndicator.innerHTML = `
-        <svg class="spinner" viewBox="0 0 50 50">
-            <circle cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
-        </svg>
-    `;
+        // Create a loading indicator
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'image-loading-indicator';
+        loadingIndicator.innerHTML = `
+            <svg class="spinner" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+            </svg>
+        `;
 
-    // Add loading indicator
-    const imageContainer = card.querySelector('.kitty-image-container');
-    imageContainer.appendChild(loadingIndicator);
+        // Add loading indicator
+        const imageContainer = card.querySelector('.kitty-image-container');
+        if (imageContainer) {
+            imageContainer.appendChild(loadingIndicator);
 
-    // Load image when it comes into view
-    lazyLoadImage(image, () => {
-        imageContainer.removeChild(loadingIndicator);
-    });
+            // Load image when it comes into view
+            lazyLoadImage(image, () => {
+                if (imageContainer.contains(loadingIndicator)) {
+                    imageContainer.removeChild(loadingIndicator);
+                }
+            });
 
-    // Handle image errors
-    image.onerror = function () {
-        this.src = 'assets/detailed_ninja_cat_64.png';
-        imageContainer.removeChild(loadingIndicator);
-    };
+            // Handle image errors
+            image.onerror = function () {
+                this.src = 'assets/detailed_ninja_cat_64.png';
+                if (imageContainer.contains(loadingIndicator)) {
+                    imageContainer.removeChild(loadingIndicator);
+                }
+            };
+        }
+    }
 
     // Set name and ID
-    card.querySelector('.kitty-name').firstChild.textContent = nft.name;
-    card.querySelector('.kitty-id').textContent = `#${nft.id}`;
+    const nameEl = card.querySelector('.kitty-name');
+    const idEl = card.querySelector('.kitty-id');
+
+    if (nameEl) nameEl.firstChild.textContent = nft.name;
+    if (idEl) idEl.textContent = `#${nft.id}`;
 
     // Set breed
-    card.querySelector('.kitty-breed span').textContent = nft.breed || 'Unknown Breed';
+    const breedEl = card.querySelector('.kitty-breed span');
+    if (breedEl) breedEl.textContent = nft.breed || 'Unknown Breed';
 
     // Get traits from NFT
     const traitsContainer = card.querySelector('.kitty-traits');
-    traitsContainer.innerHTML = ''; // Clear default traits
+    if (traitsContainer) {
+        traitsContainer.innerHTML = ''; // Clear default traits
 
-    // Extract key traits
-    let keyTraits = [];
+        // Extract key traits
+        let keyTraits = [];
 
-    // Element trait
-    const elementTrait = nft.traits?.find(t =>
-        t.trait_type === 'Element' || t.trait_type === 'Power'
-    );
-    if (elementTrait) {
-        const icon = elementIcons[elementTrait.value] || '';
-        const traitEl = document.createElement('span');
-        traitEl.className = `trait element-${elementTrait.value.toLowerCase()}`;
-        traitEl.innerHTML = `${icon} ${elementTrait.value}`;
-        keyTraits.push(traitEl);
-    }
+        // Element trait
+        const elementTrait = nft.traits?.find(t =>
+            t.trait_type === 'Element' || t.trait_type === 'Power'
+        );
+        if (elementTrait) {
+            const icon = elementIcons[elementTrait.value] || '';
+            const traitEl = document.createElement('span');
+            traitEl.className = `trait element-${elementTrait.value.toLowerCase()}`;
+            traitEl.innerHTML = `${icon} ${elementTrait.value}`;
+            keyTraits.push(traitEl);
+        }
 
-    // Weapon trait
-    const weaponTrait = nft.traits?.find(t =>
-        t.trait_type === 'Weapon' || t.trait_type === 'Equipment'
-    );
-    if (weaponTrait) {
-        const icon = weaponIcons[weaponTrait.value] || '';
-        const traitEl = document.createElement('span');
-        traitEl.className = 'trait';
-        traitEl.innerHTML = `${icon} ${weaponTrait.value}`;
-        keyTraits.push(traitEl);
-    }
-
-    // Stance trait
-    const stanceTrait = nft.traits?.find(t => t.trait_type === 'Stance');
-    if (stanceTrait) {
-        const traitEl = document.createElement('span');
-        traitEl.className = 'trait';
-        traitEl.textContent = stanceTrait.value;
-        keyTraits.push(traitEl);
-    }
-
-    // If we have no key traits, add up to 3 other traits
-    if (keyTraits.length === 0 && nft.traits && nft.traits.length) {
-        keyTraits = nft.traits.slice(0, 3).map(trait => {
+        // Weapon trait
+        const weaponTrait = nft.traits?.find(t =>
+            t.trait_type === 'Weapon' || t.trait_type === 'Equipment'
+        );
+        if (weaponTrait) {
+            const icon = weaponIcons[weaponTrait.value] || '';
             const traitEl = document.createElement('span');
             traitEl.className = 'trait';
-            traitEl.textContent = trait.value || trait;
-            return traitEl;
-        });
+            traitEl.innerHTML = `${icon} ${weaponTrait.value}`;
+            keyTraits.push(traitEl);
+        }
+
+        // Stance trait
+        const stanceTrait = nft.traits?.find(t => t.trait_type === 'Stance');
+        if (stanceTrait) {
+            const traitEl = document.createElement('span');
+            traitEl.className = 'trait';
+            traitEl.textContent = stanceTrait.value;
+            keyTraits.push(traitEl);
+        }
+
+        // If we have no key traits, add up to 3 other traits
+        if (keyTraits.length === 0 && nft.traits && nft.traits.length) {
+            keyTraits = nft.traits.slice(0, 3).map(trait => {
+                const traitEl = document.createElement('span');
+                traitEl.className = 'trait';
+                traitEl.textContent = trait.value || trait;
+                return traitEl;
+            });
+        }
+
+        // Add traits to container
+        keyTraits.forEach(trait => traitsContainer.appendChild(trait));
     }
-
-    // Add traits to container
-    keyTraits.forEach(trait => traitsContainer.appendChild(trait));
-
-    // Get actions container
-    const actionsContainer = card.querySelector('.actions');
 
     // Set button actions
     const viewDetailsBtn = card.querySelector('.view-details');
-    viewDetailsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        window.location.href = `kitty.html?id=${nft.id}`;
-    });
-
     const listForSaleBtn = card.querySelector('.share-btn');
-    listForSaleBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        window.location.href = `marketplace.html?list=${nft.id}`;
-    });
+
+    if (viewDetailsBtn) {
+        viewDetailsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.location.href = `kitty.html?id=${nft.id}`;
+        });
+    }
+
+    if (listForSaleBtn) {
+        listForSaleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.location.href = `marketplace.html?list=${nft.id}`;
+        });
+    }
 
     // Add the card to the grid
     grid.appendChild(card);
@@ -1531,142 +1575,174 @@ function addCardHoverEffect(card) {
     }
 }
 
-// Lazy load image implementation
+// Lazy load image implementation with better error handling
 function lazyLoadImage(img, callback) {
+    if (!img) return;
+
     if ('IntersectionObserver' in window) {
         const observer = new IntersectionObserver((entries, observer) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const image = entry.target;
-                    image.src = image.dataset.src;
-                    image.onload = callback;
-                    observer.unobserve(image);
+                    if (image.dataset.src) {
+                        image.src = image.dataset.src;
+                        image.onload = callback;
+                        observer.unobserve(image);
+                    }
                 }
             });
         });
         observer.observe(img);
     } else {
         // Fallback for browsers that don't support IntersectionObserver
-        img.src = img.dataset.src;
-        img.onload = callback;
+        if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.onload = callback;
+        }
     }
 }
 
 // Render detailed card with real data only
 function renderDetailedCard(nft) {
     const template = document.getElementById('detailedCardTemplate');
+    if (!template) return;
+
     const card = template.content.cloneNode(true);
 
     // Set image with error handling
     const image = card.querySelector('.detailed-image');
-    image.src = nft.image;
-    image.alt = nft.name;
-    image.onerror = function () {
-        this.src = 'assets/detailed_ninja_cat_64.png';
-    };
+    if (image) {
+        image.src = nft.image;
+        image.alt = nft.name;
+        image.onerror = function () {
+            this.src = 'assets/detailed_ninja_cat_64.png';
+        };
+    }
 
     // Set basic info
-    card.querySelector('h2').textContent = nft.name;
-    card.querySelector('.cat-breed').textContent = nft.breed || 'Unknown Breed';
+    const titleEl = card.querySelector('h2');
+    const breedEl = card.querySelector('.cat-breed');
+
+    if (titleEl) titleEl.textContent = nft.name;
+    if (breedEl) breedEl.textContent = nft.breed || 'Unknown Breed';
 
     // Only set real data for mint date
     const mintDateElement = card.querySelector('.mint-date');
-    if (nft.mintDate) {
-        mintDateElement.textContent = nft.mintDate;
-    } else {
-        mintDateElement.parentElement.style.display = 'none';
+    if (mintDateElement) {
+        if (nft.mintDate) {
+            mintDateElement.textContent = nft.mintDate;
+        } else {
+            const parent = mintDateElement.parentElement;
+            if (parent) parent.style.display = 'none';
+        }
     }
 
     // Only show real rarity data
     const rarityElement = card.querySelector('.rarity-score');
-    if (nft.rarityScore) {
-        rarityElement.textContent = nft.rarityScore;
-    } else {
-        rarityElement.parentElement.style.display = 'none';
+    if (rarityElement) {
+        if (nft.rarityScore) {
+            rarityElement.textContent = nft.rarityScore;
+        } else {
+            const parent = rarityElement.parentElement;
+            if (parent) parent.style.display = 'none';
+        }
     }
 
     // Set traits
     const traitsContainer = card.querySelector('.detailed-traits');
-    traitsContainer.innerHTML = ''; // Clear any existing traits
+    if (traitsContainer) {
+        traitsContainer.innerHTML = ''; // Clear any existing traits
 
-    if (nft.traits && nft.traits.length) {
-        nft.traits.forEach(trait => {
-            const traitEl = document.createElement('div');
-            traitEl.className = 'detailed-trait';
+        if (nft.traits && nft.traits.length) {
+            nft.traits.forEach(trait => {
+                if (!trait || (!trait.trait_type && !trait.value)) return;
 
-            const traitType = document.createElement('div');
-            traitType.className = 'trait-type';
-            traitType.textContent = trait.trait_type || 'Attribute';
+                const traitEl = document.createElement('div');
+                traitEl.className = 'detailed-trait';
 
-            const traitValue = document.createElement('div');
-            traitValue.className = 'trait-value';
+                const traitType = document.createElement('div');
+                traitType.className = 'trait-type';
+                traitType.textContent = trait.trait_type || 'Attribute';
 
-            // Add icon for element or weapon traits
-            if (trait.trait_type === 'Element' || trait.trait_type === 'Power') {
-                const icon = elementIcons[trait.value] || '';
-                traitValue.innerHTML = icon ? `${icon} ${trait.value}` : trait.value;
-            }
-            else if (trait.trait_type === 'Weapon' || trait.trait_type === 'Equipment') {
-                const icon = weaponIcons[trait.value] || '';
-                traitValue.innerHTML = icon ? `${icon} ${trait.value}` : trait.value;
-            }
-            else {
-                traitValue.textContent = trait.value || trait;
-            }
+                const traitValue = document.createElement('div');
+                traitValue.className = 'trait-value';
 
-            traitEl.appendChild(traitType);
-            traitEl.appendChild(traitValue);
-            traitsContainer.appendChild(traitEl);
-        });
+                // Add icon for element or weapon traits
+                if (trait.trait_type === 'Element' || trait.trait_type === 'Power') {
+                    const icon = elementIcons[trait.value] || '';
+                    traitValue.innerHTML = icon ? `${icon} ${trait.value}` : trait.value;
+                }
+                else if (trait.trait_type === 'Weapon' || trait.trait_type === 'Equipment') {
+                    const icon = weaponIcons[trait.value] || '';
+                    traitValue.innerHTML = icon ? `${icon} ${trait.value}` : trait.value;
+                }
+                else {
+                    traitValue.textContent = trait.value || trait;
+                }
+
+                traitEl.appendChild(traitType);
+                traitEl.appendChild(traitValue);
+                traitsContainer.appendChild(traitEl);
+            });
+        }
     }
 
     // Set button actions
     const buttons = card.querySelectorAll('.detailed-actions .btn');
 
     // Vitruveo explorer button
-    buttons[0].addEventListener('click', () => {
-        window.open(`https://explorer.vitruveo.xyz/tokens/${CONTRACT_ADDRESS}/${nft.id}`, '_blank');
-    });
+    if (buttons[0]) {
+        buttons[0].addEventListener('click', () => {
+            window.open(`https://explorer.vitruveo.xyz/tokens/${CONTRACT_ADDRESS}/${nft.id}`, '_blank');
+        });
+    }
 
     // List for sale
-    buttons[1].addEventListener('click', () => {
-        window.location.href = `marketplace.html?list=${nft.id}`;
-    });
+    if (buttons[1]) {
+        buttons[1].addEventListener('click', () => {
+            window.location.href = `marketplace.html?list=${nft.id}`;
+        });
+    }
 
     // Share button
-    buttons[2].addEventListener('click', () => {
-        if (navigator.share) {
-            navigator.share({
-                title: nft.name,
-                text: `Check out my NFT on Vitruveo!`,
-                url: window.location.origin + `/kitty.html?id=${nft.id}&contract=${CONTRACT_ADDRESS}`
-            });
-        } else {
-            navigator.clipboard.writeText(window.location.origin + `/kitty.html?id=${nft.id}&contract=${CONTRACT_ADDRESS}`);
-            showToast('Link copied to clipboard!', 'success');
-        }
-    });
+    if (buttons[2]) {
+        buttons[2].addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: nft.name,
+                    text: `Check out my NFT on Vitruveo!`,
+                    url: window.location.origin + `/kitty.html?id=${nft.id}&contract=${CONTRACT_ADDRESS}`
+                });
+            } else {
+                navigator.clipboard.writeText(window.location.origin + `/kitty.html?id=${nft.id}&contract=${CONTRACT_ADDRESS}`);
+                showToast('Link copied to clipboard!', 'success');
+            }
+        });
+    }
 
     // Add the card to the detailed view
     detailedView.appendChild(card);
 
     // Add hover effects
     if (window.gsap) {
-        card.querySelector('.detailed-image').addEventListener('mouseenter', function () {
-            gsap.to(this, {
-                scale: 1.05,
-                boxShadow: '0 10px 25px rgba(138, 101, 255, 0.4)',
-                duration: 0.3
+        const detailedImg = card.querySelector('.detailed-image');
+        if (detailedImg) {
+            detailedImg.addEventListener('mouseenter', function () {
+                gsap.to(this, {
+                    scale: 1.05,
+                    boxShadow: '0 10px 25px rgba(138, 101, 255, 0.4)',
+                    duration: 0.3
+                });
             });
-        });
 
-        card.querySelector('.detailed-image').addEventListener('mouseleave', function () {
-            gsap.to(this, {
-                scale: 1,
-                boxShadow: '0 5px 15px rgba(138, 101, 255, 0.2)',
-                duration: 0.3
+            detailedImg.addEventListener('mouseleave', function () {
+                gsap.to(this, {
+                    scale: 1,
+                    boxShadow: '0 5px 15px rgba(138, 101, 255, 0.2)',
+                    duration: 0.3
+                });
             });
-        });
+        }
     }
 }
 
@@ -1695,7 +1771,7 @@ function renderPage(page, itemsPerPage) {
 
         grid.appendChild(noResults);
 
-        document.getElementById('clearAllFiltersBtn').addEventListener('click', () => {
+        document.getElementById('clearAllFiltersBtn')?.addEventListener('click', () => {
             // Reset all filters
             Object.keys(currentFilters).forEach(key => {
                 const element = document.getElementById(`${key}Filter`);
@@ -1726,7 +1802,10 @@ function renderPage(page, itemsPerPage) {
 // Update dashboard with real data only
 function updateDashboard(nfts) {
     // Total count
-    document.getElementById('totalCount').textContent = nfts.length;
+    const totalCountEl = document.getElementById('totalCount');
+    if (totalCountEl) {
+        totalCountEl.textContent = nfts.length;
+    }
 
     // Calculate rarity statistics
     let highestRarityScore = 0;
@@ -1761,10 +1840,12 @@ function updateDashboard(nfts) {
 
     // Update rarest NFT display
     const rarestElement = document.getElementById('rarestRarity');
-    if (rarestNft) {
-        rarestElement.innerHTML = `<a href="kitty.html?id=${rarestNft.id}" class="dashboard-link">#${rarestNft.id}</a>`;
-    } else {
-        rarestElement.textContent = 'N/A';
+    if (rarestElement) {
+        if (rarestNft) {
+            rarestElement.innerHTML = `<a href="kitty.html?id=${rarestNft.id}" class="dashboard-link">#${rarestNft.id}</a>`;
+        } else {
+            rarestElement.textContent = 'N/A';
+        }
     }
 
     // Find most common breed
@@ -1779,17 +1860,19 @@ function updateDashboard(nfts) {
 
     // Update breed distribution display
     const breedElement = document.getElementById('breedDistribution');
-    if (mostCommonBreed) {
-        breedElement.textContent = mostCommonBreed;
-    } else {
-        breedElement.textContent = 'Unknown';
+    if (breedElement) {
+        if (mostCommonBreed) {
+            breedElement.textContent = mostCommonBreed;
+        } else {
+            breedElement.textContent = 'Unknown';
+        }
     }
 
     // Update collection stats visualization if the element exists
     updateCollectionStats(breedCounts, elementCounts);
 
     // If we have GSAP, animate the stat values for a nice effect
-    if (window.gsap) {
+    if (window.gsap && totalCountEl) {
         gsap.from('#totalCount', {
             textContent: 0,
             duration: 1.5,
@@ -2005,7 +2088,11 @@ function showToast(message, type = 'info', duration = 5000) {
     if (duration > 0) {
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => toastContainer.removeChild(toast), 300);
+            setTimeout(() => {
+                if (toastContainer.contains(toast)) {
+                    toastContainer.removeChild(toast);
+                }
+            }, 300);
         }, duration);
     }
 
@@ -2102,7 +2189,9 @@ async function render(owner) {
         console.log(`Owner has ${bal} NFTs on Vitruveo contract ${CONTRACT_ADDRESS}`);
 
         // Update count
-        count.textContent = `You own ${bal} Ninja Cat${bal !== 1 ? 's' : ''}`;
+        if (count) {
+            count.textContent = `You own ${bal} Ninja Cat${bal !== 1 ? 's' : ''}`;
+        }
 
         if (!bal) {
             loading.style.display = 'none';
@@ -2179,10 +2268,13 @@ async function render(owner) {
 
                 // Update progress indicator
                 const progressFill = progressIndicator.querySelector('.progress-fill');
-                const progressPercent = ((i + 1) / bal) * 100;
-                progressFill.style.width = `${progressPercent}%`;
-                progressIndicator.querySelector('.progress-text').textContent =
-                    `Loading your collection: ${i + 1}/${bal} NFTs`;
+                const progressText = progressIndicator.querySelector('.progress-text');
+
+                if (progressFill && progressText) {
+                    const progressPercent = ((i + 1) / bal) * 100;
+                    progressFill.style.width = `${progressPercent}%`;
+                    progressText.textContent = `Loading your collection: ${i + 1}/${bal} NFTs`;
+                }
 
             } catch (tokenError) {
                 console.error(`Error fetching token #${i}:`, tokenError);
@@ -2201,7 +2293,9 @@ async function render(owner) {
 
     } catch (error) {
         console.error("Error rendering NFTs from Vitruveo:", error);
-        count.textContent = `Error loading your NFTs: ${error.message}`;
+        if (count) {
+            count.textContent = `Error loading your NFTs: ${error.message}`;
+        }
         showToast(`Failed to load your collection: ${error.message}`, 'error');
     } finally {
         loading.style.display = 'none';

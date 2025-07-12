@@ -1493,10 +1493,10 @@
 
                     if (tokenCount <= 0) {
                         carouselTrack.innerHTML = `
-                                                <div class="carousel-item">
-                                                    <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
-                                                    <p>No ninja cats have been minted yet.<br>Be the first to summon a warrior!</p>
-                                                </div>`;
+                                                    <div class="carousel-item">
+                                                        <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
+                                                        <p>No ninja cats have been minted yet.<br>Be the first to summon a warrior!</p>
+                                                    </div>`;
                         return;
                     }
 
@@ -1542,9 +1542,9 @@
                         const item = document.createElement('div');
                         item.className = 'carousel-item';
                         item.innerHTML = `
-                                                <div class="loading-spinner"></div>
-                                                <p>Loading Ninja Cat...</p>
-                                            `;
+                                                    <div class="loading-spinner"></div>
+                                                    <p>Loading Ninja Cat...</p>
+                                                `;
                         carouselTrack.appendChild(item);
 
                         // Create dot
@@ -1586,15 +1586,15 @@
                                 }
 
                                 item.innerHTML = `
-                                                        <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image"
-                                                             onerror="this.src='${fallbackImage}'">
-                                                        <div class="carousel-caption">
-                                                            ${metadata.name}
-                                                            <div style="font-size: 0.8rem; color: #9e9e9e; margin-top: 0.3rem;">
-                                                                ${breed} · Token #${tokenId}
+                                                            <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image"
+                                                                 onerror="this.src='${fallbackImage}'">
+                                                            <div class="carousel-caption">
+                                                                ${metadata.name}
+                                                                <div style="font-size: 0.8rem; color: #9e9e9e; margin-top: 0.3rem;">
+                                                                    ${breed} · Token #${tokenId}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    `;
+                                                        `;
 
                                 // Add click to view details
                                 item.style.cursor = 'pointer';
@@ -1605,9 +1605,9 @@
                         } catch (err) {
                             console.error("Error loading token:", err);
                             item.innerHTML = `
-                                                    <img src="${fallbackImage}" alt="Ninja Cat" class="carousel-image">
-                                                    <div class="carousel-caption">Mysterious Ninja Cat</div>
-                                                `;
+                                                        <img src="${fallbackImage}" alt="Ninja Cat" class="carousel-image">
+                                                        <div class="carousel-caption">Mysterious Ninja Cat</div>
+                                                    `;
                         }
                     }
 
@@ -1645,21 +1645,21 @@
                         if (isPlaying) {
                             clearInterval(interval);
                             autoPlayBtn.innerHTML = `
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                                    </svg>
-                                                    Auto-Play`;
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                                        </svg>
+                                                        Auto-Play`;
                         } else {
                             interval = setInterval(() => {
                                 currentSlide = (currentSlide + 1) % slides.length;
                                 goToSlide(currentSlide);
                             }, 4000);
                             autoPlayBtn.innerHTML = `
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <rect x="6" y="4" width="4" height="16"></rect>
-                                                        <rect x="14" y="4" width="4" height="16"></rect>
-                                                    </svg>
-                                                    Pause`;
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <rect x="6" y="4" width="4" height="16"></rect>
+                                                            <rect x="14" y="4" width="4" height="16"></rect>
+                                                        </svg>
+                                                        Pause`;
                         }
                         isPlaying = !isPlaying;
                     }
@@ -1690,10 +1690,10 @@
                 } catch (error) {
                     console.error("Error setting up NFT carousel:", error);
                     carouselTrack.innerHTML = `
-                                            <div class="carousel-item">
-                                                <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
-                                                <p>Error loading ninja cats.<br>The ancient scrolls are currently unreadable.</p>
-                                            </div>`;
+                                                <div class="carousel-item">
+                                                    <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
+                                                    <p>Error loading ninja cats.<br>The ancient scrolls are currently unreadable.</p>
+                                                </div>`;
                 }
             }
 
@@ -1876,6 +1876,7 @@
     <script src="js/footer.js"></script>
 
     <!-- Include the navbar script -->
-    <script src="js/navbar.js"></script>
+    <!-- Replace the existing navbar script line at the bottom of the page with this: -->
+    <script type="module" src="js/navbar.js"></script>
 </body>
 </html>

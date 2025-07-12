@@ -460,8 +460,19 @@ mintBtn.onclick = async () => {
         showStatus('Connecting wallet…', true);
         updateProgress(5);
 
-        const { signer, addr } = await connectWallet(document.getElementById('connectBtn'));
-        updateProgress(10);
+        // Replace line 473 in mint.js where you call connectWallet:
+        // Old line: const { signer, addr } = await connectWallet(document.getElementById('connectBtn'));
+
+        // With this fixed version:
+        const result = await connectWallet(document.getElementById('connectBtn'));
+        const signer = result.signer;
+        const addr = result.address;  // The key issue - the function returns 'address', not 'addr'
+
+        console.log("Wallet connected:", {
+            address: addr,
+            signer: !!signer,
+            validAddress: ethers.isAddress(addr || '')
+        });
 
         // CRITICAL FIX: Always query the DOM directly to get the current values
         const imageProvider = document.getElementById('imageProvider')?.value || "dall-e";
@@ -565,8 +576,7 @@ mintBtn.onclick = async () => {
         /* mint with selected breed and options */
         console.log("DEBUG - Provider selection:", {
             selected: imageProvider,
-            providerObj: providers[imageProvider],
-            allProviders: providers
+            providerObj: providers[imageProvider]
         });
 
         // Get provider name for display
@@ -574,25 +584,46 @@ mintBtn.onclick = async () => {
         showStatus(`Creating your ninja cat with ${providerName}...`, true);
         updateProgress(35);
 
+        // Debug parameters before sending
+        console.log("Contract address:", CONTRACT_ADDRESS);
+        console.log("Breed parameter:", breed);
+        console.log("Connected address:", addr);
+
         // Add the mint options to the transaction
         let tx;
 
         try {
-            // First try without including data field
-            tx = await nft.buy(breed);
-        } catch (err) {
-            // If the contract expects data, properly encode it
-            console.log("Retrying with encoded parameters");
-            const encodedData = ethers.hexlify(
-                ethers.toUtf8Bytes(JSON.stringify({
-                    imageProvider,
-                    promptExtras: promptExtrasValue.substring(0, 100),
-                    negativePrompt: negativePromptValue.substring(0, 100),
-                    ...providerOptions
-                }))
-            );
+            // Make sure breed is a proper string value - this is critical!
+            const breedString = String(breed || "").trim();
+            console.log(`Attempting mint with breed: "${breedString}"`);
 
-            tx = await nft.buy(breed, { data: encodedData });
+            // First try with just the breed parameter
+            tx = await nft.buy(breedString);
+        } catch (err) {
+            console.warn("First mint attempt failed:", err);
+
+            try {
+                // Try again with explicit transaction options
+                const overrides = {
+                    gasLimit: 600000,  // Explicit gas limit
+                    value: 0           // Explicit zero value (no ETH)
+                };
+
+                console.log("Retrying with overrides:", overrides);
+                tx = await nft.buy(breed, overrides);
+            } catch (err2) {
+                // If all else fails, check if the contract has another signature
+                console.warn("Second mint attempt failed:", err2);
+
+                // Try one more approach with data parameter
+                const metadata = ethers.toUtf8Bytes(JSON.stringify({
+                    imageProvider,
+                    promptExtras: promptExtrasValue || '',
+                    negativePrompt: negativePromptValue || ''
+                }));
+
+                tx = await nft.buy(breed, ethers.hexlify(metadata));
+            }
         }
 
         // Create transaction confirmation UI

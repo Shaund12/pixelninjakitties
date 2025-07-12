@@ -2322,8 +2322,12 @@
         <div class="selected-cat"></div>
     </div>
 
-    <script type="module" src="js/connect-only.js"></script>
-    <script type="module" src="js/marketplace.js"></script>
+    <!-- With this single import -->
+    <script type="module">
+        // Import wallet first to ensure it's ready before marketplace
+        import './js/wallet.js';
+        import './js/marketplace.js';
+    </script>
 
     <!-- Purchase modal and ticker functionality -->
     <script>
@@ -2540,12 +2544,12 @@
                 }
 
                 notification.innerHTML = `
-                                <div class="notification-icon">${iconSvg}</div>
-                                <div class="notification-content">
-                                    <div class="notification-title">${title}</div>
-                                    <div class="notification-message">${message}</div>
-                                </div>
-                            `;
+                                            <div class="notification-icon">${iconSvg}</div>
+                                            <div class="notification-content">
+                                                <div class="notification-title">${title}</div>
+                                                <div class="notification-message">${message}</div>
+                                            </div>
+                                        `;
 
                 notificationSystem.appendChild(notification);
 
@@ -2693,7 +2697,8 @@
     <footer id="footer"></footer>
     <script src="js/footer.js"></script>
     <!-- Include the navbar script -->
-    <script src="js/navbar.js"></script>
+    <!-- Replace the existing navbar script line at the bottom of the page with this: -->
+    <script type="module" src="js/navbar.js"></script>
     <!-- Listing Form Modal -->
     <div class="modal-backdrop" id="listingFormModal">
         <div class="modal-container">

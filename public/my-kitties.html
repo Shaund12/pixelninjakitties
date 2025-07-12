@@ -1993,13 +1993,14 @@
     </script>
 
     <!-- IMPORTANT: Import wallet connection before gallery.js -->
-    <script type="module" src="js/connect-only.js"></script>
+    <script type="module" src="js/wallet.js"></script>
     <script type="module" src="js/my-kitties.js"></script>
-    <script src="js/gallery.js"></script>
+    
 
     <!-- Include the footer -->
     <footer id="footer"></footer>
     <script src="js/footer.js"></script>
-    <script src="js/navbar.js"></script>
+    <!-- Replace the existing navbar script line at the bottom of the page with this: -->
+    <script type="module" src="js/navbar.js"></script>
 </body>
 </html>

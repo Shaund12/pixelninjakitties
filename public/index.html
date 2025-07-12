@@ -11,7 +11,7 @@
     <!-- Add GSAP for enhanced animations -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
-    <script type="module" src="js/mint.js"></script>
+
     <style>
         body {
             background: radial-gradient(ellipse at 60% 10%, #23263a 0%, #121212 100%);
@@ -1400,8 +1400,7 @@
     </style>
 </head>
 <head>
-    <!-- Add this line to include navbar.js -->
-    <script type="module" src="js/navbar.js"></script>
+
 </head>
 
 <body>
@@ -1857,9 +1856,9 @@
                     const item = document.createElement('div');
                     item.className = 'carousel-item';
                     item.innerHTML = `
-                            <div class="spinner"></div>
-                            <p>Loading Ninja Cat #${tokenId}...</p>
-                        `;
+                                            <div class="spinner"></div>
+                                            <p>Loading Ninja Cat #${tokenId}...</p>
+                                        `;
                     carouselTrack.appendChild(item);
 
                     // Create dot
@@ -1898,16 +1897,16 @@
                                 : metadata.image;
 
                             item.innerHTML = `
-                                    <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image" onerror="this.src='${fallbackImage}'">
-                                    <div class="carousel-caption">${metadata.name}</div>
-                                `;
+                                                    <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image" onerror="this.src='${fallbackImage}'">
+                                                    <div class="carousel-caption">${metadata.name}</div>
+                                                `;
                         }
                     } catch (metadataError) {
                         console.warn(`Error loading metadata for token #${tokenId}:`, metadataError);
                         item.innerHTML = `
-                                <img src="${fallbackImage}" alt="Ninja Cat #${tokenId}" class="carousel-image">
-                                <div class="carousel-caption">Ninja Cat #${tokenId}</div>
-                            `;
+                                                <img src="${fallbackImage}" alt="Ninja Cat #${tokenId}" class="carousel-image">
+                                                <div class="carousel-caption">Ninja Cat #${tokenId}</div>
+                                            `;
                     }
                 }
 
@@ -1915,13 +1914,13 @@
                 const mintSlide = document.createElement('div');
                 mintSlide.className = 'carousel-item';
                 mintSlide.innerHTML = `
-                        <div style="text-align: center; padding: 20px;">
-                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own"
-                                style="width: 80px; height: 80px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(138,101,255,0.5));">
-                            <h3 style="margin: 0 0 10px 0;">Mint your own Ninja Cat!</h3>
-                            <p>Join the Ninja Cat collection with your unique warrior.</p>
-                        </div>
-                    `;
+                                        <div style="text-align: center; padding: 20px;">
+                                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own"
+                                                style="width: 80px; height: 80px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(138,101,255,0.5));">
+                                            <h3 style="margin: 0 0 10px 0;">Mint your own Ninja Cat!</h3>
+                                            <p>Join the Ninja Cat collection with your unique warrior.</p>
+                                        </div>
+                                    `;
                 carouselTrack.appendChild(mintSlide);
 
                 // Add dot for mint slide
@@ -1977,11 +1976,11 @@
             } catch (error) {
                 console.error("Error setting up NFT carousel:", error);
                 carouselTrack.innerHTML = `
-                        <div class="carousel-item">
-                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own" style="width: 80px; height: 80px; margin-bottom: 15px;">
-                            <p>Be the first to mint a Ninja Cat!</p>
-                            <small style="display: block; margin-top: 10px; color: #666;">Error: ${error.message}</small>
-                        </div>`;
+                                        <div class="carousel-item">
+                                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own" style="width: 80px; height: 80px; margin-bottom: 15px;">
+                                            <p>Be the first to mint a Ninja Cat!</p>
+                                            <small style="display: block; margin-top: 10px; color: #666;">Error: ${error.message}</small>
+                                        </div>`;
             }
         }
 
@@ -2345,6 +2344,27 @@
                 vtruConversionEl.style.display = 'none';
             }
         }
+    </script>
+    <!-- Add right before the wallet script -->
+    <script type="module" src="js/navbar.js"></script>
+    <!-- Replace the script at the bottom with this corrected version -->
+    <script type="module">
+        // First initialize global NFT config
+        import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI } from './js/config.js';
+        window.NFT_CONFIG = {
+            RPC_URL,
+            CONTRACT_ADDRESS,
+            NFT_ABI
+        };
+
+        // Load the wallet system first
+        import './js/wallet.js';
+
+        // Then load navbar
+        import './js/navbar.js';
+
+        // Then load mint.js
+        import './js/mint.js';
     </script>
 </body>
 </html>

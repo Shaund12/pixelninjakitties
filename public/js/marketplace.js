@@ -1295,54 +1295,10 @@ window.executePurchase = async function (listing) {
     }
 };
 
-// Initialize the marketplace
-// Initialize the marketplace
 async function init() {
     try {
         // Initialize read-only contracts for browsing
         initReadOnlyContracts();
-
-        // Update wallet prompt to use the same connection system as navbar
-        walletPrompt.innerHTML = `
-            <div class="empty-notice">
-                <h3>Connect your wallet</h3>
-                <p>You need to connect your wallet to list your ninja cats for sale or manage your existing listings.</p>
-                <button id="walletPromptConnectBtn" class="btn primary-btn">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" style="margin-right: 8px; vertical-align: middle;">
-                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path>
-                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path>
-                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>
-                    </svg>
-                    Connect Wallet
-                </button>
-            </div>
-        `;
-
-        // Add click handler for the wallet prompt button that uses the navbar's connection logic
-        const connectPromptBtn = document.getElementById('walletPromptConnectBtn');
-        if (connectPromptBtn) {
-            connectPromptBtn.addEventListener('click', async function () {
-                // Find the navbar connect button and click it to reuse the same logic
-                const navbarConnectBtn = document.getElementById('connectBtn');
-                if (navbarConnectBtn) {
-                    navbarConnectBtn.click();
-                } else if (window.connectWallet) {
-                    // Direct fallback to window.connectWallet if button not found
-                    await window.connectWallet();
-                } else if (window.ethereum) {
-                    try {
-                        // Last resort direct connection
-                        await window.ethereum.request({ method: 'eth_requestAccounts' });
-                        connectPromptBtn.textContent = 'Connected';
-                        location.reload(); // Refresh to pick up the connection
-                    } catch (error) {
-                        console.error('User denied account access', error);
-                    }
-                } else {
-                    alert('Please install MetaMask or another Ethereum wallet');
-                }
-            });
-        }
 
         // Load initial listings
         await loadListings();
@@ -1381,7 +1337,29 @@ async function init() {
 
         document.getElementById('cancelListingForm').addEventListener('click', hideListingForm);
 
-        // Check for wallet connection
+        // Check for wallet connection using the unified wallet system
+        if (window.getWalletConnection) {
+            const connection = await window.getWalletConnection();
+            if (connection && connection.address) {
+                currentAccount = connection.address;
+                walletPrompt.style.display = 'none';
+                sellContent.style.display = 'block';
+
+                // Initialize contracts with signer
+                if (browserProvider) {
+                    try {
+                        const signer = await browserProvider.getSigner();
+                        await initContractsWithSigner(signer);
+                        loadUserCats();
+                        loadUserListings();
+                    } catch (err) {
+                        console.error("Error getting signer:", err);
+                    }
+                }
+            }
+        }
+
+        // Listen for wallet change events from the unified wallet system
         window.addEventListener('walletChanged', async (event) => {
             const address = event.detail?.address;
 
@@ -1408,112 +1386,92 @@ async function init() {
             }
         });
 
-        // Check if wallet is already connected (from connect-only.js)
-        const savedAddress = localStorage.getItem('ninja_cats_wallet') || localStorage.getItem('pnc_addr'); // Support both key names
-        if (savedAddress && browserProvider) {
-            try {
-                currentAccount = savedAddress;
-                walletPrompt.style.display = 'none';
-                sellContent.style.display = 'block';
-
-                const signer = await browserProvider.getSigner();
-                const signerAddress = await signer.getAddress();
-
-                if (signerAddress.toLowerCase() === savedAddress.toLowerCase()) {
-                    await initContractsWithSigner(signer);
-                    loadUserCats();
-                    loadUserListings();
-                } else {
-                    console.warn("Connected wallet doesn't match saved address");
-                }
-            } catch (error) {
-                console.error("Error initializing with saved wallet:", error);
-            }
-        }
-
         // Add toast container for notifications
         const toastContainer = document.createElement('div');
         toastContainer.className = 'toast-container';
         document.body.appendChild(toastContainer);
 
-        // Add toast styles
-        const toastStyles = document.createElement('style');
-        toastStyles.textContent = `
-            .toast-container {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                z-index: 9999;
-            }
-            
-            .toast {
-                background: #333;
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                margin-top: 10px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                transform: translateY(100px);
-                opacity: 0;
-                transition: all 0.3s ease;
-                max-width: 350px;
-            }
-            
-            .toast.show {
-                transform: translateY(0);
-                opacity: 1;
-            }
-            
-            .toast.success {
-                background: linear-gradient(135deg, #10b981, #059669);
-                border-left: 4px solid #10b981;
-            }
-            
-            .toast.error {
-                background: linear-gradient(135deg, #ef4444, #dc2626);
-                border-left: 4px solid #ef4444;
-            }
-            
-            .toast.info {
-                background: linear-gradient(135deg, #3b82f6, #2563eb);
-                border-left: 4px solid #3b82f6;
-            }
-            
-            .success-badge {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.7);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                backdrop-filter: blur(4px);
-                z-index: 5;
-                animation: fadeIn 0.3s ease;
-                border-radius: 12px;
-            }
-            
-            .success-badge svg {
-                color: #10b981;
-                width: 40px;
-                height: 40px;
-                margin-bottom: 10px;
-            }
-            
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            
-            .purchased {
-                opacity: 0.8;
-            }
-        `;
-        document.head.appendChild(toastStyles);
+        // Add toast styles if not already present
+        if (!document.getElementById('toast-styles')) {
+            const toastStyles = document.createElement('style');
+            toastStyles.id = 'toast-styles';
+            toastStyles.textContent = `
+                .toast-container {
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                }
+                
+                .toast {
+                    background: #333;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    margin-top: 10px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    transform: translateY(100px);
+                    opacity: 0;
+                    transition: all 0.3s ease;
+                    max-width: 350px;
+                }
+                
+                .toast.show {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                
+                .toast.success {
+                    background: linear-gradient(135deg, #10b981, #059669);
+                    border-left: 4px solid #10b981;
+                }
+                
+                .toast.error {
+                    background: linear-gradient(135deg, #ef4444, #dc2626);
+                    border-left: 4px solid #ef4444;
+                }
+                
+                .toast.info {
+                    background: linear-gradient(135deg, #3b82f6, #2563eb);
+                    border-left: 4px solid #3b82f6;
+                }
+                
+                .success-badge {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.7);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    backdrop-filter: blur(4px);
+                    z-index: 5;
+                    animation: fadeIn 0.3s ease;
+                    border-radius: 12px;
+                }
+                
+                .success-badge svg {
+                    color: #10b981;
+                    width: 40px;
+                    height: 40px;
+                    margin-bottom: 10px;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                .purchased {
+                    opacity: 0.8;
+                }
+            `;
+            document.head.appendChild(toastStyles);
+        }
 
     } catch (error) {
         console.error("Initialization error:", error);
