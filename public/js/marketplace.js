@@ -1012,6 +1012,48 @@ async function init() {
         // Initialize read-only contracts for browsing
         initReadOnlyContracts();
 
+        // Update wallet prompt to use the same connection system as navbar
+        walletPrompt.innerHTML = `
+            <div class="empty-notice">
+                <h3>Connect your wallet</h3>
+                <p>You need to connect your wallet to list your ninja cats for sale or manage your existing listings.</p>
+                <button id="walletPromptConnectBtn" class="btn primary-btn">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" style="margin-right: 8px; vertical-align: middle;">
+                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path>
+                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path>
+                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>
+                    </svg>
+                    Connect Wallet
+                </button>
+            </div>
+        `;
+
+        // Add click handler for the wallet prompt button that uses the navbar's connection logic
+        const connectPromptBtn = document.getElementById('walletPromptConnectBtn');
+        if (connectPromptBtn) {
+            connectPromptBtn.addEventListener('click', async function () {
+                // Find the navbar connect button and click it to reuse the same logic
+                const navbarConnectBtn = document.getElementById('connectBtn');
+                if (navbarConnectBtn) {
+                    navbarConnectBtn.click();
+                } else if (window.connectWallet) {
+                    // Direct fallback to window.connectWallet if button not found
+                    await window.connectWallet();
+                } else if (window.ethereum) {
+                    try {
+                        // Last resort direct connection
+                        await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        connectPromptBtn.textContent = 'Connected';
+                        location.reload(); // Refresh to pick up the connection
+                    } catch (error) {
+                        console.error('User denied account access', error);
+                    }
+                } else {
+                    alert('Please install MetaMask or another Ethereum wallet');
+                }
+            });
+        }
+
         // Load initial listings
         await loadListings();
 
@@ -1081,7 +1123,7 @@ async function init() {
         });
 
         // Check if wallet is already connected (from connect-only.js)
-        const savedAddress = localStorage.getItem('ninja_cats_wallet');
+        const savedAddress = localStorage.getItem('ninja_cats_wallet') || localStorage.getItem('pnc_addr'); // Support both key names
         if (savedAddress && browserProvider) {
             try {
                 currentAccount = savedAddress;
