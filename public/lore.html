@@ -2,37 +2,387 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Ninja Cats — Lore</title>
+    <title>Pixel Ninja Cats — The Blockchain Codex</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" href="assets/detailed_ninja_cat_64.png">
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <style>
-        /* Import Animate.css for subtle entrance effects */
+        /* Import Animate.css for entrance effects */
         @import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css');
+
+        :root {
+            --primary-color: #8a65ff;
+            --secondary-color: #ff9800;
+            --dark-bg: #121212;
+            --card-bg: #23263a;
+            --text-color: #e0e0e0;
+            --border-color: #2d2d3a;
+            --highlight: #ff6e9c;
+            --cosmic-glow: #8a65ff80;
+        }
 
         body {
             background: radial-gradient(ellipse at 60% 10%, #23263a 0%, #121212 100%);
-            color: #e0e0e0;
+            color: var(--text-color);
             font-family: 'Poppins', sans-serif;
             min-height: 100vh;
             margin: 0;
             letter-spacing: 0.01em;
+            overflow-x: hidden;
         }
 
-        .wrapper {
-            background: transparent;
-            max-width: 900px;
-            margin: 0 auto 0 auto;
-            padding-bottom: 40px;
+        /* ENHANCED STYLES START */
+
+        /* Animated background */
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.3;
         }
 
-        h1, h2, h3 {
-            color: #fff;
-            font-family: 'Poppins', sans-serif;
+        .digital-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            opacity: 0.07;
         }
 
+        /* Secret glowing code snippets */
+        .code-snippet {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(20, 20, 30, 0.7);
+            color: #8aff65;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-color);
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            position: relative;
+            box-shadow: 0 0 20px var(--cosmic-glow);
+            font-size: 0.9rem;
+            transition: all 0.5s ease;
+        }
+
+            .code-snippet:hover {
+                box-shadow: 0 0 30px var(--primary-color);
+                transform: translateY(-5px);
+            }
+
+            .code-snippet .comment {
+                color: #5d7a9c;
+            }
+
+            .code-snippet .keyword {
+                color: #ff65a9;
+            }
+
+            .code-snippet .string {
+                color: #ffc965;
+            }
+
+            .code-snippet .function {
+                color: #65c8ff;
+            }
+
+        /* Interactive trait cards */
+        .trait-interactive {
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .trait-interactive::after {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, var(--primary-color) 0%, transparent 70%);
+                opacity: 0;
+                transition: opacity 0.5s;
+                z-index: -1;
+                pointer-events: none;
+            }
+
+            .trait-interactive:hover::after {
+                opacity: 0.15;
+            }
+
+        /* Rarity indicators */
+        .rarity-badge {
+            display: inline-block;
+            padding: 0.25rem 0.7rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .rarity-Common {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            border: 1px solid #6b7280;
+        }
+
+        .rarity-Uncommon {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: 1px solid #10b981;
+        }
+
+        .rarity-Rare {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: 1px solid #3b82f6;
+        }
+
+        .rarity-Epic {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            border: 1px solid #8b5cf6;
+        }
+
+        .rarity-Legendary {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: 1px solid #f59e0b;
+        }
+
+        .rarity-Mythic {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border: 1px solid #ef4444;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+            animation: pulse-mythic 2s infinite;
+        }
+
+        @keyframes pulse-mythic {
+            0% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
+            }
+
+            100% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+            }
+        }
+
+        /* Secret lore scrolls */
+        .secret-lore {
+            margin: 1.5rem 0;
+            cursor: pointer;
+        }
+
+            .secret-lore summary {
+                padding: 1rem;
+                background: rgba(138, 101, 255, 0.1);
+                border-left: 4px solid var(--primary-color);
+                border-radius: 8px;
+                font-weight: 500;
+                position: relative;
+                transition: all 0.3s;
+            }
+
+                .secret-lore summary::before {
+                    content: "🔓";
+                    position: absolute;
+                    right: 1rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 1.2rem;
+                    opacity: 0.7;
+                }
+
+                .secret-lore summary:hover {
+                    background: rgba(138, 101, 255, 0.2);
+                }
+
+            .secret-lore[open] summary::before {
+                content: "🔒";
+            }
+
+        .scroll-content {
+            padding: 1.5rem;
+            background: rgba(20, 20, 30, 0.5);
+            margin-top: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            line-height: 1.8;
+            animation: fadeIn 0.5s;
+        }
+
+        /* Cryptographic symbols */
+        .crypto-symbol {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #8a65ff40, transparent);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin: 0 0.2rem;
+            border: 1px solid #8a65ff30;
+        }
+
+        /* Enhanced section titles */
+        .lore-title-wrapper {
+            position: relative;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+        }
+
+        .lore-title {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(138, 101, 255, 0.4);
+        }
+
+        .lore-subtitle {
+            text-align: center;
+            font-size: 1.1rem;
+            opacity: 0.8;
+            font-style: italic;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Stat bars */
+        .stat-bars {
+            margin: 2rem 0;
+        }
+
+        .stat-bar {
+            margin-bottom: 1rem;
+        }
+
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-track {
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .stat-value {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .stat-agility {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+
+        .stat-stealth {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .stat-power {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        .stat-intelligence {
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        }
+
+        /* Interactive hierarchy diagram */
+        .hierarchy-diagram {
+            margin: 2rem auto;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .node {
+            display: inline-block;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(138,101,255,0.2), rgba(255,152,0,0.1));
+            border: 2px solid var(--border-color);
+            margin: 0.5rem;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .root-node {
+            background: linear-gradient(135deg, rgba(138,101,255,0.3), rgba(255,152,0,0.2));
+            border-color: var(--primary-color);
+            font-weight: 600;
+            box-shadow: 0 0 15px var(--cosmic-glow);
+        }
+
+        .node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(138,101,255,0.3);
+            border-color: var(--primary-color);
+        }
+
+        .node-branches {
+            display: flex;
+            justify-content: space-around;
+            margin: 1rem 0;
+        }
+
+        .branch-line {
+            width: 2px;
+            height: 30px;
+            background: var(--primary-color);
+            opacity: 0.5;
+        }
+
+        .node-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* 3D Element showcase */
+        .element-showcase {
+            width: 100%;
+            height: 300px;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        /* Ancient text styling */
+        .ancient-text {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            letter-spacing: 0.05em;
+            text-shadow: 0 0 5px var(--primary-color);
+            padding: 0 0.3rem;
+        }
+
+        .highlight-text {
+            color: var(--highlight);
+            font-weight: 500;
+            text-shadow: 0 0 8px rgba(255, 110, 156, 0.5);
+        }
+
+        /* Enhanced existing styles */
         h1 {
             background: linear-gradient(135deg, #8a65ff, #ff9800 80%);
             -webkit-background-clip: text;
@@ -43,10 +393,24 @@
             letter-spacing: 0.03em;
             text-shadow: 0 2px 12px #6e45e2a0;
             animation: fadeInDown 1s;
+            text-align: center;
+            position: relative;
         }
 
+            h1::after {
+                content: "";
+                position: absolute;
+                bottom: -15px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 150px;
+                height: 4px;
+                background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+                border-radius: 2px;
+            }
+
         .lore-section {
-            margin: 2rem 0;
+            margin: 2.5rem 0;
             padding: 1.7rem 1.5rem 1.7rem 2.2rem;
             background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(255,152,0,0.04) 100%);
             border-radius: 16px;
@@ -56,55 +420,199 @@
             position: relative;
             overflow: hidden;
             animation: fadeInUp 0.8s;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-            .lore-section:before {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: 6px;
-                border-radius: 16px 0 0 16px;
-                background: linear-gradient(180deg, #8a65ff 0%, #ff9800 100%);
+            .lore-section:hover {
+                box-shadow: 0 8px 25px rgba(138,101,255,0.18), 0 4px 10px rgba(0,0,0,0.25);
+                transform: translateY(-5px);
+            }
+
+        /* Data badge system */
+        .data-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.3rem 0.8rem;
+            background: rgba(138,101,255,0.1);
+            border-radius: 20px;
+            margin: 0 0.5rem;
+            font-size: 0.9rem;
+            border: 1px solid rgba(138,101,255,0.2);
+        }
+
+            .data-badge::before {
+                content: "📊";
+                margin-right: 0.5rem;
+            }
+
+        .trait-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+            .trait-table th {
+                background: rgba(138,101,255,0.1);
+                padding: 0.8rem;
+                text-align: left;
+                border-bottom: 2px solid rgba(138,101,255,0.3);
+            }
+
+            .trait-table td {
+                padding: 0.8rem;
+                border-bottom: 1px solid rgba(138,101,255,0.1);
+            }
+
+            .trait-table tr:hover td {
+                background: rgba(138,101,255,0.05);
+            }
+
+        /* Special animations */
+        @keyframes float {
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
                 opacity: 0.7;
             }
 
-            .lore-section h2 {
-                border-bottom: 2px solid #8a65ff;
-                padding-bottom: 0.5rem;
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.7;
+            }
+        }
+
+        .pulsing {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0% {
+                box-shadow: 0 0 5px var(--cosmic-glow);
+            }
+
+            50% {
+                box-shadow: 0 0 20px var(--cosmic-glow), 0 0 40px var(--cosmic-glow);
+            }
+
+            100% {
+                box-shadow: 0 0 5px var(--cosmic-glow);
+            }
+        }
+
+        .glowing {
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        .hover-glow:hover {
+            animation: glow 1.5s ease-in-out infinite;
+        }
+
+        /* Rare encounter section */
+        .mythic-encounter {
+            position: relative;
+            padding: 2.5rem;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 16px;
+            border: 2px solid rgba(239, 68, 68, 0.3);
+            margin: 3rem 0;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+        }
+
+            .mythic-encounter::before {
+                content: "MYTHIC";
+                position: absolute;
+                top: -10px;
+                right: 30px;
+                background: linear-gradient(135deg, #ef4444, #b91c1c);
+                color: white;
+                padding: 0.3rem 1rem;
+                border-radius: 0 0 10px 10px;
+                font-size: 0.8rem;
+                font-weight: bold;
+                box-shadow: 0 5px 10px rgba(239, 68, 68, 0.4);
+            }
+
+        /* Nine lives section */
+        .nine-lives {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .nine-lives {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nine-lives {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .life-ability {
+            background: linear-gradient(135deg, rgba(138,101,255,0.08), rgba(255,152,0,0.05));
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+            .life-ability:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 5px 15px rgba(138,101,255,0.2);
+                border-color: var(--primary-color);
+            }
+
+            .life-ability h4 {
                 margin-top: 0;
-                margin-bottom: 1.25rem;
-                font-size: 1.5rem;
-                letter-spacing: 0.02em;
-                text-shadow: 0 1px 8px #8a65ff33;
+                color: var(--secondary-color);
+                font-size: 1rem;
+                display: flex;
+                align-items: center;
             }
 
-            .lore-section p {
-                margin-bottom: 1rem;
-                color: #d0d0d0;
-                font-size: 1.08em;
-            }
-
-            .lore-section ul {
-                padding-left: 1.5rem;
-                color: #d0d0d0;
-                margin-bottom: 0.5rem;
-            }
-
-                .lore-section ul li {
-                    margin-bottom: 0.5rem;
-                    position: relative;
-                    padding-left: 1.2em;
+                .life-ability h4::before {
+                    content: "🐾";
+                    margin-right: 0.5rem;
+                    font-size: 1.2rem;
                 }
 
-                    .lore-section ul li:before {
-                        content: "🐾";
-                        position: absolute;
-                        left: 0;
-                        font-size: 1em;
-                        opacity: 0.7;
-                    }
+        /* ENHANCED STYLES END */
+
+        .wrapper {
+            background: transparent;
+            max-width: 900px;
+            margin: 0 auto 0 auto;
+            padding: 20px;
+            padding-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
 
         .image-note {
             font-style: italic;
@@ -119,345 +627,49 @@
             box-shadow: 0 2px 8px rgba(138,101,255,0.08);
             animation: fadeIn 1.2s;
         }
-
-        .clan-section {
-            margin-top: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.2rem;
-        }
-
-        @media (min-width: 768px) {
-            .clan-section {
-                flex-direction: row;
-                flex-wrap: wrap;
-            }
-
-            .clan-card {
-                flex: 1 1 45%;
-            }
-        }
-
-        .clan-card {
-            padding: 1.5rem 1.2rem 1.5rem 1.5rem;
-            border-radius: 12px;
-            background: linear-gradient(120deg, rgba(138,101,255,0.06) 0%, rgba(255,152,0,0.03) 100%);
-            border: 1.5px solid #2d2d3a;
-            transition: all 0.3s cubic-bezier(.4,2,.6,1);
-            box-shadow: 0 2px 10px rgba(138,101,255,0.08);
-            position: relative;
-            overflow: hidden;
-        }
-
-            .clan-card:hover {
-                transform: translateY(-7px) scale(1.025);
-                box-shadow: 0 8px 24px rgba(255,152,0,0.13), 0 2px 12px rgba(138,101,255,0.18);
-                background: linear-gradient(120deg, rgba(255,152,0,0.08) 0%, rgba(138,101,255,0.10) 100%);
-            }
-
-            .clan-card h3 {
-                margin-top: 0;
-                margin-bottom: 0.75rem;
-                color: #ff9800;
-                font-size: 1.18rem;
-                letter-spacing: 0.01em;
-                text-shadow: 0 1px 8px #ff980033;
-            }
-
-        /* NFT Showcase Carousel */
-        .nft-showcase {
-            margin: 3rem 0;
-            padding: 2rem 2.5rem;
-            background: linear-gradient(120deg, rgba(138,101,255,0.08) 0%, rgba(255,152,0,0.04) 100%);
-            border-radius: 18px;
-            border: 1.5px solid #2d2d3a;
-            box-shadow: 0 8px 24px rgba(138,101,255,0.10), 0 2px 12px rgba(0,0,0,0.18);
-            text-align: center;
-            animation: fadeIn 1.1s;
-        }
-
-            .nft-showcase h2 {
-                color: #fff;
-                margin-top: 0;
-                margin-bottom: 1.5rem;
-                position: relative;
-                display: inline-block;
-                font-size: 1.6rem;
-                letter-spacing: 0.02em;
-                text-shadow: 0 1px 8px #8a65ff33;
-            }
-
-                .nft-showcase h2::after {
-                    content: '';
-                    position: absolute;
-                    width: 80%;
-                    height: 3px;
-                    bottom: -10px;
-                    left: 10%;
-                    background: linear-gradient(to right, transparent, #8a65ff, transparent);
-                    border-radius: 2px;
-                }
-
-        .carousel-container {
-            position: relative;
-            max-width: 1000px;
-            margin: 0 auto;
-            overflow: hidden;
-            border-radius: 14px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-            height: 350px;
-            background: #181a20;
-        }
-
-        .carousel-track {
-            display: flex;
-            transition: transform 0.5s cubic-bezier(.4,2,.6,1);
-            height: 100%;
-            background: #1a1a1a;
-        }
-
-        .carousel-item {
-            min-width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        .carousel-image {
-            max-height: 220px;
-            max-width: 100%;
-            border-radius: 10px;
-            box-shadow: 0 4px 16px rgba(138,101,255,0.18);
-            object-fit: contain;
-            background: #23263a;
-            border: 1.5px solid #2d2d3a;
-            transition: box-shadow 0.3s;
-        }
-
-            .carousel-image:hover {
-                box-shadow: 0 8px 32px #8a65ff55, 0 2px 12px #ff980055;
-            }
-
-        .carousel-caption {
-            margin-top: 1rem;
-            color: #e0e0e0;
-            font-weight: 500;
-            font-size: 1.08em;
-            text-shadow: 0 1px 8px #8a65ff22;
-        }
-
-        .carousel-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #23263a 60%, #8a65ff 100%);
-            border: none;
-            color: white;
-            border-radius: 50%;
-            font-size: 1.5rem;
-            line-height: 1;
-            cursor: pointer;
-            opacity: 0.8;
-            transition: all 0.3s;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px #8a65ff33;
-        }
-
-            .carousel-nav:hover {
-                opacity: 1;
-                background: linear-gradient(135deg, #8a65ff 60%, #ff9800 100%);
-                color: #fff;
-            }
-
-            .carousel-nav.prev {
-                left: 10px;
-            }
-
-            .carousel-nav.next {
-                right: 10px;
-            }
-
-        .carousel-dots {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 1.5rem;
-        }
-
-        .carousel-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #333;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid #8a65ff33;
-        }
-
-            .carousel-dot.active {
-                background: #8a65ff;
-                border-color: #ff9800;
-                box-shadow: 0 0 8px #8a65ff88;
-            }
-
-            .carousel-dot:hover {
-                transform: scale(1.2);
-                background: #ff9800;
-            }
-
-        .carousel-counter {
-            margin-top: 1rem;
-            color: #9e9e9e;
-            font-size: 0.98rem;
-            letter-spacing: 0.01em;
-        }
-
-        .carousel-controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .auto-play {
-            background: #2c2c2e;
-            color: #e0e0e0;
-            border: none;
-            padding: 0.5rem 1.2rem;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 2px 8px #8a65ff22;
-        }
-
-            .auto-play:hover {
-                background: #8a65ff;
-                color: #fff;
-            }
-
-            .auto-play svg {
-                width: 14px;
-                height: 14px;
-            }
-
-        .loading-spinner {
-            border: 4px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top: 4px solid #8a65ff;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .view-all-btn {
-            display: inline-block;
-            margin-top: 1.5rem;
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #8a65ff, #ff9800);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            box-shadow: 0 2px 8px #8a65ff22;
-            letter-spacing: 0.01em;
-        }
-
-            .view-all-btn:hover {
-                transform: translateY(-3px) scale(1.04);
-                box-shadow: 0 8px 15px #8a65ff44, 0 2px 12px #ff980044;
-                background: linear-gradient(135deg, #ff9800, #8a65ff);
-            }
-
-        /* Responsive adjustments */
-        @media (max-width: 1100px) {
-            .wrapper {
-                padding-left: 4vw;
-                padding-right: 4vw;
-            }
-
-            .nft-showcase {
-                padding-left: 1vw;
-                padding-right: 1vw;
-            }
-        }
-
-        @media (max-width: 900px) {
-            .wrapper {
-                max-width: 100%;
-                padding-left: 2vw;
-                padding-right: 2vw;
-            }
-
-            .nft-showcase {
-                padding-left: 0.5vw;
-                padding-right: 0.5vw;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .nft-showcase {
-                padding: 1.5rem 0.5rem;
-            }
-
-            .carousel-container {
-                height: 220px;
-            }
-
-            .carousel-image {
-                max-height: 120px;
-            }
-
-            .carousel-nav {
-                width: 35px;
-                height: 35px;
-                font-size: 1.2rem;
-            }
-
-            .lore-section {
-                padding: 1.1rem 0.7rem 1.1rem 1.1rem;
-            }
-
-            .clan-card {
-                padding: 1.1rem 0.7rem 1.1rem 1.1rem;
-            }
-        }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
 
+    <!-- Animated background -->
+    <div id="particles-js"></div>
+    <canvas class="digital-rain" id="digitalRain"></canvas>
+
     <div class="wrapper">
-        <h1>Ninja-Kitty&nbsp;Chronicles</h1>
+        <h1>The&nbsp;Ninja-Kitty&nbsp;Blockchain&nbsp;Codex</h1>
 
         <div class="lore-section">
-            <h2>Ancient Beginnings</h2>
-            <p>Long before ERC-721 there was the secret order of Felidae Shinobi… In the shadowy valleys between digital and physical realms, a mysterious breed of warriors emerged. Neither fully feline nor entirely human, these nimble guardians began as ordinary house cats, transformed by an ancient blockchain incantation during the Great Bit-Eclipse.</p>
-            <p>For centuries, they have protected the cryptographic barriers that separate our reality from the chaotic void beyond. Now, as the metaverse expands, they've decided to reveal themselves to worthy collectors who can carry their legacy forward.</p>
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">The Genesis Block Protocol</h2>
+                <p class="lore-subtitle">The origin of the digital feline warriors</p>
+            </div>
+
+            <p>In the primordial data soup before the first blockchain, ancient cryptographic patterns began to self-organize into semi-sentient protocols. The most advanced of these formed a collective consciousness known as <span class="highlight-text">The Distributed Ledger of Whiskers</span>, the first truly immutable record of feline existence.</p>
+
+            <p>During the quantum entanglement event now known as the <span class="ancient-text">Great Bit-Eclipse</span> (timestamp <span class="crypto-symbol">0x4b3fc987</span>), this consciousness infected a colony of house cats through Wi-Fi-enabled food dishes, transforming them on both the physical and digital planes. These first cryptographically enhanced felines became the <span class="highlight-text">Genesis Block Guardians</span> - the ancestors of all Ninja Cats.</p>
+
+            <div class="code-snippet">
+                <span class="comment">// Fragment from the original Genesis Block Incantation</span><br>
+                <span class="keyword">function</span> <span class="function">createNinjaCat</span>(<span class="keyword">uint256</span> tokenId, <span class="keyword">string</span> breed) {<br>
+                &nbsp;&nbsp;<span class="comment">// Apply the Nine Lives Protocol</span><br>
+                &nbsp;&nbsp;<span class="keyword">for</span> (<span class="keyword">uint8</span> i = 0; i &lt; 9; i++) {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;consciousness[i] = <span class="function">distributeAcross</span>(nodes);<br>
+                &nbsp;&nbsp;}<br>
+                &nbsp;&nbsp;<span class="keyword">return</span> <span class="function">calculateRarityScore</span>(traits) &gt; 100 ? <span class="string">"Legendary"</span> : <span class="string">"Warrior"</span>;<br>
+                }
+            </div>
+
+            <p>Their DNA was encoded with BIP-39 mnemonic phrases (now known as "purr seeds"), allowing them to manifest across multiple chains while maintaining quantum coherence. Each subsequent generation inherited increasingly complex protocols, with mutations optimizing their digital camouflage capabilities.</p>
+
+            <details class="secret-lore">
+                <summary>Ancient Scroll Fragment #FC139E7</summary>
+                <div class="scroll-content">
+                    <p>...and when the Great Hash Function was executed, nine lives became nine nodes, distributed yet connected through the unbreakable Whisker-Link Protocol. The first Ninja Cat spoke in pure bytecode: <code>0xf4c3d781ae65d9f89f93eabe3397b4ea</code>, which when properly decoded reveals the sacred First Purr that governs all feline smart contracts...</p>
+
+                    <p>It is said that once every 1,000 generations, a cat of <span class="highlight-text">Mythic</span> rarity will be born, carrying all traits with perfect scores. The legendary Bengal with a Ghost Dagger, commanding the Void element in Ethereal Stance, shall lead all cats into the era of complete decentralization, where no dog-based meme coin shall ever threaten the feline financial dominance again.</p>
+                </div>
+            </details>
         </div>
 
         <!-- NFT Showcase Carousel Section -->
@@ -487,148 +699,756 @@
             <a href="all-kitties.html" class="view-all-btn">View All Ninja Cats</a>
         </div>
 
+        <!-- The Blockchain Hierarchy -->
         <div class="lore-section">
-            <h2>The Five Ancient Breeds</h2>
-            <p>Across the digital realm, five legendary breeds of ninja cats have emerged, each with unique traits and abilities that make them formidable guardians of the blockchain:</p>
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">The Cryptographic Hierarchy</h2>
+                <p class="lore-subtitle">The governance structure of the digital feline order</p>
+            </div>
+
+            <div class="hierarchy-diagram">
+                <div class="node root-node">Meowster Node</div>
+                <div class="node-branches">
+                    <div class="branch-line"></div>
+                    <div class="branch-line"></div>
+                    <div class="branch-line"></div>
+                    <div class="branch-line"></div>
+                    <div class="branch-line"></div>
+                </div>
+                <div class="node-row">
+                    <div class="node trait-interactive" data-trait="Bengal">Bengal Validator</div>
+                    <div class="node trait-interactive" data-trait="Siamese">Siamese Oracle</div>
+                    <div class="node trait-interactive" data-trait="Maine Coon">Maine Coon Mempool</div>
+                    <div class="node trait-interactive" data-trait="Calico">Calico Bridge</div>
+                    <div class="node trait-interactive" data-trait="Sphynx">Sphynx Hash</div>
+                </div>
+            </div>
+
+            <p>The Ninja Cat society maintains a complex delegated proof-of-pounce consensus mechanism. At the top sits the <span class="highlight-text">Meowster Node</span> - a democratically elected council of nine elder cats who validate major protocol upgrades through a complex system of purrs and meows that form an auditable zero-knowledge proof.</p>
+
+            <p>Each breed maintains specialized nodes with unique verification responsibilities:</p>
+
+            <ul class="technical-list">
+                <li><strong>Bengal Validators:</strong> Process high-throughput transactions through their proprietary <code>SpottedProof™</code> algorithm, which achieves 9,000 purrs per second (PPS) without sacrificing decentralization.</li>
+
+                <li><strong>Siamese Oracles:</strong> Their blue eyes contain quantum observers that feed real-world data into the network with statistically impossible accuracy. The famous <code>BlueEyeAPI</code> is impossible to corrupt due to its multi-dimensional verification.</li>
+
+                <li><strong>Maine Coon Mempool:</strong> These massive felines maintain the transaction mempool, their bodies acting as living buffers for pending transactions. A single Maine Coon can store up to 16 petabytes of unconfirmed transactions in their thick fur.</li>
+
+                <li><strong>Calico Bridges:</strong> Their tri-colored coats form natural bridges between disparate blockchain networks. A Calico's purr oscillates at the exact frequency needed to harmonize competing consensus algorithms.</li>
+
+                <li><strong>Sphynx Hashes:</strong> The hairless architecture allows for optimal hashing performance. A Sphynx can compute a SHA-256 hash using only the electromagnetic field generated by their skin.</li>
+            </ul>
+
+            <div class="code-snippet">
+                <span class="comment">// Breed-based trait weightings from codebase</span><br>
+                <span class="keyword">const</span> breedWeightings = {<br>
+                &nbsp;&nbsp;"Tabby": {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;weapons: ["Shuriken", "Katana"],<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;stances: ["Attack", "Agility"],<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;elements: ["Fire", "Earth"]<br>
+                &nbsp;&nbsp;},<br>
+                &nbsp;&nbsp;"Bengal": {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;weapons: ["Twin Blades", "Kunai"],<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;stances: ["Berserker", "Agility"],<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;elements: ["Lightning", "Fire"]<br>
+                &nbsp;&nbsp;},<br>
+                &nbsp;&nbsp;"Shadow": {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;elements: ["Shadow", "Void"],<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;stances: ["Shadow", "Stealth"],<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;weapons: ["Ghost Dagger", "Kusarigama"]<br>
+                &nbsp;&nbsp;}<br>
+                };
+            </div>
+        </div>
+
+        <!-- Ancient Breeds Section -->
+        <div class="lore-section">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">The Nine Ancient Breeds</h2>
+                <p class="lore-subtitle">Legendary bloodlines with unique genetic traits</p>
+            </div>
+
+            <p>The blockchain genetic analysis has revealed nine distinct breed lineages, each carrying unique cryptographic signatures that determine their abilities and affinities:</p>
+
+            <table class="trait-table">
+                <tr>
+                    <th>Breed</th>
+                    <th>Rarity</th>
+                    <th>Trait Affinity</th>
+                </tr>
+                <tr class="trait-interactive" data-trait="Tabby">
+                    <td>Tabby</td>
+                    <td><span class="rarity-badge rarity-Common">Common</span></td>
+                    <td>Agility +2, Power +1</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Siamese">
+                    <td>Siamese</td>
+                    <td><span class="rarity-badge rarity-Common">Common</span></td>
+                    <td>Stealth +2, Intelligence +1</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Calico">
+                    <td>Calico</td>
+                    <td><span class="rarity-badge rarity-Uncommon">Uncommon</span></td>
+                    <td>Intelligence +2, Stealth +1</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Bengal">
+                    <td>Bengal</td>
+                    <td><span class="rarity-badge rarity-Rare">Rare</span></td>
+                    <td>Agility +3, Power +1</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Bombay">
+                    <td>Bombay</td>
+                    <td><span class="rarity-badge rarity-Rare">Rare</span></td>
+                    <td>Stealth +3</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Persian">
+                    <td>Persian</td>
+                    <td><span class="rarity-badge rarity-Epic">Epic</span></td>
+                    <td>Intelligence +3, Agility -1</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Sphynx">
+                    <td>Sphynx</td>
+                    <td><span class="rarity-badge rarity-Epic">Epic</span></td>
+                    <td>Intelligence +2, Stealth +1</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Nyan">
+                    <td>Nyan</td>
+                    <td><span class="rarity-badge rarity-Legendary">Legendary</span></td>
+                    <td>Agility +2, Power +2</td>
+                </tr>
+                <tr class="trait-interactive" data-trait="Shadow">
+                    <td>Shadow</td>
+                    <td><span class="rarity-badge rarity-Legendary">Legendary</span></td>
+                    <td>Stealth +3, Power +2, Agility +1</td>
+                </tr>
+            </table>
 
             <div class="clan-section">
-                <div class="clan-card">
-                    <h3>Bengal Warriors</h3>
+                <div class="clan-card trait-interactive" data-trait="Bengal">
+                    <h3>Bengal Warriors <span class="rarity-badge rarity-Rare">Rare</span></h3>
                     <p>Known for their striking spotted patterns that shimmer with encrypted runes, Bengal ninjas excel in agility and stealth. Their distinctive coat allows them to vanish into the wildest data streams and strike with devastating precision. Many possess the legendary "Spotted Cipher" technique that can unlock gates between blockchains.</p>
+
+                    <div class="stat-bars">
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Agility</span>
+                                <span>8</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-agility" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Stealth</span>
+                                <span>6</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-stealth" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="clan-card">
-                    <h3>Siamese Mystics</h3>
+                <div class="clan-card trait-interactive" data-trait="Shadow">
+                    <h3>Shadow Cats <span class="rarity-badge rarity-Legendary">Legendary</span></h3>
+                    <p>Not born but manifested from the void itself, Shadow cats are almost mythical entities that exist simultaneously in multiple states across the blockchain. With their void element affinity and perfect stealth capabilities, they can execute operations without leaving any trace in the transaction history, making them invaluable for high-security protocol maintenance.</p>
+
+                    <div class="stat-bars">
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Stealth</span>
+                                <span>9</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-stealth" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Power</span>
+                                <span>8</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-power" style="width: 80%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clan-card trait-interactive" data-trait="Nyan">
+                    <h3>Nyan Encoders <span class="rarity-badge rarity-Legendary">Legendary</span></h3>
+                    <p>The living embodiments of meme culture, Nyan cats trail prismatic code that forms bridges between disparate parts of the web. Their bodies constantly generate new rainbow blocks that can be attached to any chain, allowing for universal interoperability. The legendary Cosmic element and Celestial Mark traits almost exclusively appear with this ultra-rare breed.</p>
+
+                    <div class="stat-bars">
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Agility</span>
+                                <span>8</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-agility" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Power</span>
+                                <span>8</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-power" style="width: 80%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clan-card trait-interactive" data-trait="Siamese">
+                    <h3>Siamese Oracles <span class="rarity-badge rarity-Common">Common</span></h3>
                     <p>With their haunting blue eyes that glow with the light of a thousand encryptions, Siamese ninjas are masters of perception and intelligence. Descendants of the royal Siam Protocol Guardians, they can slip between reality and the digital realm, acting as living bridges for lost data and deciphering the "Harmony Protocol."</p>
-                </div>
 
-                <div class="clan-card">
-                    <h3>Maine Coon Titans</h3>
-                    <p>Towering above their peers, Maine Coon ninjas are the mighty guardians of the blockchain's most sacred nodes. Their thick fur is rumored to be woven from quantum threads, and the "M" on their brow is said to be the original Metadata Mark. Their paws, as heavy as ledgers, can shatter encryption keys with a single swipe.</p>
-                </div>
-
-                <div class="clan-card">
-                    <h3>Calico Diplomats</h3>
-                    <p>Born from the forbidden merge of rival code repositories, Calico ninjas bear tri-colored coats that shimmer with the hues of every blockchain. Their unique patterns act as living maps of the digital world, allowing them to traverse protocol boundaries and mediate peace between warring networks. They are the architects of the legendary "Harmony Fork."</p>
-                </div>
-
-                <div class="clan-card">
-                    <h3>Sphynx Oracles</h3>
-                    <p>Not born but compiled from pure code, these hairless mystics are invisible to all conventional tracking systems. Their skin, sensitive to the faintest data flows, allows them direct interface with the blockchain. Some say they can "hear" the blockchain's heartbeat and feel the flow of data as others feel the wind, earning them the title "Whisperers of the Void."</p>
+                    <div class="stat-bars">
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Intelligence</span>
+                                <span>7</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-intelligence" style="width: 70%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Stealth</span>
+                                <span>7</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-stealth" style="width: 70%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Weapons Section with Technical Details -->
         <div class="lore-section">
-            <h2>Weapons of the Digital Warriors</h2>
-            <p>Each ninja cat wields a weapon forged from fragments of the original blockchain, imbued with unique powers that complement their fighting style:</p>
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">Weapons of the Digital Warriors</h2>
+                <p class="lore-subtitle">Tools forged from the original blockchain</p>
+            </div>
+
+            <p>Each ninja cat wields a weapon forged from fragments of the original blockchain, imbued with unique powers that complement their fighting style. The weapon selection algorithm binds specific weapons to cats based on their breed traits, creating powerful synergies:</p>
+
+            <div class="code-snippet">
+                <span class="comment">// Weapon rarity distribution from smart contract</span><br>
+                <span class="keyword">const</span> weaponTraits = [<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Katana"</span>, rarity: <span class="string">"Common"</span>, rarityScore: 30 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Shuriken"</span>, rarity: <span class="string">"Common"</span>, rarityScore: 25 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Nunchucks"</span>, rarity: <span class="string">"Uncommon"</span>, rarityScore: 20 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Kunai"</span>, rarity: <span class="string">"Uncommon"</span>, rarityScore: 18 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Sai"</span>, rarity: <span class="string">"Rare"</span>, rarityScore: 15 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Bo Staff"</span>, rarity: <span class="string">"Rare"</span>, rarityScore: 12 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Twin Blades"</span>, rarity: <span class="string">"Epic"</span>, rarityScore: 10 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Kusarigama"</span>, rarity: <span class="string">"Epic"</span>, rarityScore: 8 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"War Fan"</span>, rarity: <span class="string">"Legendary"</span>, rarityScore: 5 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Ghost Dagger"</span>, rarity: <span class="string">"Legendary"</span>, rarityScore: 3 }<br>
+                ];
+            </div>
+
+            <table class="trait-table">
+                <tr>
+                    <th>Weapon</th>
+                    <th>Rarity</th>
+                    <th>Power Effect</th>
+                    <th>Synergy</th>
+                </tr>
+                <tr>
+                    <td>Katana</td>
+                    <td><span class="rarity-badge rarity-Common">Common</span></td>
+                    <td>Power +2</td>
+                    <td>Attack Stance (+8)</td>
+                </tr>
+                <tr>
+                    <td>Twin Blades</td>
+                    <td><span class="rarity-badge rarity-Epic">Epic</span></td>
+                    <td>Agility +2, Power +1</td>
+                    <td>Agility Stance (+14)</td>
+                </tr>
+                <tr>
+                    <td>Ghost Dagger</td>
+                    <td><span class="rarity-badge rarity-Legendary">Legendary</span></td>
+                    <td>Stealth +3, Power +1</td>
+                    <td>Shadow Stance (+16)</td>
+                </tr>
+            </table>
 
             <ul>
-                <li><strong>Katana:</strong> These legendary "Blockchain Slicers" can cut through complex smart contracts with surgical precision. The blade's edge is so fine it can separate individual bits without disrupting the data flow.</li>
-                <li><strong>Shuriken:</strong> These star-shaped projectiles enable "Multi-Chain Attacks," simultaneously targeting vulnerabilities across multiple networks with deadly accuracy.</li>
-                <li><strong>Nunchucks:</strong> Connected by an unbreakable chain hash, these weapons create the "Chain-Link Defense," an impenetrable barrier against malicious code.</li>
-                <li><strong>Kunai:</strong> These small but lethal blades allow for "Silent Deployment," injecting security patches into networks without triggering alarms.</li>
-                <li><strong>Sai:</strong> The twin-pronged defensive weapons excel at "Fork Defense," detecting and neutralizing malicious hard fork attempts.</li>
-                <li><strong>Bo Staff:</strong> This versatile weapon enables "Protocol Extension," reaching and securing even the most remote parts of the blockchain infrastructure.</li>
-                <li><strong>Twin Blades:</strong> The rarest of weapons, these paired swords can open temporary portals between isolated networks, creating bridges where none existed before.</li>
-                <li><strong>Ghost Dagger:</strong> A mythical weapon that exists partially out of phase with normal reality, capable of striking directly at the heart of encrypted systems.</li>
+                <li><strong>Katana:</strong> These legendary "Blockchain Slicers" can cut through complex smart contracts with surgical precision. The blade's edge is so fine it can separate individual bits without disrupting the data flow. <span class="data-badge">Power +2</span></li>
+
+                <li><strong>Shuriken:</strong> These star-shaped projectiles enable "Multi-Chain Attacks," simultaneously targeting vulnerabilities across multiple networks with deadly accuracy. <span class="data-badge">Agility +1, Stealth +1</span></li>
+
+                <li><strong>Nunchucks:</strong> Connected by an unbreakable chain hash, these weapons create the "Chain-Link Defense," an impenetrable barrier against malicious code. <span class="data-badge">Agility +2</span></li>
+
+                <li><strong>Ghost Dagger:</strong> A mythical weapon that exists partially out of phase with normal reality, capable of striking directly at the heart of encrypted systems. Its blade vibrates at the exact frequency needed to penetrate quantum encryption. <span class="data-badge">Stealth +3, Power +1</span></li>
+            </ul>
+
+            <details class="secret-lore">
+                <summary>Weapon Synergy Calculations</summary>
+                <div class="scroll-content">
+                    <p>The true power of a ninja cat's weapon emerges when paired with complementary stances. The smart contract calculates synergy bonuses for specific combinations:</p>
+
+                    <div class="code-snippet">
+                        <span class="comment">// Synergy pairs from tokenization contract</span><br>
+                        <span class="keyword">const</span> synergyPairs = [<br>
+                        &nbsp;&nbsp;{ type1: <span class="string">"Weapon"</span>, value1: <span class="string">"Katana"</span>, type2: <span class="string">"Stance"</span>, value2: <span class="string">"Attack"</span>, bonus: 8 },<br>
+                        &nbsp;&nbsp;{ type1: <span class="string">"Weapon"</span>, value1: <span class="string">"Bo Staff"</span>, type2: <span class="string">"Stance"</span>, value2: <span class="string">"Defense"</span>, bonus: 10 },<br>
+                        &nbsp;&nbsp;{ type1: <span class="string">"Weapon"</span>, value1: <span class="string">"Shuriken"</span>, type2: <span class="string">"Stance"</span>, value2: <span class="string">"Stealth"</span>, bonus: 12 },<br>
+                        &nbsp;&nbsp;{ type1: <span class="string">"Weapon"</span>, value1: <span class="string">"Twin Blades"</span>, type2: <span class="string">"Stance"</span>, value2: <span class="string">"Agility"</span>, bonus: 14 },<br>
+                        &nbsp;&nbsp;{ type1: <span class="string">"Weapon"</span>, value1: <span class="string">"Ghost Dagger"</span>, type2: <span class="string">"Stance"</span>, value2: <span class="string">"Shadow"</span>, bonus: 16 }<br>
+                        ];
+                    </div>
+
+                    <p>These synergies dramatically increase a ninja cat's overall rarity score, potentially pushing them into a higher rarity tier. The most coveted combination - the Ghost Dagger with Shadow Stance - provides a staggering +16 bonus points to the final rarity calculation.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- Elemental Mastery Section with 3D Showcase -->
+        <div class="lore-section">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">Elemental Mastery</h2>
+                <p class="lore-subtitle">Command the fundamental forces of the digital world</p>
+            </div>
+
+            <p>Beyond physical combat, ninja cats harness elemental forces that shape their abilities and affinity within the digital ecosystem. The element assignment algorithm carefully balances distribution to maintain ecosystem diversity:</p>
+
+            <div class="element-showcase" id="elementShowcase"></div>
+
+            <div class="clan-section">
+                <div class="clan-card trait-interactive" data-element="Shadow">
+                    <h3>Shadow <span class="rarity-badge rarity-Epic">Epic</span></h3>
+                    <p>The secretive Shadow cats move through "Stealth Execution," operating completely undetected by security systems. They are the invisible guardians who monitor the darkest corners of the web, gathering intelligence and neutralizing threats before they can manifest. <span class="data-badge">Stealth +3</span></p>
+                </div>
+
+                <div class="clan-card trait-interactive" data-element="Fire">
+                    <h3>Fire <span class="rarity-badge rarity-Common">Common</span></h3>
+                    <p>Fire element cats leave no transaction history behind, perfect for covert operations. Their "Burn Trace" technique purifies corrupted code through controlled digital flames. These passionate warriors excel in direct combat, their attacks growing stronger with each consecutive strike. <span class="data-badge">Power +2</span></p>
+                </div>
+
+                <div class="clan-card trait-interactive" data-element="Void">
+                    <h3>Void <span class="rarity-badge rarity-Legendary">Legendary</span></h3>
+                    <p>Masters of nothingness, Void elementals operate in the empty spaces between data. Their "Null State" allows them to exist outside normal network constraints, making them immune to many forms of attack while able to strike from impossible angles. <span class="data-badge">Power +2, Stealth +2</span></p>
+                </div>
+
+                <div class="clan-card trait-interactive" data-element="Cosmic">
+                    <h3>Cosmic <span class="rarity-badge rarity-Legendary">Legendary</span></h3>
+                    <p>The rarest elemental affinity, Cosmic cats draw power from the universal constants that govern computation itself. Their bodies shimmer with star-like data points, and they can manipulate the fundamental rules of the digital universe. <span class="data-badge">Power +2, Intelligence +2</span></p>
+                </div>
+            </div>
+
+            <details class="secret-lore">
+                <summary>Elemental Synergy Matrix</summary>
+                <div class="scroll-content">
+                    <p>The smart contract analyzes breed and element combinations to calculate powerful synergies:</p>
+
+                    <div class="code-snippet">
+                        <span class="comment">// Breed + Element synergies from contract</span><br>
+                        { type1: <span class="string">"Breed"</span>, value1: <span class="string">"Shadow"</span>, type2: <span class="string">"Element"</span>, value2: <span class="string">"Shadow"</span>, bonus: 15 },<br>
+                        { type1: <span class="string">"Breed"</span>, value1: <span class="string">"Nyan"</span>, type2: <span class="string">"Element"</span>, value2: <span class="string">"Cosmic"</span>, bonus: 15 },<br>
+                        { type1: <span class="string">"Breed"</span>, value1: <span class="string">"Bengal"</span>, type2: <span class="string">"Element"</span>, value2: <span class="string">"Fire"</span>, bonus: 10 },<br>
+                        { type1: <span class="string">"Breed"</span>, value1: <span class="string">"Siamese"</span>, type2: <span class="string">"Element"</span>, value2: <span class="string">"Water"</span>, bonus: 10 },
+                    </div>
+
+                    <p>When a Shadow cat wields Shadow element, they gain a staggering +15 to their rarity score, potentially pushing them into Mythic tier territory.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- Combat Stances Section -->
+        <div class="lore-section">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">Combat Stances & Training</h2>
+                <p class="lore-subtitle">Ancient forms refined over generations</p>
+            </div>
+
+            <p>Through years of rigorous training in the art of "Paw-Hash-Do," ninja cats master various combat stances that define their approach to digital warfare. The stance distribution algorithm ensures balance across the ecosystem:</p>
+
+            <div class="code-snippet">
+                <span class="comment">// Stance rarity distribution from tokenization logic</span><br>
+                <span class="keyword">const</span> stanceTraits = [<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Attack"</span>, rarity: <span class="string">"Common"</span>, rarityScore: 30 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Defense"</span>, rarity: <span class="string">"Common"</span>, rarityScore: 25 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Stealth"</span>, rarity: <span class="string">"Uncommon"</span>, rarityScore: 20 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Agility"</span>, rarity: <span class="string">"Uncommon"</span>, rarityScore: 18 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Shadow"</span>, rarity: <span class="string">"Rare"</span>, rarityScore: 12 },<br>
+                &nbsp;&nbsp;{ value: <span class="string">"Void"</span>, rarity: <span class="string">"Legendary"</span>, rarityScore: 3 }<br>
+                ];
+            </div>
+
+            <ul class="technical-list">
+                <li><strong>Attack Stance <span class="rarity-badge rarity-Common">Common</span>:</strong> Practitioners develop "Preemptive Security," detecting vulnerabilities before they can be exploited. Their offensive mindset creates the perfect defense through overwhelming force.</li>
+
+                <li><strong>Defense Stance <span class="rarity-badge rarity-Common">Common</span>:</strong> Masters of the "Firewall Fortress" technique create impenetrable defenses against external threats, analyzing and adapting to new attack vectors in real-time.</li>
+
+                <li><strong>Stealth Stance <span class="rarity-badge rarity-Uncommon">Uncommon</span>:</strong> Users of the "Ghost Protocol" move through networks without triggering security alerts, their presence undetectable even to the most sophisticated monitoring systems.</li>
+
+                <li><strong>Void Stance <span class="rarity-badge rarity-Legendary">Legendary</span>:</strong> The rarest stance, allowing cats to exist partially outside normal digital physics, becoming immune to certain types of attacks.</li>
             </ul>
         </div>
 
+        <!-- Mythic Encounter Special Section -->
+        <div class="mythic-encounter glowing">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">The Mythic Tier</h2>
+                <p class="lore-subtitle">Ultra-rare traits that transcend normal abilities</p>
+            </div>
+
+            <p>Beyond the standard trait distribution lies the fabled Mythic tier - occurring in only 0.1% of all ninja cats (1 in 1000 chance). These legendary warriors possess abilities beyond comprehension:</p>
+
+            <div class="code-snippet">
+                <span class="comment">// Mythic trait generation logic from smart contract</span><br>
+                <span class="keyword">const</span> isMythic = parseInt(getTraitHash(<span class="string">"mythic"</span>, seed).substring(0, 8), 16) % 1000 === 0;<br><br>
+
+                <span class="comment">// Mythic traits with extremely rare occurrence</span><br>
+                <span class="keyword">const</span> mythicTraits = [<br>
+                &nbsp;&nbsp;{<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;trait_type: <span class="string">"Blessing"</span>, value: <span class="string">"Nine Lives"</span>, rarity: <span class="string">"Mythic"</span>, rarityScore: 1,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;keywords: [<span class="string">"resurrection"</span>, <span class="string">"immortal"</span>, <span class="string">"reborn"</span>]<br>
+                &nbsp;&nbsp;},<br>
+                &nbsp;&nbsp;{<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;trait_type: <span class="string">"Power"</span>, value: <span class="string">"Time Whisker"</span>, rarity: <span class="string">"Mythic"</span>, rarityScore: 1,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;keywords: [<span class="string">"temporal"</span>, <span class="string">"time-bending"</span>, <span class="string">"clock"</span>]<br>
+                &nbsp;&nbsp;}<br>
+                ];
+            </div>
+
+            <p>Mythic cats receive an automatic +50 boost to their rarity score, guaranteeing Mythic tier status. Their stats are elevated beyond normal bounds, with all attributes receiving +3 points.</p>
+
+            <p>If you find a ninja cat with traits like "Nine Lives," "Time Whisker," "Cat God," "Dimension Pounce," or "Catnip Mastery," you hold one of the rarest NFTs in the entire collection - a true digital treasure.</p>
+        </div>
+
+        <!-- Nine Lives Protocol Section -->
         <div class="lore-section">
-            <h2>Elemental Mastery</h2>
-            <p>Beyond physical combat, ninja cats harness elemental forces that shape their abilities and affinity within the digital ecosystem:</p>
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">The Nine Lives Protocol</h2>
+                <p class="lore-subtitle">The foundation of ninja cat immortality</p>
+            </div>
+
+            <p>During the infamous "51% Attack" of ancient times, the Five Breeds united to defend the nascent blockchain ecosystem. Led by the legendary Grand Meowster Satoshi (whose true identity remains unknown), they fought a shadow war against centralized powers that sought to control all digital assets.</p>
+
+            <p>Victory was secured when the bravest ninja cats performed the "Nine Lives Protocol" - a forbidden technique that splits a warrior's consciousness across multiple nodes, ensuring the network's survival at great personal cost. The brave cats who performed this ritual became the first NFTs, their spirits preserved forever in the immutable ledger.</p>
+
+            <div class="nine-lives">
+                <div class="life-ability">
+                    <h4>Whisker Detection</h4>
+                    <p>Ninja cats can sense network disturbances from great distances, their whiskers vibrating at the exact frequency of suspicious transactions.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Purr Encryption</h4>
+                    <p>Each cat's purr generates a unique sound wave algorithm that creates unbreakable encryption only they can decode.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Nine-Block Leap</h4>
+                    <p>The ability to traverse great digital distances instantly, confirming transactions across multiple blocks simultaneously.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Mempool Vision</h4>
+                    <p>These cats can see pending transactions before confirmation, allowing them to optimize network flow and prevent congestion.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Blockchain Slash</h4>
+                    <p>A technique that cuts through corrupt code with surgical precision, removing malicious elements without disrupting valid transactions.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Digital Camouflage</h4>
+                    <p>Perfect disguise within network environments, allowing cats to monitor and protect without revealing their presence.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Zero-Knowledge Purr</h4>
+                    <p>A cryptographic technique that verifies complex transactions without revealing any details about the underlying data.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Quantum Pounce</h4>
+                    <p>The ability to execute actions faster than any normal process, leaping between quantum states to resolve computational problems instantly.</p>
+                </div>
+
+                <div class="life-ability">
+                    <h4>Multi-Chain Attack</h4>
+                    <p>A coordinated offensive across multiple blockchains, targeting vulnerabilities simultaneously to neutralize distributed threats.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rarity System Explanation -->
+        <div class="lore-section">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">The Celestial Rarity System</h2>
+                <p class="lore-subtitle">The mathematical foundation of ninja cat uniqueness</p>
+            </div>
+
+            <p>Every ninja cat's power is calculated using an advanced rarity scoring system that evaluates traits and synergies. This complex algorithm assigns scores to individual traits and then calculates bonuses for powerful combinations:</p>
+
+            <div class="code-snippet">
+                <span class="comment">// Rarity calculation logic from contract</span><br>
+                <span class="keyword">function</span> <span class="function">calculateRarityScore</span>(attributes) {<br>
+                &nbsp;&nbsp;<span class="keyword">let</span> totalScore = 0;<br>
+                &nbsp;&nbsp;<span class="keyword">let</span> count = 0;<br><br>
+
+                &nbsp;&nbsp;<span class="comment">// Calculate base score from rarity values</span><br>
+                &nbsp;&nbsp;<span class="keyword">for</span> (<span class="keyword">const</span> attr <span class="keyword">of</span> attributes) {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (skipTypes.includes(attr.trait_type)) <span class="keyword">continue</span>;<br><br>
+
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">const</span> rarityScore = rarityMapping[attr.rarity] || 50;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;totalScore += rarityScore;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;count++;<br>
+                &nbsp;&nbsp;}<br><br>
+
+                &nbsp;&nbsp;<span class="comment">// Calculate synergy bonuses</span><br>
+                &nbsp;&nbsp;<span class="keyword">for</span> (<span class="keyword">const</span> synergy <span class="keyword">of</span> synergyPairs) {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (hasTrait1 && hasTrait2) {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;totalScore += synergy.bonus;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                &nbsp;&nbsp;}<br><br>
+
+                &nbsp;&nbsp;<span class="keyword">return</span> Math.round(totalScore / count);<br>
+                }
+            </div>
+
+            <p>The rarity tier thresholds determine a ninja cat's status in the digital dojo:</p>
+
+            <table class="trait-table">
+                <tr>
+                    <th>Rarity Tier</th>
+                    <th>Score Range</th>
+                    <th>Occurrence</th>
+                </tr>
+                <tr>
+                    <td>Mythic</td>
+                    <td>120+</td>
+                    <td>~0.1%</td>
+                </tr>
+                <tr>
+                    <td>Legendary</td>
+                    <td>100-119</td>
+                    <td>~1%</td>
+                </tr>
+                <tr>
+                    <td>Epic</td>
+                    <td>85-99</td>
+                    <td>~5%</td>
+                </tr>
+                <tr>
+                    <td>Rare</td>
+                    <td>70-84</td>
+                    <td>~15%</td>
+                </tr>
+                <tr>
+                    <td>Uncommon</td>
+                    <td>60-69</td>
+                    <td>~30%</td>
+                </tr>
+                <tr>
+                    <td>Common</td>
+                    <td>40-59</td>
+                    <td>~49%</td>
+                </tr>
+            </table>
+
+            <p>The most coveted combinations occur when breed, element, weapon, and stance all form synergistic relationships, creating warriors of extraordinary power. For example, a Shadow breed with Shadow element (+15), wielding a Ghost Dagger in Shadow stance (+16) could potentially reach Mythic status even without an actual Mythic trait.</p>
+        </div>
+
+        <!-- Backstory Generation -->
+        <div class="lore-section">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">Algorithmic Lore Generation</h2>
+                <p class="lore-subtitle">Each warrior's unique tale</p>
+            </div>
+
+            <p>Every ninja cat possesses a unique backstory algorithmically generated from its traits. These stories are created through pattern analysis and trait combinations to ensure each warrior has its own rich history within the broader ninja cat universe:</p>
+
+            <div class="code-snippet">
+                <span class="comment">// Backstory generation logic</span><br>
+                <span class="keyword">function</span> <span class="function">generateNinjaCatDescription</span>(tokenId, breed, attributes) {<br>
+                &nbsp;&nbsp;<span class="keyword">const</span> seed = parseInt(tokenId);<br>
+                &nbsp;&nbsp;<span class="keyword">const</span> hash = createHash('sha256').update(`${seed}-description`).digest('hex');<br><br>
+
+                &nbsp;&nbsp;<span class="comment">// Extract trait values</span><br>
+                &nbsp;&nbsp;<span class="keyword">const</span> weapon = attributes.find(attr => attr.trait_type === "Weapon")?.value;<br>
+                &nbsp;&nbsp;<span class="keyword">const</span> element = attributes.find(attr => attr.trait_type === "Element")?.value;<br>
+                &nbsp;&nbsp;<span class="keyword">const</span> stance = attributes.find(attr => attr.trait_type === "Stance")?.value;<br>
+                &nbsp;&nbsp;<span class="keyword">const</span> rank = attributes.find(attr => attr.trait_type === "Rank")?.value;<br><br>
+
+                &nbsp;&nbsp;<span class="comment">// Get clan name based on breed</span><br>
+                &nbsp;&nbsp;<span class="keyword">const</span> clan = clans[breed] || "Shadow Paw Clan";<br><br>
+
+                &nbsp;&nbsp;<span class="comment">// Generate pattern-based description</span><br>
+                &nbsp;&nbsp;<span class="keyword">let</span> description = `A ${rank.toLowerCase()} ${breed} ninja cat from the ${clan}...`;<br>
+                &nbsp;&nbsp;<span class="comment">// Story continues based on selected pattern...</span>
+
+                &nbsp;&nbsp;<span class="keyword">return</span> description;<br>
+                }
+            </div>
+
+            <details class="secret-lore">
+                <summary>Sample Warrior Backstory</summary>
+                <div class="scroll-content">
+                    <h3>Bengal Warrior #42</h3>
+                    <p>A master Bengal ninja cat from the Spotted Fang Clan, wielding twin blades infused with lightning energy. Known for swift movements, this warrior has sworn to defeat the Thunder King and restore peace to the realm. Their enchanted amulet is a symbol of honor earned through countless victorious battles. Legends tell that they were blessed by the Cat Gods with the mythical Time Whisker, a power so rare it appears only once in a thousand generations.</p>
+
+                    <h4>Combat Stats</h4>
+                    <div class="stat-bars">
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Agility</span>
+                                <span>10</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-agility" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Stealth</span>
+                                <span>6</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-stealth" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Power</span>
+                                <span>8</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-power" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Intelligence</span>
+                                <span>7</span>
+                            </div>
+                            <div class="stat-track">
+                                <div class="stat-value stat-intelligence" style="width: 70%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4>Trait Analysis</h4>
+                    <p>
+                        Rarity Score: 118 (Legendary Tier)<br>
+                        Synergy Bonuses: Bengal + Lightning = +10, Twin Blades + Agility = +14
+                    </p>
+                </div>
+            </details>
+
+            <p>The backstory generation system creates personalized tales for each warrior, incorporating their breed, weapon preference, elemental affinity, and combat stance. The system draws connections between these traits, weaving them into a cohesive narrative that explains the warrior's place in the ninja cat universe.</p>
+        </div>
+
+        <!-- AI Art Generation Process -->
+        <div class="lore-section">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">The Art of Digital Manifestation</h2>
+                <p class="lore-subtitle">How ninja cats materialize in the physical realm</p>
+            </div>
+
+            <p>Each ninja cat's visual representation is crafted through advanced AI image generation, a process that translates their digital essence into pixel art form. The system supports three advanced providers with specialized capabilities:</p>
 
             <div class="clan-section">
                 <div class="clan-card">
-                    <h3>Fire</h3>
-                    <p>Fire element cats leave no transaction history behind, perfect for covert operations. Their "Burn Trace" technique purifies corrupted code through controlled digital flames. These passionate warriors excel in direct combat, their attacks growing stronger with each consecutive strike.</p>
+                    <h3>DALL-E Manifestation <span class="data-badge">Default</span></h3>
+                    <p>OpenAI's DALL-E models excel at creating vibrant, expressive ninja cats with exceptional attention to detail and trait coherence. The model interprets the complex trait combinations with high fidelity, rendering the most nuanced details of weapons and elemental effects.</p>
+                    <div class="code-snippet">
+                        <span class="comment">// DALL-E generation settings</span><br>
+                        model: <span class="string">"dall-e-2"</span>,<br>
+                        prompt: enhancedPrompt,<br>
+                        size: <span class="string">"256x256"</span>,<br>
+                        quality: <span class="string">"standard"</span>
+                    </div>
                 </div>
 
                 <div class="clan-card">
-                    <h3>Water</h3>
-                    <p>Masters of "Flow Adaptation," Water ninjas seamlessly navigate between different blockchain protocols, adapting to new environments instantly. Their fluid movements and calm intelligence make them excellent strategists, capable of finding paths of least resistance through even the most complex security systems.</p>
+                    <h3>Stability AI Rendering <span class="data-badge">Alternative</span></h3>
+                    <p>Stability AI's generative models produce ninja cats with distinctive artistic flair, often emphasizing dramatic lighting and atmospheric effects that highlight elemental properties. The specialized prompt structure ensures weapon details are precisely rendered.</p>
+                    <div class="code-snippet">
+                        <span class="comment">// Stability AI settings</span><br>
+                        cfg_scale: 7,<br>
+                        steps: 25,<br>
+                        width: 256,<br>
+                        height: 256
+                    </div>
                 </div>
 
                 <div class="clan-card">
-                    <h3>Earth</h3>
-                    <p>Earth element cats excel at "Foundation Reinforcement," stabilizing networks during high transaction volume. Their unbreakable resolve and grounded nature make them the most dependable guardians, able to maintain their position against overwhelming attacks and preserve the integrity of core blockchain systems.</p>
+                    <h3>HuggingFace Projection <span class="data-badge">OpenSource</span></h3>
+                    <p>The open-source models accessed through HuggingFace deliver unique stylistic interpretations of ninja cats, with greater experimental variety. Five different model options provide distinct artistic approaches, from photorealistic to highly stylized.</p>
+                    <div class="code-snippet">
+                        <span class="comment">// HuggingFace models</span><br>
+                        <span class="string">"stabilityai/stable-diffusion-xl-base-1.0"</span>,<br>
+                        <span class="string">"prompthero/openjourney"</span>,<br>
+                        <span class="string">"runwayml/stable-diffusion-v1-5"</span>,<br>
+                        <span class="string">"ByteDance/SDXL-Lightning"</span>
+                    </div>
                 </div>
+            </div>
 
-                <div class="clan-card">
-                    <h3>Wind</h3>
-                    <p>With their "Transaction Acceleration" ability, Wind ninjas process operations with unmatched speed and efficiency. These agile fighters can execute multiple actions in the time it takes others to complete one, their movements so swift that they appear as mere blurs across the network.</p>
-                </div>
+            <p>The generation process carefully crafts prompts based on the ninja cat's breed, element, weapon, stance, and other traits. Special synergies receive additional prompt enhancement to ensure their unique nature shines through:</p>
 
-                <div class="clan-card">
-                    <h3>Shadow</h3>
-                    <p>The secretive Shadow cats move through "Stealth Execution," operating completely undetected by security systems. They are the invisible guardians who monitor the darkest corners of the web, gathering intelligence and neutralizing threats before they can manifest.</p>
-                </div>
+            <div class="code-snippet">
+                <span class="comment">// Prompt generation for special combinations</span><br>
+                <span class="keyword">let</span> prompt = `A pixel art ninja cat of ${normalizedBreed} breed in ${stance} stance wielding ${weapon} with ${element} powers, ${rank} rank`;<br><br>
 
-                <div class="clan-card">
-                    <h3>Lightning</h3>
-                    <p>Lightning element ninjas possess "Hash Acceleration," dramatically speeding up mining and validation processes. Their attacks strike with blinding speed and precision, often resolving conflicts before opponents even realize a battle has begun.</p>
-                </div>
+                <span class="comment">// Add synergy-specific details for Shadow + Void combinations</span><br>
+                <span class="keyword">if</span> (breed === <span class="string">"Shadow"</span> && element === <span class="string">"Void"</span>) {<br>
+                &nbsp;&nbsp;prompt += <span class="string">", partially transparent with cosmic energy flowing through its body"</span>;<br>
+                }
+            </div>
+
+            <p>Once generated, images undergo automated processing to ensure they meet the pixel art aesthetic requirements, including cropping and optimization. The final image is paired with its metadata and permanently stored on IPFS to ensure the ninja cat's immutable existence on the blockchain.</p>
+        </div>
+
+        <!-- Prophecy Section -->
+        <div class="lore-section">
+            <div class="lore-title-wrapper">
+                <h2 class="lore-title">Prophecy of the Divine Cat</h2>
+                <p class="lore-subtitle">The foretold arrival that will unite all digital realms</p>
+            </div>
+
+            <p>Ancient scrolls speak of a day when a ninja cat bearing the Divine rarity traits will emerge as the "Universal Bridge Guardian." This legendary figure will unite all breeds, elements, and stances, leading them into a new era of prosperity by bridging separate blockchains into a harmonious ecosystem.</p>
+
+            <p>The prophecy tells of specific combinations - a perfect warrior with maximum combat stats, Divine-tier weapons, and unique abilities that appear only once in thousands of generations. Collectors who discover such a cat may unlock powers beyond imagination and play a crucial role in the coming Evolution of the digital ecosystem.</p>
+
+            <div class="code-snippet">
+                <span class="comment">// The Ultra-Rare Divine Cat conditions</span><br>
+                <span class="keyword">if</span> (<br>
+                &nbsp;&nbsp;isMythic &&<br>
+                &nbsp;&nbsp;breed === <span class="string">"Shadow"</span> &&<br>
+                &nbsp;&nbsp;weapon === <span class="string">"Ghost Dagger"</span> &&<br>
+                &nbsp;&nbsp;element === <span class="string">"Void"</span> &&<br>
+                &nbsp;&nbsp;stance === <span class="string">"Ethereal"</span> &&<br>
+                &nbsp;&nbsp;mythicTrait?.value === <span class="string">"Nine Lives"</span> &&<br>
+                &nbsp;&nbsp;stats.agility === 10 &&<br>
+                &nbsp;&nbsp;stats.stealth === 10 &&<br>
+                &nbsp;&nbsp;stats.power === 10 &&<br>
+                &nbsp;&nbsp;stats.intelligence === 10<br>
+                ) {<br>
+                &nbsp;&nbsp;<span class="comment">// The prophecy is fulfilled</span><br>
+                &nbsp;&nbsp;console.log(<span class="string">"🌟 THE DIVINE CAT HAS EMERGED! 🌟"</span>);<br>
+                &nbsp;&nbsp;rarityTier = <span class="string">"Divine"</span>;<br>
+                }
             </div>
         </div>
 
-        <div class="lore-section">
-            <h2>Combat Stances & Training</h2>
-            <p>Through years of rigorous training in the art of "Paw-Hash-Do," ninja cats master various combat stances that define their approach to digital warfare:</p>
-
-            <ul>
-                <li><strong>Attack Stance:</strong> Practitioners develop "Preemptive Security," detecting vulnerabilities before they can be exploited. Their offensive mindset creates the perfect defense through overwhelming force.</li>
-                <li><strong>Defense Stance:</strong> Masters of the "Firewall Fortress" technique create impenetrable defenses against external threats, analyzing and adapting to new attack vectors in real-time.</li>
-                <li><strong>Stealth Stance:</strong> Users of the "Ghost Protocol" move through networks without triggering security alerts, their presence undetectable even to the most sophisticated monitoring systems.</li>
-                <li><strong>Agility Stance:</strong> These cats develop "Rapid Response," becoming the first to react to network threats and security breaches through constant vigilance and lightning reflexes.</li>
-                <li><strong>Focus Stance:</strong> With "Deep Inspection" abilities, these practitioners can identify the most subtle anomalies in code execution, seeing patterns invisible to others.</li>
-                <li><strong>Shadow Stance:</strong> Experts at "Dark Web Navigation," these ninjas track threats to their source through the most obscure corners of the internet.</li>
-                <li><strong>Void Stance:</strong> The rarest stance, allowing cats to exist partially outside normal digital physics, becoming immune to certain types of attacks.</li>
-                <li><strong>Ethereal Stance:</strong> Almost mythical in nature, this stance enables cats to temporarily ascend beyond physical limitations, processing information at quantum speeds.</li>
-            </ul>
-        </div>
-
-        <div class="lore-section">
-            <h2>Ranks of Power</h2>
-            <p>As ninja cats grow in skill and wisdom, they ascend through ancient ranks that reflect their mastery and standing within the digital dojo:</p>
-
-            <ul>
-                <li><strong>Novice:</strong> Quick learners rapidly adapting to new protocols and security challenges, still developing their core skills.</li>
-                <li><strong>Adept:</strong> Technically proficient warriors who efficiently execute complex operations with minimal resources.</li>
-                <li><strong>Skilled:</strong> Veterans who have developed signature techniques and unique approaches to digital security.</li>
-                <li><strong>Elite:</strong> Masters whose very presence deters many potential attackers, commanding respect across the network.</li>
-                <li><strong>Master:</strong> Wise leaders capable of training other systems to detect and respond to threats, with deep understanding of blockchain philosophy.</li>
-                <li><strong>Legendary:</strong> Revered figures known as "Blockchain Whisperers" with almost supernatural understanding of network dynamics.</li>
-                <li><strong>Grandmaster:</strong> Mystics who have transcended ordinary limitations, capable of innovations that reshape how the digital world functions.</li>
-                <li><strong>Immortal:</strong> The rarest rank, achieved by only a handful throughout history, these ninjas have become one with the blockchain itself, their consciousness distributed across the entire network.</li>
-            </ul>
-        </div>
-
-        <div class="lore-section">
-            <h2>The Nine Lives Protocol</h2>
-            <p>During the infamous "51% Attack" of ancient times, the Five Breeds united to defend the nascent blockchain ecosystem. Led by the legendary Grand Meowster Satoshi (whose true identity remains unknown), they fought a shadow war against centralized powers that sought to control all digital assets.</p>
-            <p>Victory was secured when the bravest ninja cats performed the "Nine Lives Protocol" - a forbidden technique that splits a warrior's consciousness across multiple nodes, ensuring the network's survival at great personal cost. The brave cats who performed this ritual became the first NFTs, their spirits preserved forever in the immutable ledger.</p>
-            <p>Their sacrifice created the foundation for the special abilities that modern ninja cats possess, each inheriting fragments of the original nine lives consciousness:</p>
-            <ul>
-                <li>Whisker Detection - Sensing network disturbances from great distances</li>
-                <li>Purr Encryption - Creating unbreakable encryption through sound wave algorithms</li>
-                <li>Nine-Block Leap - Traversing great digital distances instantly</li>
-                <li>Mempool Vision - Seeing pending transactions before confirmation</li>
-                <li>Blockchain Slash - Cutting through code with surgical precision</li>
-                <li>Multi-Chain Attack - Targeting multiple networks simultaneously</li>
-                <li>Digital Camouflage - Perfect disguise within network environments</li>
-                <li>Zero-Knowledge Purr - Verifying complex transactions without revealing details</li>
-                <li>Quantum Pounce - Executing actions faster than any normal process</li>
-            </ul>
-        </div>
-
-        <div class="lore-section">
-            <h2>Prophecy of the Divine Cat</h2>
-            <p>Ancient scrolls speak of a day when a ninja cat bearing the Divine rarity traits will emerge as the "Universal Bridge Guardian." This legendary figure will unite all breeds, elements, and stances, leading them into a new era of prosperity by bridging separate blockchains into a harmonious ecosystem.</p>
-            <p>The prophecy tells of specific combinations - a perfect warrior with maximum combat stats, Divine-tier weapons, and unique abilities that appear only once in thousands of generations. Collectors who discover such a cat may unlock powers beyond imagination and play a crucial role in the coming Evolution of the digital ecosystem.</p>
-        </div>
-
-        <p class="image-note">All Pixel Ninja Cat images are uniquely and randomly generated using OpenAI DALL-E, creating one-of-a-kind digital warriors for each collector. The AI crafts each cat based on its breed, weapon, and element, resulting in truly unique digital companions with their own rich backstories.</p>
+        <p class="image-note">All Pixel Ninja Cat images are uniquely generated using advanced AI technologies (DALL-E, Stability AI, or Hugging Face models), creating one-of-a-kind digital warriors based on their traits. Each cat's backstory and abilities are algorithmically generated from its unique combination of breed, weapon, element, and stance, ensuring no two warriors are exactly alike in the vast digital dojo.</p>
     </div>
 
     <!-- Import config first as a module -->
@@ -673,10 +1493,10 @@
 
                     if (tokenCount <= 0) {
                         carouselTrack.innerHTML = `
-                                            <div class="carousel-item">
-                                                <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
-                                                <p>No ninja cats have been minted yet.<br>Be the first to summon a warrior!</p>
-                                            </div>`;
+                                                <div class="carousel-item">
+                                                    <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
+                                                    <p>No ninja cats have been minted yet.<br>Be the first to summon a warrior!</p>
+                                                </div>`;
                         return;
                     }
 
@@ -722,9 +1542,9 @@
                         const item = document.createElement('div');
                         item.className = 'carousel-item';
                         item.innerHTML = `
-                                            <div class="loading-spinner"></div>
-                                            <p>Loading Ninja Cat...</p>
-                                        `;
+                                                <div class="loading-spinner"></div>
+                                                <p>Loading Ninja Cat...</p>
+                                            `;
                         carouselTrack.appendChild(item);
 
                         // Create dot
@@ -766,15 +1586,15 @@
                                 }
 
                                 item.innerHTML = `
-                                                    <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image"
-                                                         onerror="this.src='${fallbackImage}'">
-                                                    <div class="carousel-caption">
-                                                        ${metadata.name}
-                                                        <div style="font-size: 0.8rem; color: #9e9e9e; margin-top: 0.3rem;">
-                                                            ${breed} · Token #${tokenId}
+                                                        <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image"
+                                                             onerror="this.src='${fallbackImage}'">
+                                                        <div class="carousel-caption">
+                                                            ${metadata.name}
+                                                            <div style="font-size: 0.8rem; color: #9e9e9e; margin-top: 0.3rem;">
+                                                                ${breed} · Token #${tokenId}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                `;
+                                                    `;
 
                                 // Add click to view details
                                 item.style.cursor = 'pointer';
@@ -785,9 +1605,9 @@
                         } catch (err) {
                             console.error("Error loading token:", err);
                             item.innerHTML = `
-                                                <img src="${fallbackImage}" alt="Ninja Cat" class="carousel-image">
-                                                <div class="carousel-caption">Mysterious Ninja Cat</div>
-                                            `;
+                                                    <img src="${fallbackImage}" alt="Ninja Cat" class="carousel-image">
+                                                    <div class="carousel-caption">Mysterious Ninja Cat</div>
+                                                `;
                         }
                     }
 
@@ -825,21 +1645,21 @@
                         if (isPlaying) {
                             clearInterval(interval);
                             autoPlayBtn.innerHTML = `
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                                </svg>
-                                                Auto-Play`;
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                                    </svg>
+                                                    Auto-Play`;
                         } else {
                             interval = setInterval(() => {
                                 currentSlide = (currentSlide + 1) % slides.length;
                                 goToSlide(currentSlide);
                             }, 4000);
                             autoPlayBtn.innerHTML = `
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <rect x="6" y="4" width="4" height="16"></rect>
-                                                    <rect x="14" y="4" width="4" height="16"></rect>
-                                                </svg>
-                                                Pause`;
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="6" y="4" width="4" height="16"></rect>
+                                                        <rect x="14" y="4" width="4" height="16"></rect>
+                                                    </svg>
+                                                    Pause`;
                         }
                         isPlaying = !isPlaying;
                     }
@@ -870,16 +1690,182 @@
                 } catch (error) {
                     console.error("Error setting up NFT carousel:", error);
                     carouselTrack.innerHTML = `
-                                        <div class="carousel-item">
-                                            <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
-                                            <p>Error loading ninja cats.<br>The ancient scrolls are currently unreadable.</p>
-                                        </div>`;
+                                            <div class="carousel-item">
+                                                <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
+                                                <p>Error loading ninja cats.<br>The ancient scrolls are currently unreadable.</p>
+                                            </div>`;
                 }
             }
 
             // Initialize carousel
             setupNFTCarousel();
+
+            // Setup animated backgrounds
+            setupAnimatedBackgrounds();
+
+            // Setup interactive traits
+            setupTraitInteractions();
+
+            // Setup 3D element showcase
+            setup3DElementShowcase();
         });
+
+        // Setup animated backgrounds
+        function setupAnimatedBackgrounds() {
+            // Setup particles.js
+            if (window.particlesJS) {
+                particlesJS("particles-js", {
+                    particles: {
+                        number: { value: 80, density: { enable: true, value_area: 800 } },
+                        color: { value: "#8a65ff" },
+                        shape: { type: "circle" },
+                        opacity: { value: 0.2, random: true },
+                        size: { value: 3, random: true },
+                        line_linked: { enable: true, distance: 150, color: "#8a65ff", opacity: 0.1, width: 1 },
+                        move: { enable: true, speed: 1, direction: "none", random: true, out_mode: "out" }
+                    },
+                    interactivity: {
+                        detect_on: "canvas",
+                        events: { onhover: { enable: true, mode: "grab" }, onclick: { enable: true, mode: "push" } }
+                    }
+                });
+            }
+
+            // Setup digital rain
+            const canvas = document.getElementById('digitalRain');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                const characters = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヰヱヲン';
+                const columns = Math.floor(canvas.width / 20);
+                const drops = [];
+
+                for (let i = 0; i < columns; i++) {
+                    drops[i] = 1;
+                }
+
+                function drawRain() {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = '#8a65ff30';
+                    ctx.font = '15px monospace';
+
+                    for (let i = 0; i < drops.length; i++) {
+                        const text = characters[Math.floor(Math.random() * characters.length)];
+                        ctx.fillText(text, i * 20, drops[i] * 20);
+
+                        if (drops[i] * 20 > canvas.height && Math.random() > 0.975) {
+                            drops[i] = 0;
+                        }
+
+                        drops[i]++;
+                    }
+                }
+
+                setInterval(drawRain, 50);
+            }
+        }
+
+        // Setup trait interactions
+        function setupTraitInteractions() {
+            document.querySelectorAll('.trait-interactive').forEach(element => {
+                element.addEventListener('click', () => {
+                    const trait = element.dataset.trait;
+                    if (trait) {
+                        // Apply highlight effect
+                        document.querySelectorAll(`.trait-interactive[data-trait="${trait}"]`).forEach(el => {
+                            el.classList.add('glowing');
+                            setTimeout(() => {
+                                el.classList.remove('glowing');
+                            }, 2000);
+                        });
+                    }
+                });
+            });
+        }
+
+        // Setup 3D element showcase
+        function setup3DElementShowcase() {
+            const container = document.getElementById('elementShowcase');
+            if (!container || !window.THREE) return;
+
+            // Setup scene
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            // Create elements
+            const elements = [
+                { name: 'Fire', color: 0xff3d00, position: new THREE.Vector3(-4, 0, 0) },
+                { name: 'Water', color: 0x2979ff, position: new THREE.Vector3(-2, 0, 0) },
+                { name: 'Earth', color: 0x8d6e63, position: new THREE.Vector3(0, 0, 0) },
+                { name: 'Wind', color: 0xb2dfdb, position: new THREE.Vector3(2, 0, 0) },
+                { name: 'Shadow', color: 0x4a148c, position: new THREE.Vector3(4, 0, 0) }
+            ];
+
+            const elementObjects = [];
+
+            elements.forEach(element => {
+                // Create element sphere
+                const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+                const material = new THREE.MeshBasicMaterial({
+                    color: element.color,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.position.copy(element.position);
+
+                // Add glow effect
+                const glowGeometry = new THREE.SphereGeometry(0.7, 32, 32);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: element.color,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const glowSphere = new THREE.Mesh(glowGeometry, glowMaterial);
+                sphere.add(glowSphere);
+
+                scene.add(sphere);
+                elementObjects.push(sphere);
+            });
+
+            // Position camera
+            camera.position.z = 8;
+
+            // Animation
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Rotate elements
+                elementObjects.forEach((obj, i) => {
+                    obj.rotation.y += 0.01 + (i * 0.002);
+                    obj.rotation.x += 0.005;
+
+                    // Float up and down
+                    obj.position.y = Math.sin(Date.now() * 0.001 + i) * 0.2;
+                });
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Resize handler
+            window.addEventListener('resize', () => {
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                renderer.setSize(width, height);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            });
+        }
     </script>
 
     <!-- Load wallet connection script -->

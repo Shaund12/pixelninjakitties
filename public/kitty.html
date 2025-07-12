@@ -749,6 +749,113 @@
                 transform: translateY(-2px) scale(1.04);
                 box-shadow: 0 4px 16px #8a65ff33;
             }
+
+        /* Special traits styling */
+        .special-trait {
+            background: linear-gradient(90deg, #8a65ff, #2775ca);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .mythic-trait {
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .special-attribute-card {
+            border: 1.5px solid #8a65ff;
+            box-shadow: 0 0 15px rgba(138, 101, 255, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px rgba(138, 101, 255, 0.3);
+            }
+
+            to {
+                box-shadow: 0 0 15px rgba(138, 101, 255, 0.6);
+            }
+        }
+
+        /* Element specific styling */
+        .element-fire .attribute-value {
+            color: #ff7043;
+        }
+
+        .element-water .attribute-value {
+            color: #42a5f5;
+        }
+
+        .element-earth .attribute-value {
+            color: #66bb6a;
+        }
+
+        .element-air .attribute-value {
+            color: #b0bec5;
+        }
+
+        .element-void .attribute-value {
+            color: #9c27b0;
+        }
+
+        .element-lightning .attribute-value {
+            color: #ffeb3b;
+        }
+
+        .element-ice .attribute-value {
+            color: #81d4fa;
+        }
+
+        .element-shadow .attribute-value {
+            color: #7e57c2;
+        }
+
+        .element-light .attribute-value {
+            color: #fff176;
+        }
+
+        .element-cosmic .attribute-value {
+            color: #e040fb;
+        }
+
+        /* Divider for special traits section */
+        .attributes-divider {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin: 10px 0;
+            border-bottom: 1px solid rgba(138, 101, 255, 0.3);
+            line-height: 0.1em;
+        }
+
+            .attributes-divider span {
+                background: #23263a;
+                padding: 0 10px;
+                color: #8a65ff;
+                font-weight: 600;
+            }
+
+        /* Mythic badge styling */
+        .mythic-badge {
+            background: linear-gradient(135deg, #FFD700, #FF00FF) !important;
+            color: #23263a !important;
+            border: 1.5px solid #FFD700 !important;
+            text-shadow: 0 1px 8px #FFD70055 !important;
+            animation: mythicGlow 2s infinite alternate !important;
+        }
+
+        @keyframes mythicGlow {
+            from {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 0, 255, 0.4);
+            }
+        }
     </style>
 </head>
 <body>

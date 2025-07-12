@@ -8,6 +8,8 @@
     <link rel="icon" href="assets/detailed_ninja_cat_64.png">
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Add GSAP for enhanced animations -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <script type="module" src="js/mint.js"></script>
     <style>
@@ -397,6 +399,8 @@
             margin: 1.2rem 0 0.5rem 0;
             box-shadow: 0 2px 8px #8a65ff22;
             letter-spacing: 0.01em;
+            position: relative;
+            z-index: 1;
         }
 
             #mintBtn:not([disabled]):hover {
@@ -567,6 +571,620 @@
                 background: #8a65ff;
                 box-shadow: 0 2px 8px #8a65ff44;
             }
+
+        /* Provider Info */
+        .provider-info {
+            margin-top: 1rem;
+            padding: 1.25rem;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
+            border-radius: 10px;
+            display: none;
+            border: 1.5px solid #2d2d3a;
+            transition: all 0.3s;
+        }
+
+            .provider-info.active {
+                display: block;
+                animation: fadeIn 0.5s;
+            }
+
+        /* New styles for the prompt inputs and advanced options */
+        textarea.prompt-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: #23263a;
+            border: 1.5px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            margin-bottom: 1rem;
+            font-size: 1em;
+            transition: border 0.2s;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+            textarea.prompt-input:focus {
+                border: 1.5px solid #8a65ff;
+                outline: none;
+                box-shadow: 0 0 8px #8a65ff33;
+            }
+
+        .advanced-toggle {
+            background: transparent;
+            border: none;
+            color: #a084ff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            width: 100%;
+            justify-content: space-between;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+            .advanced-toggle:hover {
+                background: rgba(138,101,255,0.1);
+            }
+
+            .advanced-toggle::after {
+                content: '▼';
+                font-size: 0.8em;
+                margin-left: 0.5rem;
+                transition: transform 0.3s;
+            }
+
+            .advanced-toggle.active::after {
+                transform: rotate(180deg);
+            }
+
+        .advanced-options {
+            display: none;
+            padding: 1rem;
+            background: rgba(35, 38, 58, 0.3);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #2d2d3a;
+        }
+
+            .advanced-options.show {
+                display: block;
+                animation: fadeIn 0.5s;
+            }
+
+        .provider-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 0.5rem;
+        }
+
+        .provider-option {
+            min-width: 160px;
+            flex: 1;
+        }
+
+        .option-group {
+            margin-bottom: 1rem;
+        }
+
+        .option-label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-size: 0.9em;
+            color: #b0b0b0;
+        }
+
+        .provider-pros-cons {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .pros, .cons {
+            flex: 1;
+        }
+
+            .pros h5 {
+                margin: 5px 0;
+                color: #16a34a;
+            }
+
+            .cons h5 {
+                margin: 5px 0;
+                color: #dc2626;
+            }
+
+            .pros ul, .cons ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+
+        /* Progress bar */
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: linear-gradient(90deg, #8a65ff, #2775ca);
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.3s ease-in-out;
+        }
+
+        /* Download section styles */
+        .download-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(120deg, rgba(138,101,255,0.1) 0%, rgba(39,117,202,0.07) 100%);
+            border-radius: 10px;
+            border: 1.5px solid #2d2d3a;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+            .download-section h4 {
+                margin-top: 0;
+                margin-bottom: 10px;
+                color: #fff;
+            }
+
+        .download-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .download-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .download-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 4px 12px rgba(138,101,255,0.3);
+                background: linear-gradient(135deg, #2775ca, #8a65ff);
+            }
+
+            .download-btn svg {
+                margin-right: 8px;
+                width: 16px;
+                height: 16px;
+            }
+
+        /* Provider icons */
+        .provider-icons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            justify-content: center;
+        }
+
+        .provider-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #23263a;
+            border: 1.5px solid #444;
+            color: #b0b0b0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+            .provider-icon:hover {
+                border-color: #8a65ff;
+                transform: translateY(-3px);
+                box-shadow: 0 4px 12px rgba(138, 101, 255, 0.2);
+            }
+
+            .provider-icon.active {
+                background: linear-gradient(135deg, rgba(138, 101, 255, 0.2), rgba(39, 117, 202, 0.2));
+                border-color: #8a65ff;
+                color: white;
+                box-shadow: 0 4px 12px rgba(138, 101, 255, 0.3);
+            }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: absolute;
+            background: rgba(35, 38, 58, 0.95);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            max-width: 250px;
+            text-align: center;
+        }
+
+            .tooltip.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        /* Success animation styles */
+        .success-ui {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .checkmark-circle {
+            stroke-dasharray: 157;
+            stroke-dashoffset: 157;
+            stroke: #4ade80;
+            transform-origin: 50% 50%;
+            fill: none;
+        }
+
+        .checkmark-check {
+            stroke-dasharray: 32;
+            stroke-dashoffset: 32;
+            stroke: #4ade80;
+            stroke-width: 4;
+            stroke-linecap: round;
+            transform-origin: 50% 50%;
+        }
+
+        .success-content {
+            margin-top: 15px;
+            opacity: 0;
+        }
+
+        .explorer-link {
+            color: #8a65ff;
+            text-decoration: underline;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .view-nft-btn {
+            display: block;
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(138,101,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        /* Transaction animation */
+        .tx-confirmation {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(120deg, rgba(138,101,255,0.1) 0%, rgba(39,117,202,0.07) 100%);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(45, 45, 58, 0.8);
+        }
+
+        .tx-animation {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            margin-right: 15px;
+        }
+
+        .tx-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid rgba(138, 101, 255, 0.5);
+            border-top: 3px solid #8a65ff;
+            border-radius: 50%;
+        }
+
+        .tx-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid rgba(138, 101, 255, 0.3);
+            border-radius: 50%;
+        }
+
+        .tx-hash {
+            font-size: 0.85em;
+            margin-top: 8px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+            .tx-hash a {
+                color: #8a65ff;
+            }
+
+        /* Generation animation */
+        .nft-generation {
+            padding: 15px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(45, 45, 58, 0.8);
+            background: linear-gradient(120deg, rgba(138,101,255,0.1) 0%, rgba(39,117,202,0.07) 100%);
+        }
+
+        .generation-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .generation-animation {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-right: 15px;
+        }
+
+        .generation-circle {
+            stroke: #8a65ff;
+            stroke-width: 4;
+            stroke-linecap: round;
+            fill: none;
+            stroke-dasharray: 251.2;
+            stroke-dashoffset: 251.2;
+        }
+
+        .generation-path {
+            stroke: #ff9800;
+            stroke-width: 4;
+            stroke-linecap: round;
+            fill: none;
+        }
+
+        .generation-stages {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .generation-stage {
+            background: rgba(255,255,255,0.1);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+            .generation-stage.active {
+                background: rgba(138,101,255,0.1);
+                color: #8a65ff;
+                opacity: 1;
+            }
+
+        /* Mint button particle effect */
+        .particle-container {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        .mint-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float-up 5s ease-in-out infinite;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(60px) rotate(0deg);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 0.3;
+            }
+
+            80% {
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: translateY(-20px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Error UI */
+        .error-ui {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(120deg, rgba(239,68,68,0.1) 0%, rgba(127,29,29,0.07) 100%);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(220, 38, 38, 0.3);
+        }
+
+        .error-icon {
+            margin-right: 15px;
+        }
+
+        .retry-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        /* Preview system */
+        .preview-container {
+            margin: 15px 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(138,101,255,0.3);
+            border: 2px solid #2d2d3a;
+        }
+
+        .preview-traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .preview-trait {
+            background: rgba(138,101,255,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+            .preview-trait span {
+                color: #8a65ff;
+                font-weight: 500;
+                margin-right: 4px;
+            }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            min-width: 250px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: #333;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+            .toast.show {
+                animation: toast-in 0.3s forwards, toast-out 0.3s forwards;
+                animation-delay: 0s, 2.7s;
+            }
+
+            .toast.info {
+                background: #3498db;
+            }
+
+            .toast.success {
+                background: linear-gradient(135deg, #8a65ff, #2775ca);
+            }
+
+            .toast.warning {
+                background: #f39c12;
+            }
+
+            .toast.error {
+                background: #e74c3c;
+            }
+
+        @keyframes toast-in {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toast-out {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Approval animation */
+        .approval-ui {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .approval-animation {
+            margin-right: 15px;
+        }
+
+        .approval-svg {
+            transform: rotate(-90deg);
+        }
+
+        .approval-path {
+            stroke-dasharray: 75;
+            stroke-dashoffset: 75;
+        }
+
+        .checkmark-path {
+            stroke-dasharray: 15;
+            stroke-dashoffset: 15;
+        }
 
         /* Responsive adjustments */
         @media (max-width: 1100px) {
@@ -781,8 +1399,13 @@
         }
     </style>
 </head>
-<body>
+<head>
+    <!-- Add this line to include navbar.js -->
+    <script type="module" src="js/navbar.js"></script>
+</head>
 
+<body>
+    <!-- Navbar will be added by navbar.js -->
     <div id="navbar-container"></div>
 
     <div class="wrapper">
@@ -814,7 +1437,7 @@
         </section>
 
         <div class="disclaimer">
-            <strong>AI Generation Notice:</strong> All Pixel Ninja Cat imagery is completely randomly generated using OpenAI's DALL-E. Each NFT is unique and algorithmically created at the moment of minting, making your ninja cat truly one-of-a-kind.
+            <strong>AI Generation Notice:</strong> All Pixel Ninja Cat imagery is completely randomly generated using advanced AI models. Each NFT is unique and algorithmically created at the moment of minting, making your ninja cat truly one-of-a-kind.
         </div>
 
         <!-- MINT STEPS -->
@@ -833,12 +1456,114 @@
                 <option>Maine Coon</option>
                 <option>Calico</option>
                 <option>Sphynx</option>
+                <option>Shadow</option>
+                <option>Nyan</option>
+                <option>Persian</option>
+                <option>Bombay</option>
+                <option>Tabby</option>
             </select>
+
+            <!-- Add AI Provider Selection -->
+            <label for="imageProvider">Choose AI image provider</label>
+            <select id="imageProvider" data-tooltip="Select which AI service will generate your cat's image">
+                <option value="dall-e">DALL-E 3 (OpenAI)</option>
+                <option value="stability">Stability AI (SDXL)</option>
+                <option value="huggingface">HuggingFace (Free)</option>
+            </select>
+
+            <!-- Custom Prompt Input -->
+            <label for="promptExtras">Custom prompt details (optional)</label>
+            <textarea id="promptExtras" class="prompt-input" placeholder="Add specific details you want to see in your ninja cat (e.g., 'with glowing eyes, golden armor')"></textarea>
+
+            <!-- Advanced Options Toggle -->
+            <button class="advanced-toggle" id="advancedToggle">Advanced Options</button>
+
+            <!-- Advanced Options Section -->
+            <div class="advanced-options" id="advancedOptions">
+                <!-- Negative Prompt -->
+                <div class="option-group">
+                    <label for="negativePrompt" class="option-label">Negative prompt (elements to avoid)</label>
+                    <textarea id="negativePrompt" class="prompt-input" placeholder="Specify what you don't want in the image (e.g., 'text, watermark, blurry, distorted')" style="min-height: 60px;">text, watermark, signature, borders, low quality, blurry, distorted</textarea>
+                </div>
+
+                <!-- Provider-specific options containers -->
+                <div class="provider-options-container">
+                    <!-- Provider option panels will be created dynamically by JavaScript -->
+                </div>
+            </div>
 
             <div class="breed-preview">
                 Your ninja cat will be randomly generated at minting
             </div>
 
+            <!-- Add info sections for each provider -->
+            <div id="dall-e-info" class="provider-info active">
+                <h4>DALL-E 3</h4>
+                <p>OpenAI's most advanced image generation model. Creates highly detailed pixel ninja cats with excellent composition and character design.</p>
+                <div class="provider-pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>High quality images</li>
+                            <li>Best text comprehension</li>
+                            <li>Consistent style</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>May be slower</li>
+                            <li>Higher cost</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="huggingface-info" class="provider-info">
+                <h4>Stable Diffusion (HuggingFace)</h4>
+                <p>Free open-source model that creates quality ninja cat pixel art. May have more artistic variation but produces unique stylized results.</p>
+                <div class="provider-pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>Free to use</li>
+                            <li>Multiple model options</li>
+                            <li>Community supported</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>Quality may vary</li>
+                            <li>Can be slower</li>
+                            <li>May require loading time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stability-info" class="provider-info">
+                <h4>Stability AI</h4>
+                <p>Creators of Stable Diffusion with professional image quality. Excellent for detailed ninja cat pixel art with consistent style and composition.</p>
+                <div class="provider-pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>Great stylization</li>
+                            <li>Good fine details</li>
+                            <li>Style control</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>May need more specific prompts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breed Information Cards -->
             <div id="bengal-info" class="breed-info active">
                 <h4>Bengal Ninja</h4>
                 <p>The stealthy Bengal ninjas are known for their spotted patterns and exceptional agility. They excel at infiltration missions and can leap across great distances silently.</p>
@@ -864,14 +1589,66 @@
                 <p>The enigmatic hairless Sphynx ninjas are immune to detection by conventional means. Their unique appearance conceals their true power - an unmatched sensitivity to energy flows.</p>
             </div>
 
-            <!-- Add after the price element -->
+            <div id="shadow-info" class="breed-info">
+                <h4>Shadow Ninja</h4>
+                <p>Legendary and rarely seen, Shadow ninjas are born of void energies. They can merge with darkness completely, making them the ultimate assassins and spies in the Ninja Cat world.</p>
+            </div>
+
+            <div id="nyan-info" class="breed-info">
+                <h4>Nyan Ninja</h4>
+                <p>The cosmic Nyan ninjas trail rainbow energy as they move. These legendary warriors possess playful yet devastating power, channeling the cosmic forces of the multiverse.</p>
+            </div>
+
+            <div id="persian-info" class="breed-info">
+                <h4>Persian Ninja</h4>
+                <p>With their luxurious coats and regal demeanor, Persian ninjas are tactical masterminds. They appear slow and docile but possess unmatched intelligence and strategic prowess.</p>
+            </div>
+
+            <div id="bombay-info" class="breed-info">
+                <h4>Bombay Ninja</h4>
+                <p>These sleek black ninjas are nearly invisible in darkness. Bombay ninjas are considered to be blessed by the night itself, with unparalleled stealth capabilities.</p>
+            </div>
+
+            <div id="tabby-info" class="breed-info">
+                <h4>Tabby Ninja</h4>
+                <p>The most adaptable of all ninja cats, Tabby warriors are versatile fighters. Their distinctive stripes are said to represent the paths of fate they can navigate and manipulate.</p>
+            </div>
+
+            <!-- Price Information -->
             <p class="price" id="price"><span class="spinner"></span> Fetching price…</p>
             <p class="vtru-conversion" id="vtruConversion">≈ <span id="vtruValue">--</span> VTRU</p>
             <p class="vtru-conversion" id="exchangeRateDisplay">1 VTRU = <span id="exchangeRate">--</span> USDC</p>
 
-            <button id="mintBtn" disabled>Mint Your Ninja Cat</button><div id="status"></div>
+            <button id="mintBtn" disabled>Mint Your Ninja Cat</button>
+            <div id="status"></div>
+
+            <!-- Progress bar -->
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+
+            <!-- Download section - hidden by default -->
+            <div id="downloadSection" class="download-section" style="display: none;">
+                <h4>Your NFT is ready!</h4>
+                <p>Download your ninja cat and metadata to keep a local copy of your digital warrior.</p>
+                <div class="download-buttons">
+                    <button id="downloadImage" class="download-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                            <path d="M18 15v3H6v-3H4v3c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-3h-2zm-1-4l-1.41-1.41L13 12.17V4h-2v8.17L8.41 9.59 7 11l5 5 5-5z" />
+                        </svg>
+                        Download Image
+                    </button>
+                    <button id="downloadMetadata" class="download-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z" />
+                        </svg>
+                        Download Metadata
+                    </button>
+                </div>
+            </div>
 
             <p class="disclaimer">By minting, you'll receive a completely unique AI-generated Ninja Cat NFT with randomly assigned traits, colors and abilities.</p>
+            <p class="disclaimer" style="font-size: 0.8rem; font-style: italic;">Keyboard shortcuts: Alt+M to mint, Alt+P to preview</p>
         </section>
 
         <!-- FUN FACTS -->
@@ -886,13 +1663,16 @@
                 <li>Bengal ninjas once patched a rogue contract bug mid-battle, saving countless wallets.</li>
                 <li>Siamese ninjas can communicate telepathically with other cats across different blockchains.</li>
                 <li>Sphynx ninjas can phase through digital walls by temporarily converting to pure hexadecimal.</li>
+                <li>Shadow ninjas leave no transaction traces when moving between contracts.</li>
+                <li>Nyan ninjas can traverse the entire blockchain in a single bound, leaving a rainbow trail.</li>
+                <li>Persian ninjas invented the first anti-MEV protection mechanisms through elaborate fur-based encryption.</li>
+                <li>Tabby ninjas possess the ability to predict gas prices with uncanny accuracy.</li>
             </ul>
         </section>
     </div>
 
-    <!-- Replace the NFT Carousel Functionality script with this fixed version -->
+    <!-- Import configuration for use in the carousel -->
     <script type="module">
-        // Import configuration for use in the carousel
         import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI } from './js/config.js';
 
         // Make these available to the non-module script
@@ -903,9 +1683,7 @@
         };
     </script>
 
-
-
-    <!-- Replace the NFT Carousel script with this fixed version -->
+    <!-- NFT Carousel script -->
     <script>
         // Facts rotator
         const facts = [...document.querySelectorAll('#factList li')]; let i = 0;
@@ -922,8 +1700,95 @@
         breedSelect.addEventListener('change', function () {
             breedInfos.forEach(info => info.classList.remove('active'));
             const selectedBreed = this.value.toLowerCase().replace(' ', '');
-            document.getElementById(selectedBreed + '-info').classList.add('active');
+            const infoElement = document.getElementById(selectedBreed + '-info');
+            if (infoElement) {
+                infoElement.classList.add('active');
+            }
         });
+
+        // Advanced options toggle
+        const advancedToggle = document.getElementById('advancedToggle');
+        const advancedOptions = document.getElementById('advancedOptions');
+
+        advancedToggle.addEventListener('click', function () {
+            this.classList.toggle('active');
+            advancedOptions.classList.toggle('show');
+        });
+
+        // Download functionality
+        function setupNFTDownloads(nftData) {
+            const downloadSection = document.getElementById('downloadSection');
+            const downloadImage = document.getElementById('downloadImage');
+            const downloadMetadata = document.getElementById('downloadMetadata');
+
+            if (!nftData) {
+                console.warn("No NFT data available for download");
+                return;
+            }
+
+            // Show the download section
+            downloadSection.style.display = 'block';
+
+            // Setup image download
+            downloadImage.addEventListener('click', async function () {
+                try {
+                    let imageUrl = nftData.image;
+
+                    // Convert IPFS URL to HTTP if needed
+                    if (imageUrl.startsWith('ipfs://')) {
+                        imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+                    }
+
+                    // Fetch the image
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+
+                    // Create a temporary link and trigger download
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `ninja-cat-${nftData.tokenId || 'image'}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // Clean up
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    console.error("Error downloading image:", error);
+                    alert("Failed to download image. Please try again or check the console for details.");
+                }
+            });
+
+            // Setup metadata download
+            downloadMetadata.addEventListener('click', function () {
+                try {
+                    // Format metadata as pretty JSON
+                    const metadataStr = JSON.stringify(nftData.metadata, null, 2);
+                    const blob = new Blob([metadataStr], { type: 'application/json' });
+
+                    // Create a temporary link and trigger download
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `ninja-cat-${nftData.tokenId || 'metadata'}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // Clean up
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    console.error("Error downloading metadata:", error);
+                    alert("Failed to download metadata. Please try again or check the console for details.");
+                }
+            });
+        }
+
+        // Make the download function available globally for mint.js to use
+        window.setupNFTDownloads = setupNFTDownloads;
 
         // NFT Carousel Functionality - Using imported config
         async function setupNFTCarousel() {
@@ -992,9 +1857,9 @@
                     const item = document.createElement('div');
                     item.className = 'carousel-item';
                     item.innerHTML = `
-                                        <div class="spinner"></div>
-                                        <p>Loading Ninja Cat #${tokenId}...</p>
-                                    `;
+                            <div class="spinner"></div>
+                            <p>Loading Ninja Cat #${tokenId}...</p>
+                        `;
                     carouselTrack.appendChild(item);
 
                     // Create dot
@@ -1033,16 +1898,16 @@
                                 : metadata.image;
 
                             item.innerHTML = `
-                                                <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image" onerror="this.src='${fallbackImage}'">
-                                                <div class="carousel-caption">${metadata.name}</div>
-                                            `;
+                                    <img src="${imageUrl}" alt="${metadata.name}" class="carousel-image" onerror="this.src='${fallbackImage}'">
+                                    <div class="carousel-caption">${metadata.name}</div>
+                                `;
                         }
                     } catch (metadataError) {
                         console.warn(`Error loading metadata for token #${tokenId}:`, metadataError);
                         item.innerHTML = `
-                                            <img src="${fallbackImage}" alt="Ninja Cat #${tokenId}" class="carousel-image">
-                                            <div class="carousel-caption">Ninja Cat #${tokenId}</div>
-                                        `;
+                                <img src="${fallbackImage}" alt="Ninja Cat #${tokenId}" class="carousel-image">
+                                <div class="carousel-caption">Ninja Cat #${tokenId}</div>
+                            `;
                     }
                 }
 
@@ -1050,13 +1915,13 @@
                 const mintSlide = document.createElement('div');
                 mintSlide.className = 'carousel-item';
                 mintSlide.innerHTML = `
-                                    <div style="text-align: center; padding: 20px;">
-                                        <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own"
-                                            style="width: 80px; height: 80px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(138,101,255,0.5));">
-                                        <h3 style="margin: 0 0 10px 0;">Mint your own Ninja Cat!</h3>
-                                        <p>Join the Ninja Cat collection with your unique warrior.</p>
-                                    </div>
-                                `;
+                        <div style="text-align: center; padding: 20px;">
+                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own"
+                                style="width: 80px; height: 80px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(138,101,255,0.5));">
+                            <h3 style="margin: 0 0 10px 0;">Mint your own Ninja Cat!</h3>
+                            <p>Join the Ninja Cat collection with your unique warrior.</p>
+                        </div>
+                    `;
                 carouselTrack.appendChild(mintSlide);
 
                 // Add dot for mint slide
@@ -1112,18 +1977,194 @@
             } catch (error) {
                 console.error("Error setting up NFT carousel:", error);
                 carouselTrack.innerHTML = `
-                                    <div class="carousel-item">
-                                        <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own" style="width: 80px; height: 80px; margin-bottom: 15px;">
-                                        <p>Be the first to mint a Ninja Cat!</p>
-                                        <small style="display: block; margin-top: 10px; color: #666;">Error: ${error.message}</small>
-                                    </div>`;
+                        <div class="carousel-item">
+                            <img src="assets/detailed_ninja_cat_64.png" alt="Mint your own" style="width: 80px; height: 80px; margin-bottom: 15px;">
+                            <p>Be the first to mint a Ninja Cat!</p>
+                            <small style="display: block; margin-top: 10px; color: #666;">Error: ${error.message}</small>
+                        </div>`;
             }
         }
 
         // Initialize carousel when page loads
         document.addEventListener('DOMContentLoaded', setupNFTCarousel);
-    </script>
 
+        document.addEventListener('DOMContentLoaded', function () {
+            // Provider-specific options configuration
+            const providerOptions = {
+                'dall-e': [
+                    {
+                        id: 'dalle-model',
+                        name: 'model',
+                        label: 'Model',
+                        type: 'select',
+                        options: [
+                            { value: 'dall-e-3', label: 'DALL-E 3 (Best Quality)' },
+                            { value: 'dall-e-2', label: 'DALL-E 2 (Faster)' }
+                        ]
+                    },
+                    {
+                        id: 'dalle-quality',
+                        name: 'quality',
+                        label: 'Quality',
+                        type: 'select',
+                        options: [
+                            { value: 'hd', label: 'High Definition' },
+                            { value: 'standard', label: 'Standard' }
+                        ]
+                    },
+                    {
+                        id: 'dalle-style',
+                        name: 'style',
+                        label: 'Style',
+                        type: 'select',
+                        options: [
+                            { value: 'vivid', label: 'Vivid' },
+                            { value: 'natural', label: 'Natural' }
+                        ]
+                    }
+                ],
+                'stability': [
+                    {
+                        id: 'stability-preset',
+                        name: 'stylePreset',
+                        label: 'Style Preset',
+                        type: 'select',
+                        options: [
+                            { value: 'pixel-art', label: 'Pixel Art' },
+                            { value: 'anime', label: 'Anime' },
+                            { value: '3d-model', label: '3D Model' },
+                            { value: 'photographic', label: 'Photographic' },
+                            { value: 'digital-art', label: 'Digital Art' }
+                        ]
+                    }
+                ],
+                'huggingface': [
+                    {
+                        id: 'hf-model',
+                        name: 'model',
+                        label: 'Model',
+                        type: 'select',
+                        options: [
+                            { value: 'stabilityai/stable-diffusion-xl-base-1.0', label: 'SDXL (High Quality)' },
+                            { value: 'prompthero/openjourney', label: 'Openjourney (Midjourney Style)' },
+                            { value: 'runwayml/stable-diffusion-v1-5', label: 'SD 1.5 (Faster)' }
+                        ]
+                    }
+                ]
+            };
+
+            // Create option panels for each provider
+            const optionsContainer = document.querySelector('.provider-options-container');
+
+            for (const [provider, options] of Object.entries(providerOptions)) {
+                const panel = document.createElement('div');
+                panel.id = `${provider}-options`;
+                panel.className = 'provider-option-panel';
+                panel.style.display = 'none';
+
+                // Create form elements for each option
+                options.forEach(option => {
+                    const group = document.createElement('div');
+                    group.className = 'option-group';
+
+                    // Create label
+                    const label = document.createElement('label');
+                    label.className = 'option-label';
+                    label.htmlFor = option.id;
+                    label.textContent = option.label;
+                    group.appendChild(label);
+
+                    if (option.type === 'select') {
+                        // Create select input
+                        const select = document.createElement('select');
+                        select.id = option.id;
+                        select.name = option.name;
+                        select.className = 'form-control';
+
+                        // Add options
+                        option.options.forEach(opt => {
+                            const optEl = document.createElement('option');
+                            optEl.value = opt.value;
+                            optEl.textContent = opt.label;
+                            select.appendChild(optEl);
+                        });
+
+                        group.appendChild(select);
+                    }
+
+                    panel.appendChild(group);
+                });
+
+                optionsContainer.appendChild(panel);
+            }
+
+            // Show the default provider options
+            const defaultProvider = 'dall-e';
+            const defaultPanel = document.getElementById(`${defaultProvider}-options`);
+            if (defaultPanel) defaultPanel.style.display = 'block';
+
+            // Helper function to update the generation summary
+            window.updateGenerationSummary = function () {
+                const summaryEl = document.getElementById('generationSummary');
+                if (!summaryEl) return;
+
+                const provider = document.getElementById('imageProvider').value;
+                const extras = document.getElementById('promptExtras').value ? 'with custom prompt' : '';
+                const negative = document.getElementById('negativePrompt').value ? 'and negative prompt' : '';
+
+                let summary = `Using ${provider} for image generation`;
+                if (extras || negative) {
+                    summary += ` (${extras} ${negative})`.replace('  ', ' ').trim();
+                }
+
+                summaryEl.textContent = summary;
+            };
+        });
+
+        // COMBINED PROVIDER SELECTOR FUNCTIONALITY
+        document.addEventListener('DOMContentLoaded', function () {
+            const imageProvider = document.getElementById('imageProvider');
+            const providerInfos = document.querySelectorAll('.provider-info');
+
+            if (imageProvider) {
+                // Remove any existing event listeners first by cloning the element
+                const oldElement = imageProvider;
+                const newElement = oldElement.cloneNode(true);
+                oldElement.parentNode.replaceChild(newElement, oldElement);
+
+                // Add the combined event listener to the new element
+                newElement.addEventListener('change', function () {
+                    // Part 1: Update provider info panels
+                    providerInfos.forEach(info => info.classList.remove('active'));
+                    const selectedProvider = this.value.toLowerCase();
+                    const providerInfo = document.getElementById(selectedProvider + '-info');
+                    if (providerInfo) providerInfo.classList.add('active');
+
+                    // Part 2: Update provider option panels
+                    document.querySelectorAll('.provider-option-panel').forEach(panel => {
+                        panel.style.display = 'none';
+                    });
+                    const optionPanel = document.getElementById(`${selectedProvider}-options`);
+                    if (optionPanel) {
+                        optionPanel.style.display = 'block';
+                    }
+
+                    // Store the selected provider in localStorage for the server to use
+                    localStorage.setItem('ninjacat_provider', selectedProvider);
+                    console.log(`Selected image provider: ${selectedProvider}`);
+
+                    // Update generation summary if applicable
+                    if (window.updateGenerationSummary) {
+                        window.updateGenerationSummary();
+                    }
+                });
+
+                // Trigger change event on page load to set initial state
+                const event = new Event('change');
+                newElement.dispatchEvent(event);
+            }
+        });
+    </script>
     <script type="module">
         // LP Pool contract address for VTRU/USDC
         const LP_POOL_ADDRESS = "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba";
@@ -1288,16 +2329,12 @@
 
             if (!vtruElement || !vtruConversionEl) return;
 
-            // Rest of the existing function...
             if (usdcPrice && !isNaN(usdcPrice)) {
                 if (exchangeRate && !isNaN(exchangeRate)) {
                     // Calculate how many VTRU you get for the USDC price
                     const vtruValue = (parseFloat(usdcPrice) / exchangeRate).toFixed(2);
                     vtruElement.textContent = vtruValue;
                     vtruConversionEl.style.display = 'block';
-
-                    // Update swap interface if it exists
-                    updateSwapInterface(exchangeRate);
                 } else {
                     // No valid exchange rate
                     vtruElement.textContent = "N/A - Unable to retrieve exchange rate";
@@ -1308,129 +2345,6 @@
                 vtruConversionEl.style.display = 'none';
             }
         }
-
-        // Function to periodically refresh all price data
-        function startPriceUpdates() {
-            // Initial update
-            refreshPriceData();
-
-            // Set interval to update every 30 seconds
-            setInterval(refreshPriceData, 30000);
-        }
-
-        // Function to refresh all price data
-        async function refreshPriceData() {
-            try {
-                const exchangeRate = await window.getExchangeRate();
-
-                // Update navbar price
-                updateNavbarPrice(exchangeRate);
-
-                // Update conversion in mint card
-                const priceElement = document.getElementById('price');
-                if (priceElement) {
-                    const priceText = priceElement.innerText || priceElement.textContent;
-                    const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
-                    if (priceMatch && priceMatch[1]) {
-                        updateVtruConversion(priceMatch[1], exchangeRate);
-                    }
-                }
-            } catch (err) {
-                console.warn("Failed to update prices:", err);
-            }
-        }
-
-        // Function to handle swap interface
-        function updateSwapInterface(exchangeRate) {
-            const vtruInput = document.getElementById('swapVtruAmount');
-            const usdcOutput = document.getElementById('swapUsdcAmount');
-
-            if (vtruInput && usdcOutput && exchangeRate) {
-                // Update the USDC amount based on current input and rate
-                const vtruAmount = parseFloat(vtruInput.value || '0');
-                if (!isNaN(vtruAmount)) {
-                    const usdcAmount = (vtruAmount * exchangeRate).toFixed(2);
-                    usdcOutput.value = usdcAmount;
-                }
-            }
-        }
-
-        // Initialize price updates when document loads
-        document.addEventListener('DOMContentLoaded', function () {
-            // Start periodic price updates
-            startPriceUpdates();
-
-            // Set up swap interface event listeners
-            setupSwapInterface();
-        });
-
-        // Setup swap interface interactions
-        function setupSwapInterface() {
-            const vtruInput = document.getElementById('swapVtruAmount');
-            if (!vtruInput) return;
-
-            vtruInput.addEventListener('input', function () {
-                // Get current exchange rate from displayed value
-                const exchangeRateEl = document.getElementById('exchangeRate');
-                const exchangeRate = exchangeRateEl ? parseFloat(exchangeRateEl.textContent) : null;
-
-                if (exchangeRate) {
-                    updateSwapInterface(exchangeRate);
-                }
-            });
-
-            // Setup swap button
-            const swapBtn = document.getElementById('swapBtn');
-            if (swapBtn) {
-                swapBtn.addEventListener('click', async function () {
-                    // Show connecting message
-                    swapBtn.disabled = true;
-                    swapBtn.textContent = 'Connecting wallet...';
-
-                    try {
-                        // In a real implementation, this would connect to wallet and execute the swap
-                        const provider = await detectEthereumProvider();
-
-                        if (provider) {
-                            // Request account access
-                            swapBtn.textContent = 'Waiting for approval...';
-                            const accounts = await provider.request({ method: 'eth_requestAccounts' });
-
-                            // Show simulated success for now - in a real implementation this would perform the actual swap
-                            swapBtn.textContent = 'Swapping...';
-                            setTimeout(() => {
-                                alert('This is a demo interface. In a production version, this would execute the actual swap transaction.');
-                                swapBtn.disabled = false;
-                                swapBtn.textContent = 'Swap';
-                            }, 1500);
-                        } else {
-                            alert('No wallet detected! Please install MetaMask or another Ethereum wallet.');
-                            swapBtn.disabled = false;
-                            swapBtn.textContent = 'Swap';
-                        }
-                    } catch (err) {
-                        console.error('Error during swap:', err);
-                        alert('Error connecting to wallet: ' + (err.message || 'Unknown error'));
-                        swapBtn.disabled = false;
-                        swapBtn.textContent = 'Swap';
-                    }
-                });
-            }
-        }
-
-        // Helper function to detect provider
-        async function detectEthereumProvider() {
-            if (window.ethereum) {
-                return window.ethereum;
-            }
-            return null;
-        }
     </script>
-
-    <!-- Include the footer -->
-    <footer id="footer"></footer>
-    <script src="js/footer.js"></script>
-    <!-- Include the navbar script -->
-    <script src="js/navbar.js"></script>
 </body>
 </html>

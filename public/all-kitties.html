@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>All Ninja Cats Gallery</title>
+    <title>Pixel Ninja Cats — Gallery</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="Browse all Pixel Ninja Cats in the collection.">
     <link rel="icon" href="assets/detailed_ninja_cat_64.png">
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <script type="module" src="js/navbar.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -18,13 +20,19 @@
             letter-spacing: 0.01em;
         }
 
+        .wrapper {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
         .gallery-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
-            color: #fff;
-            text-shadow: 0 2px 12px #6e45e2a0;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
             .gallery-header h1 {
@@ -35,64 +43,160 @@
                 font-size: 2.5rem;
                 letter-spacing: 0.03em;
                 margin: 0;
+                text-shadow: 0 2px 12px #6e45e2a0;
+            }
+
+        .stats-counter {
+            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
+            padding: 0.7rem 1.2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            color: #a084ff;
+            border: 1.5px solid #2d2d3a;
+            box-shadow: 0 2px 8px #8a65ff22;
+        }
+
+        .filter-container {
+            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1.5px solid #2d2d3a;
+            box-shadow: 0 4px 16px #8a65ff22;
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .filter-title {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #fff;
+            gap: 0.5rem;
+        }
+
+        .filter-icon {
+            color: #8a65ff;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            background: #23263a;
+            border: 1.5px solid #3d3a5a;
+            color: #a084ff;
+            padding: 0.4rem 0.7rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .view-btn.active {
+                background: linear-gradient(135deg, #8a65ff, #2775ca);
+                color: #fff;
+                border-color: #8a65ff;
             }
 
         .filter-controls {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 1rem;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
-            padding: 1.25rem;
-            border-radius: 14px;
-            box-shadow: 0 2px 12px #8a65ff22;
-            border: 1.5px solid #2d2d3a;
         }
 
-            .filter-controls label {
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+            .filter-group label {
                 color: #b0b0b0;
                 font-weight: 500;
-                margin-right: 0.5rem;
+                font-size: 0.9rem;
             }
 
-            .filter-controls select {
-                padding: 8px 12px;
+            .filter-group select {
+                padding: 0.7rem;
                 border-radius: 8px;
                 border: 1.5px solid #444;
                 background: #23263a;
                 color: #fff;
                 font-family: 'Poppins', sans-serif;
-                font-size: 1em;
                 box-shadow: 0 1px 3px #8a65ff11;
-                transition: border 0.2s;
+                transition: all 0.2s;
             }
 
-                .filter-controls select:focus {
+                .filter-group select:focus {
                     border: 1.5px solid #8a65ff;
                     outline: none;
                     box-shadow: 0 0 8px #8a65ff33;
                 }
 
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.2rem;
+            gap: 1rem;
+        }
+
+        .reset-filters {
+            background: transparent;
+            border: 1.5px solid #3d3a5a;
+            color: #b0b0b0;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+        }
+
+            .reset-filters:hover {
+                background: rgba(138,101,255,0.1);
+                color: #fff;
+            }
+
+        .apply-filters {
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            border: none;
+            color: #fff;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            box-shadow: 0 2px 8px #8a65ff22;
+        }
+
+            .apply-filters:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px #8a65ff44;
+            }
+
+        /* Grid View Styles */
         #kittiesGrid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 2rem;
             margin-bottom: 2rem;
-            animation: fadeIn 1.2s;
+            animation: fadeIn 1s;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
+            #kittiesGrid.list-view {
+                grid-template-columns: 1fr;
+                gap: 1rem;
             }
 
-            to {
-                opacity: 1;
-                transform: none;
-            }
-        }
-
+        /* Cat Card Styles */
         .cat-card {
             background: linear-gradient(120deg, rgba(138,101,255,0.10) 0%, rgba(39,117,202,0.08) 100%);
             border-radius: 18px;
@@ -102,26 +206,25 @@
             position: relative;
             border: 1.5px solid #2d2d3a;
             animation: fadeInUp 0.7s;
+            cursor: pointer;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
+            .cat-card:hover {
+                transform: translateY(-12px) scale(1.035);
+                box-shadow: 0 16px 40px #8a65ff44, 0 0 25px #2775ca44;
+                border-color: #8a65ff;
+                z-index: 2;
             }
 
-            to {
-                opacity: 1;
-                transform: none;
-            }
+        .list-view .cat-card {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
         }
 
-        .cat-card:hover {
-            transform: translateY(-12px) scale(1.035);
-            box-shadow: 0 16px 40px #8a65ff44, 0 0 25px #2775ca44;
-            border-color: #8a65ff;
-            z-index: 2;
-        }
+            .list-view .cat-card:hover {
+                transform: translateY(-5px) scale(1.01);
+            }
 
         .cat-image {
             width: 100%;
@@ -130,18 +233,30 @@
             display: block;
             border-bottom: 1.5px solid #2d2d3a;
             background: #23263a;
-            transition: box-shadow 0.3s;
+            transition: all 0.3s;
             box-shadow: 0 2px 12px #8a65ff22;
         }
 
-        .cat-card:hover .cat-image {
-            box-shadow: 0 8px 32px #8a65ff55, 0 2px 12px #2775ca55;
+        .list-view .cat-image {
+            width: 120px;
+            height: 120px;
+            border-bottom: none;
+            border-right: 1.5px solid #2d2d3a;
         }
 
         .cat-info {
             padding: 1.5rem;
             background: linear-gradient(to bottom, #1e1e1e, #252525);
             color: #fff;
+        }
+
+        .list-view .cat-info {
+            display: flex;
+            flex: 1;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            justify-content: space-between;
         }
 
         .cat-name {
@@ -153,11 +268,21 @@
             text-shadow: 0 2px 8px #8a65ff33;
         }
 
+        .list-view .cat-name {
+            margin: 0;
+            flex: 1;
+        }
+
         .cat-traits {
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
             margin-bottom: 1rem;
+        }
+
+        .list-view .cat-traits {
+            flex: 2;
+            margin-bottom: 0;
         }
 
         .trait-tag {
@@ -170,6 +295,18 @@
             display: inline-block;
             letter-spacing: 0.01em;
             box-shadow: 0 1px 4px #8a65ff11;
+            transition: all 0.2s;
+        }
+
+            .trait-tag:hover {
+                background: linear-gradient(135deg, #8a65ff33 0%, #23263a 100%);
+                color: #fff;
+                transform: translateY(-2px);
+            }
+
+        .element-icon {
+            margin-right: 4px;
+            vertical-align: middle;
         }
 
         .cat-owner {
@@ -183,11 +320,48 @@
             opacity: 0.85;
         }
 
+        .list-view .cat-owner {
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+            text-align: right;
+            flex: 1;
+            min-width: 150px;
+        }
+
         .cat-owner-label {
             font-weight: 600;
             color: #b0b0b0;
             margin-right: 0.3em;
         }
+
+        .cat-actions {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .list-view .cat-actions {
+            margin-top: 0;
+            flex-basis: 120px;
+        }
+
+        .view-details-btn {
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            font-family: 'Poppins', sans-serif;
+        }
+
+            .view-details-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(138,101,255,0.3);
+            }
 
         .rarity-badge {
             position: absolute;
@@ -228,13 +402,52 @@
             border: 1.5px solid #90EE90;
         }
 
-        .loading {
+        /* Element-specific styling */
+        .element-fire {
+            color: #ff7043;
+        }
+
+        .element-water {
+            color: #42a5f5;
+        }
+
+        .element-earth {
+            color: #66bb6a;
+        }
+
+        .element-air {
+            color: #b0bec5;
+        }
+
+        .element-void {
+            color: #9c27b0;
+        }
+
+        /* States */
+        .loading-state {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 2.5rem;
-            color: #e0e0e0;
+            padding: 3rem 1rem;
+            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
+            border-radius: 14px;
+            margin-bottom: 2rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
 
         .spinner {
@@ -253,16 +466,99 @@
             }
         }
 
+        .loading-text {
+            font-weight: 600;
+            color: #e0e0e0;
+            text-align: center;
+        }
+
+        .loading-progress {
+            width: 240px;
+            height: 6px;
+            background: #23263a;
+            border-radius: 10px;
+            margin-top: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-bar {
+            height: 100%;
+            width: 30%;
+            background: linear-gradient(90deg, #8a65ff, #2775ca);
+            border-radius: 10px;
+            position: absolute;
+            animation: loading 2s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                left: -30%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
+            border-radius: 14px;
+            margin-bottom: 2rem;
+            text-align: center;
+            border: 1.5px dashed #3d3a5a;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            color: #8a65ff;
+            margin-bottom: 1rem;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .empty-message {
+            color: #b0b0b0;
+            margin-bottom: 1.5rem;
+            max-width: 400px;
+        }
+
+        .retry-btn {
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            border: none;
+            color: #fff;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+        }
+
+            .retry-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px #8a65ff44;
+            }
+
         .pagination {
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
             margin: 2.5rem 0;
         }
 
             .pagination button {
-                padding: 0.6rem 1.2rem;
-                border: 1.5px solid #8a65ff33;
+                padding: 0.7rem 1.2rem;
+                border: 1.5px solid #3d3a5a;
                 background: #23263a;
                 color: #b0b0b0;
                 cursor: pointer;
@@ -270,14 +566,14 @@
                 transition: all 0.2s;
                 font-weight: 500;
                 font-family: 'Poppins', sans-serif;
-                font-size: 1em;
                 box-shadow: 0 1px 4px #8a65ff11;
             }
 
-                .pagination button:hover {
+                .pagination button:hover:not(:disabled) {
                     background: linear-gradient(135deg, #8a65ff, #2775ca);
                     color: #fff;
                     border-color: #8a65ff;
+                    box-shadow: 0 4px 12px #8a65ff33;
                 }
 
                 .pagination button.active {
@@ -288,45 +584,102 @@
                     box-shadow: 0 2px 8px #8a65ff22;
                 }
 
+                .pagination button:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Responsive adjustments */
         @media (max-width: 1100px) {
             #kittiesGrid {
                 gap: 1.2rem;
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             }
 
             .gallery-header {
                 flex-direction: column;
-                gap: 0.7rem;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .filter-controls {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             }
         }
 
         @media (max-width: 768px) {
+            .wrapper {
+                padding: 1rem;
+            }
+
+            .gallery-header h1 {
+                font-size: 2rem;
+            }
+
             #kittiesGrid {
                 grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-                gap: 0.8rem;
+                gap: 1rem;
             }
 
             .cat-info {
                 padding: 1rem;
             }
 
-            .gallery-header h1 {
-                font-size: 1.5rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .gallery-header {
+            .list-view .cat-card {
                 flex-direction: column;
+            }
+
+            .list-view .cat-image {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1.5px solid #2d2d3a;
+            }
+
+            .list-view .cat-info {
+                flex-direction: column;
+                width: 100%;
                 gap: 0.5rem;
             }
 
-            .cat-info {
-                padding: 0.7rem;
+            .list-view .cat-traits,
+            .list-view .cat-owner,
+            .list-view .cat-actions {
+                width: 100%;
+                text-align: left;
+                margin-top: 0.5rem;
             }
 
-            .cat-card {
-                border-radius: 10px;
+            .filter-actions {
+                flex-direction: column;
+            }
+
+            .reset-filters,
+            .apply-filters {
+                width: 100%;
             }
         }
     </style>
@@ -337,48 +690,156 @@
     <div class="wrapper">
         <div class="gallery-header">
             <h1>Ninja Cat Gallery</h1>
-            <div>
-                <span id="totalCount">0</span> cats discovered
+            <div class="stats-counter">
+                <span id="totalCount">0</span> ninja warriors discovered
             </div>
         </div>
 
-        <div class="filter-controls">
-            <div>
-                <label for="sortBy">Sort by:</label>
-                <select id="sortBy">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="rarity">Rarity</option>
-                </select>
+        <div class="filter-container">
+            <div class="filter-header">
+                <div class="filter-title">
+                    <svg class="filter-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                    </svg>
+                    Filter & Sort
+                </div>
+                <div class="view-toggle">
+                    <button id="gridViewBtn" class="view-btn active" title="Grid View">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </button>
+                    <button id="listViewBtn" class="view-btn" title="List View">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
-            <div>
-                <label for="rarityFilter">Rarity:</label>
-                <select id="rarityFilter">
-                    <option value="">All Rarities</option>
-                    <option value="legendary">Legendary</option>
-                    <option value="epic">Epic</option>
-                    <option value="rare">Rare</option>
-                    <option value="common">Common</option>
-                </select>
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="sortBy">Sort by</label>
+                    <select id="sortBy">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="rarity">Rarity (Highest)</option>
+                        <option value="rarityAsc">Rarity (Lowest)</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="rarityFilter">Rarity</label>
+                    <select id="rarityFilter">
+                        <option value="">All Rarities</option>
+                        <option value="legendary">Legendary</option>
+                        <option value="epic">Epic</option>
+                        <option value="rare">Rare</option>
+                        <option value="common">Common</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="rankFilter">Rank</label>
+                    <select id="rankFilter">
+                        <option value="">All Ranks</option>
+                        <option value="Novice">Novice</option>
+                        <option value="Adept">Adept</option>
+                        <option value="Elite">Elite</option>
+                        <option value="Veteran">Veteran</option>
+                        <option value="Master">Master</option>
+                        <option value="Shadow Master">Shadow Master</option>
+                        <option value="Mystic">Mystic</option>
+                        <option value="Warlord">Warlord</option>
+                        <option value="Legendary">Legendary</option>
+                        <option value="Immortal">Immortal</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="breedFilter">Breed</label>
+                    <select id="breedFilter">
+                        <option value="">All Breeds</option>
+                        <option value="Bengal">Bengal</option>
+                        <option value="Siamese">Siamese</option>
+                        <option value="Maine Coon">Maine Coon</option>
+                        <option value="Calico">Calico</option>
+                        <option value="Sphynx">Sphynx</option>
+                        <option value="Shadow">Shadow</option>
+                        <option value="Nyan">Nyan</option>
+                        <option value="Persian">Persian</option>
+                        <option value="Bombay">Bombay</option>
+                        <option value="Tabby">Tabby</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="elementFilter">Element</label>
+                    <select id="elementFilter">
+                        <option value="">All Elements</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Water">Water</option>
+                        <option value="Earth">Earth</option>
+                        <option value="Air">Air</option>
+                        <option value="Void">Void</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="weaponFilter">Weapon</label>
+                    <select id="weaponFilter">
+                        <option value="">All Weapons</option>
+                        <option value="Katana">Katana</option>
+                        <option value="Shuriken">Shuriken</option>
+                        <option value="Kunai">Kunai</option>
+                        <option value="Nunchaku">Nunchaku</option>
+                        <option value="Bo Staff">Bo Staff</option>
+                        <option value="Claws">Claws</option>
+                        <option value="Ghost Dagger">Ghost Dagger</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="stanceFilter">Stance</label>
+                    <select id="stanceFilter">
+                        <option value="">All Stances</option>
+                        <option value="Shadow">Shadow</option>
+                        <option value="Stealth">Stealth</option>
+                        <option value="Defensive">Defensive</option>
+                        <option value="Aggressive">Aggressive</option>
+                        <option value="Balanced">Balanced</option>
+                        <option value="Void">Void</option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <label for="breedFilter">Breed:</label>
-                <select id="breedFilter">
-                    <option value="">All Breeds</option>
-                    <option value="Bengal">Bengal</option>
-                    <option value="Siamese">Siamese</option>
-                    <option value="Maine Coon">Maine Coon</option>
-                    <option value="Calico">Calico</option>
-                    <option value="Sphynx">Sphynx</option>
-                </select>
+            <div class="filter-actions">
+                <button id="resetFilters" class="reset-filters">Reset Filters</button>
+                <button id="applyFilters" class="apply-filters">Apply Filters</button>
             </div>
         </div>
 
-        <div id="loadingState" class="loading">
+        <div id="loadingState" class="loading-state">
             <div class="spinner"></div>
-            <p>Loading ninja cats from the blockchain...</p>
+            <p class="loading-text">Loading ninja cats from the blockchain...</p>
+            <div class="loading-progress">
+                <div class="loading-bar"></div>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display:none">
+            <div class="empty-icon">🥷</div>
+            <h3 class="empty-title">No Ninja Cats Found</h3>
+            <p class="empty-message">Try adjusting your filters or check back later as more ninja cats join the blockchain.</p>
+            <button id="retryBtn" class="retry-btn">Reset Filters</button>
         </div>
 
         <div id="kittiesGrid"></div>
@@ -392,7 +853,5 @@
     <!-- Include the footer -->
     <footer id="footer"></footer>
     <script src="js/footer.js"></script>
-
-    <script src="js/navbar.js"></script>
 </body>
 </html>

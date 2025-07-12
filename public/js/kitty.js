@@ -194,6 +194,101 @@ function animateSkillBars() {
     });
 }
 
+// Get the appropriate CSS class for a rarity tier
+function getRarityClass(rarity) {
+    const tier = rarity.toLowerCase();
+    switch (tier) {
+        case 'legendary':
+            return 'legendary-badge';
+        case 'epic':
+            return 'epic-badge';
+        case 'rare':
+            return 'rare-badge';
+        case 'uncommon':
+            return 'uncommon-badge';
+        case 'common':
+            return 'common-badge';
+        case 'mythic':
+            return 'mythic-badge';
+        default:
+            return '';
+    }
+}
+
+// Get color class for specific elements
+function getElementClass(element) {
+    if (!element) return '';
+    const elementLower = element.toLowerCase();
+
+    if (elementLower === 'fire') return 'element-fire';
+    if (elementLower === 'water') return 'element-water';
+    if (elementLower === 'earth') return 'element-earth';
+    if (elementLower === 'air' || elementLower === 'wind') return 'element-air';
+    if (elementLower === 'void') return 'element-void';
+    if (elementLower === 'lightning' || elementLower === 'thunder') return 'element-lightning';
+    if (elementLower === 'ice') return 'element-ice';
+    if (elementLower === 'shadow') return 'element-shadow';
+    if (elementLower === 'light') return 'element-light';
+    if (elementLower === 'cosmic') return 'element-cosmic';
+
+    return '';
+}
+
+// Format special/mythic traits with highlights
+function formatSpecialTrait(trait) {
+    const isSpecial = trait.rarity === 'Unique';
+    const isMythic = trait.rarity === 'Mythic';
+
+    if (!isSpecial && !isMythic) return trait.value;
+
+    if (isMythic) {
+        return `<span class="mythic-trait">${trait.value}</span>`;
+    } else {
+        return `<span class="special-trait">${trait.value}</span>`;
+    }
+}
+
+// Generate HTML for a trait card based on trait information
+function createTraitCard(attr, showRarity = true) {
+    // Get rarity from the attribute or use default
+    const rarity = attr.rarity || "Common";
+
+    // Calculate progress width based on rarity tier
+    const rarityTierScore = {
+        "Common": 25,
+        "Uncommon": 50,
+        "Rare": 75,
+        "Epic": 85,
+        "Legendary": 95,
+        "Mythic": 98,
+        "Unique": 90
+    };
+
+    // Use rarity score if provided or fall back to tier-based score
+    const progressWidth = attr.rarityScore || rarityTierScore[rarity] || 50;
+
+    // Apply element-specific styling
+    let elementClass = '';
+    if (attr.trait_type === 'Element') {
+        elementClass = getElementClass(attr.value);
+    }
+
+    // Check if this is a special trait
+    const isSpecial = rarity === 'Unique' || rarity === 'Mythic';
+    const specialClass = isSpecial ? 'special-attribute-card' : '';
+
+    return `
+    <div class="attribute-card ${specialClass} ${elementClass}">
+        <div class="attribute-type">${attr.trait_type}</div>
+        <div class="attribute-value">${isSpecial ? formatSpecialTrait(attr) : attr.value}</div>
+        <div class="skill-bar">
+            <div class="skill-progress" style="width: ${progressWidth}%"></div>
+        </div>
+        ${showRarity ? `<div class="attribute-rarity">${rarity}</div>` : ''}
+    </div>
+    `;
+}
+
 // Main function
 document.addEventListener('DOMContentLoaded', async function () {
     try {
@@ -287,12 +382,26 @@ document.addEventListener('DOMContentLoaded', async function () {
                     safeSetTextContent('catBreed', breed);
                 }
 
+                // Check for special & mythic traits
+                const specialTrait = metadata.attributes.find(attr =>
+                    attr.rarity === 'Unique' ||
+                    (attr.trait_type && ['Technique', 'Skill', 'Move', 'Style', 'Secret', 'Ability', 'Power', 'Mastery'].includes(attr.trait_type))
+                );
+
+                const mythicTrait = metadata.attributes.find(attr =>
+                    attr.rarity === 'Mythic' ||
+                    (attr.trait_type && ['Blessing', 'Power', 'Title', 'Ability', 'Secret'].includes(attr.trait_type))
+                );
+
                 // Get weapon, element for tagline
                 const weaponAttr = metadata.attributes.find(attr => attr.trait_type === 'Weapon');
                 const elementAttr = metadata.attributes.find(attr => attr.trait_type === 'Element');
+                const stanceAttr = metadata.attributes.find(attr => attr.trait_type === 'Stance');
+                const rankAttr = metadata.attributes.find(attr => attr.trait_type === 'Rank');
 
                 // Create tagline from actual traits
-                let tagline = "Master ninja cat";
+                let tagline = rankAttr ? `${rankAttr.value} ninja cat` : "Master ninja cat";
+
                 if (elementAttr && weaponAttr) {
                     tagline = `${elementAttr.value} ${weaponAttr.value} specialist`;
                 } else if (elementAttr) {
@@ -301,9 +410,24 @@ document.addEventListener('DOMContentLoaded', async function () {
                     tagline = `${weaponAttr.value} wielding warrior`;
                 }
 
+                // Add stance to tagline if available
+                if (stanceAttr) {
+                    tagline += ` • ${stanceAttr.value} stance`;
+                }
+
+                // Add special trait to tagline if present
+                if (specialTrait) {
+                    tagline += ` • ${specialTrait.trait_type}: ${specialTrait.value}`;
+                }
+
+                // Add mythic trait to tagline with special formatting
+                if (mythicTrait) {
+                    tagline += ` • 🌟 ${mythicTrait.trait_type}: ${mythicTrait.value} 🌟`;
+                }
+
                 // Check if we have ninja_data.backstory.name to use as title
                 if (metadata.ninja_data && metadata.ninja_data.backstory && metadata.ninja_data.backstory.name) {
-                    tagline = metadata.ninja_data.backstory.name + " - " + tagline;
+                    tagline = metadata.ninja_data.backstory.name + " • " + tagline;
                 }
 
                 safeSetTextContent('catTagline', tagline);
@@ -314,43 +438,123 @@ document.addEventListener('DOMContentLoaded', async function () {
                     safeSetTextContent('catRarityScore', `${rarityData.score}/100`);
 
                     // Set rarity badge
-                    const rarityTier = rarityData.tier.toLowerCase();
+                    const rarityTier = rarityData.tier;
                     safeUpdateElement('rarityBadge', el => {
-                        el.textContent = rarityData.tier;
-                        el.className = `rarity-badge ${rarityTier}-badge`;
+                        el.textContent = rarityTier;
+                        el.className = `rarity-badge ${getRarityClass(rarityTier)}`;
                     });
+                } else {
+                    // Fallback rarity detection from attributes
+                    const rarityAttr = metadata.attributes.find(attr =>
+                        attr.trait_type === "Rarity" ||
+                        attr.trait_type === "Rank"
+                    );
+
+                    if (rarityAttr) {
+                        safeSetTextContent('catRarityScore', `${rarityAttr.value}/100`);
+                        safeUpdateElement('rarityBadge', el => {
+                            el.textContent = rarityAttr.value;
+                            el.className = `rarity-badge ${getRarityClass(rarityAttr.value)}`;
+                        });
+                    }
                 }
 
-                // Display all attributes from metadata in the attributes grid
-                safeUpdateElement('attributesGrid', el => {
-                    el.innerHTML = metadata.attributes
-                        .filter(attr => attr.trait_type !== "Breed") // Skip breed as it's shown elsewhere
-                        .map(attr => {
-                            // Use the rarity from the attribute if available
-                            const rarityValue = attr.rarity || "Unknown";
-                            // Calculate progress width based on rarity tier
-                            const rarityTierScore = {
-                                "Common": 25,
-                                "Uncommon": 50,
-                                "Rare": 75,
-                                "Epic": 85,
-                                "Legendary": 95,
-                                "Mythic": 98
-                            };
-                            const progressWidth = rarityTierScore[rarityValue] || 50;
+                // Group attributes by category for better organization
+                const combatStats = metadata.attributes.filter(attr =>
+                    ['Agility', 'Stealth', 'Power', 'Intelligence'].includes(attr.trait_type)
+                );
 
-                            return `
-                                <div class="attribute-card">
-                                    <div class="attribute-type">${attr.trait_type}</div>
-                                    <div class="attribute-value">${attr.value}</div>
-                                    <div class="skill-bar">
-                                        <div class="skill-progress" style="width: ${progressWidth}%"></div>
-                                    </div>
-                                    <div class="attribute-rarity">${rarityValue}</div>
-                                </div>
-                            `;
-                        })
+                const coreTraits = metadata.attributes.filter(attr =>
+                    ['Breed', 'Weapon', 'Element', 'Stance', 'Rank', 'Accessory'].includes(attr.trait_type)
+                );
+
+                const specialTraits = metadata.attributes.filter(attr =>
+                    attr.rarity === 'Unique' ||
+                    attr.rarity === 'Mythic' ||
+                    ['Technique', 'Skill', 'Move', 'Style', 'Secret', 'Ability', 'Power', 'Mastery', 'Blessing', 'Title'].includes(attr.trait_type)
+                );
+
+                // Display all core attributes
+                safeUpdateElement('attributesGrid', el => {
+                    el.innerHTML = coreTraits
+                        .filter(attr => attr.trait_type !== "Breed") // Skip breed as it's shown elsewhere
+                        .map(attr => createTraitCard(attr))
                         .join('');
+
+                    // Add any special traits at the end
+                    if (specialTraits.length > 0) {
+                        el.innerHTML += `<div class="attributes-divider"><span>Special Traits</span></div>`;
+                        el.innerHTML += specialTraits
+                            .map(attr => createTraitCard(attr))
+                            .join('');
+                    }
+                });
+
+                // Display combat stats
+                safeUpdateElement('combatSkillsGrid', el => {
+                    // Use combat_stats from ninja_data if available, otherwise use attributes
+                    if (metadata.ninja_data && metadata.ninja_data.combat_stats) {
+                        const stats = metadata.ninja_data.combat_stats;
+                        const combatStatsArray = [
+                            { trait_type: 'Agility', value: stats.agility || 5, display_type: "number" },
+                            { trait_type: 'Stealth', value: stats.stealth || 5, display_type: "number" },
+                            { trait_type: 'Power', value: stats.power || 5, display_type: "number" },
+                            { trait_type: 'Intelligence', value: stats.intelligence || 5, display_type: "number" }
+                        ];
+
+                        el.innerHTML = combatStatsArray
+                            .map(stat => {
+                                // Convert stat value to percentage for display
+                                const percentage = Math.min(100, stat.value * 10);
+                                return `
+                                <div class="attribute-card">
+                                    <div class="attribute-type">${stat.trait_type}</div>
+                                    <div class="attribute-value">${stat.value}/10</div>
+                                    <div class="skill-bar">
+                                        <div class="skill-progress" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+                                `;
+                            })
+                            .join('');
+                    } else if (combatStats.length > 0) {
+                        // Use combat stats from attributes
+                        el.innerHTML = combatStats
+                            .map(stat => createTraitCard(stat, false))
+                            .join('');
+                    } else {
+                        // Generate default combat stats
+                        el.innerHTML = `
+                            <div class="attribute-card">
+                                <div class="attribute-type">Agility</div>
+                                <div class="attribute-value">5/10</div>
+                                <div class="skill-bar">
+                                    <div class="skill-progress" style="width: 50%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-card">
+                                <div class="attribute-type">Stealth</div>
+                                <div class="attribute-value">5/10</div>
+                                <div class="skill-bar">
+                                    <div class="skill-progress" style="width: 50%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-card">
+                                <div class="attribute-type">Power</div>
+                                <div class="attribute-value">5/10</div>
+                                <div class="skill-bar">
+                                    <div class="skill-progress" style="width: 50%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-card">
+                                <div class="attribute-type">Intelligence</div>
+                                <div class="attribute-value">5/10</div>
+                                <div class="skill-bar">
+                                    <div class="skill-progress" style="width: 50%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
                 });
 
                 // Display backstory if available in ninja_data
@@ -368,6 +572,29 @@ document.addEventListener('DOMContentLoaded', async function () {
                     if (backstory.currentRole) {
                         safeSetTextContent('catStoryPart3', backstory.currentRole);
                     }
+                } else if (metadata.description) {
+                    // If no structured backstory, use the description field
+                    // Split the description into paragraphs
+                    const paragraphs = metadata.description.split('. ');
+
+                    if (paragraphs.length >= 3) {
+                        // If we have at least 3 sentences, split them into 3 parts
+                        const third = Math.floor(paragraphs.length / 3);
+
+                        safeSetTextContent('catStoryPart1', paragraphs.slice(0, third).join('. ') + '.');
+                        safeSetTextContent('catStoryPart2', paragraphs.slice(third, third * 2).join('. ') + '.');
+                        safeSetTextContent('catStoryPart3', paragraphs.slice(third * 2).join('. '));
+                    } else {
+                        // If fewer than 3 paragraphs, use what we have
+                        safeSetTextContent('catStoryPart1', paragraphs[0] + '.');
+                        if (paragraphs.length > 1) {
+                            safeSetTextContent('catStoryPart2', paragraphs[1] + '.');
+                            safeSetTextContent('catStoryPart3', paragraphs.slice(2).join('. '));
+                        } else {
+                            safeSetTextContent('catStoryPart2', 'Through years of disciplined training, this ninja cat mastered the ancient arts of stealth and combat.');
+                            safeSetTextContent('catStoryPart3', 'Now a formidable warrior, they protect the blockchain realm from threats seen and unseen.');
+                        }
+                    }
                 }
 
                 // Display special abilities from ninja_data if available
@@ -377,29 +604,37 @@ document.addEventListener('DOMContentLoaded', async function () {
                             .map(ability => `<li>${ability}</li>`)
                             .join('');
                     });
-                }
+                } else if (specialTrait || mythicTrait) {
+                    // Generate special abilities based on special/mythic traits
+                    safeUpdateElement('specialAbilities', el => {
+                        let abilities = [];
 
-                // Display combat stats from ninja_data if available
-                if (metadata.ninja_data && metadata.ninja_data.combat_stats) {
-                    const stats = metadata.ninja_data.combat_stats;
+                        if (specialTrait) {
+                            abilities.push(`<li><strong>${specialTrait.trait_type}:</strong> ${specialTrait.value} - A rare technique mastered by only the most skilled ninja cats.</li>`);
+                        }
 
-                    safeUpdateElement('combatSkillsGrid', el => {
-                        const combatStats = [
-                            { name: 'Agility', value: stats.agility || 50 },
-                            { name: 'Stealth', value: stats.stealth || 50 },
-                            { name: 'Power', value: stats.power || 50 },
-                            { name: 'Intelligence', value: stats.intelligence || 50 }
-                        ];
+                        if (mythicTrait) {
+                            abilities.push(`<li><strong>${mythicTrait.trait_type}:</strong> ${mythicTrait.value} - An ancient mystical power bestowed upon the chosen feline warriors.</li>`);
+                        }
 
-                        el.innerHTML = combatStats.map(stat => `
-                            <div class="attribute-card">
-                                <div class="attribute-type">${stat.name}</div>
-                                <div class="attribute-value">${stat.value}/100</div>
-                                <div class="skill-bar">
-                                    <div class="skill-progress" style="width: ${stat.value}%"></div>
-                                </div>
-                            </div>
-                        `).join('');
+                        if (elementAttr) {
+                            abilities.push(`<li><strong>${elementAttr.value} Mastery</strong> - Complete control over the ${elementAttr.value.toLowerCase()} element.</li>`);
+                        }
+
+                        if (weaponAttr) {
+                            abilities.push(`<li><strong>${weaponAttr.value} Expertise</strong> - Unmatched skill with the ${weaponAttr.value.toLowerCase()}.</li>`);
+                        }
+
+                        el.innerHTML = abilities.join('');
+                    });
+                } else {
+                    // Default special abilities
+                    safeUpdateElement('specialAbilities', el => {
+                        el.innerHTML = `
+                            <li>Silent Paws - Can move without making a sound</li>
+                            <li>Night Vision - Can see perfectly in the darkness</li>
+                            <li>Quick Reflexes - Able to dodge attacks with supernatural speed</li>
+                        `;
                     });
                 }
             }

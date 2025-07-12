@@ -8,8 +8,21 @@
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <!-- Optional: Include GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Optional: Include Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Optional: Include Sortable.js for drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Optional: Include QR Code generation -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Optional: Include Tippy.js for tooltips -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
     <style>
         @import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css');
+
 
         body {
             background: radial-gradient(ellipse at 60% 10%, #23263a 0%, #121212 100%);
@@ -833,6 +846,627 @@
                 margin-left: 0;
             }
         }
+
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+            .theme-switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2c2c2e;
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid #444;
+        }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 16px;
+                width: 16px;
+                left: 4px;
+                bottom: 3px;
+                background-color: #8a65ff;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+        input:checked + .slider {
+            background-color: #fff;
+        }
+
+            input:checked + .slider:before {
+                transform: translateX(26px);
+                background-color: #ff9800;
+            }
+
+        /* Search Box */
+        .search-container {
+            position: relative;
+            flex: 1;
+            max-width: 300px;
+        }
+
+            .search-container input {
+                width: 100%;
+                padding: 0.75rem 1rem 0.75rem 2.5rem;
+                background: #2c2c2e;
+                color: #ffffff;
+                border: 1px solid #444;
+                border-radius: 8px;
+                font-family: 'Poppins', sans-serif;
+                font-size: 1em;
+            }
+
+                .search-container input:focus {
+                    border: 1.5px solid #8a65ff;
+                    outline: none;
+                    box-shadow: 0 0 8px #8a65ff33;
+                }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #b0b0b0;
+            pointer-events: none;
+        }
+
+        /* Filter Badges */
+        .active-filters {
+            display: none;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .filter-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: rgba(138, 101, 255, 0.15);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #e0e0e0;
+            border: 1px solid rgba(138, 101, 255, 0.3);
+        }
+
+            .filter-badge .remove-filter {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                border: none;
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+                font-size: 0.9rem;
+                line-height: 1;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+                .filter-badge .remove-filter:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+
+        .clear-all-filters {
+            background: rgba(255, 152, 0, 0.15);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            color: #ff9800;
+            border-radius: 20px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .clear-all-filters:hover {
+                background: rgba(255, 152, 0, 0.25);
+            }
+
+        /* Batch Actions Panel */
+        .batch-actions-panel {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: linear-gradient(120deg, rgba(138, 101, 255, 0.1) 0%, rgba(255, 152, 0, 0.08) 100%);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            border: 1.5px solid #2d2d3a;
+            position: sticky;
+            top: 10px;
+            z-index: 10;
+        }
+
+            .batch-actions-panel .selection-count {
+                padding: 0.3rem 0.7rem;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 20px;
+                font-size: 0.9rem;
+            }
+
+            .batch-actions-panel .batch-btn {
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: 6px;
+                font-family: 'Poppins', sans-serif;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+                .batch-actions-panel .batch-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                }
+
+        /* Selection Mode */
+        .selection-mode .kitty-card {
+            position: relative;
+            cursor: pointer;
+        }
+
+            .selection-mode .kitty-card::before {
+                content: '';
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.5);
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                z-index: 10;
+                transition: all 0.2s;
+            }
+
+            .selection-mode .kitty-card.selected::before {
+                background: #8a65ff;
+                border-color: #fff;
+            }
+
+        /* Drag Handle */
+        .kitty-drag-handle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .kitty-card:hover .kitty-drag-handle {
+            opacity: 1;
+        }
+
+        /* Gallery Overlay */
+        .gallery-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .gallery-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .gallery-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .gallery-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+        .gallery-image {
+            max-height: 70vh;
+            max-width: 80vw;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .gallery-info {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .gallery-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .gallery-metadata {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .gallery-traits {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .gallery-trait {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Modal Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-dialog {
+            background: #1e1e1e;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .modal-header h3 {
+                margin: 0;
+                font-size: 1.2rem;
+            }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #444;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .modal-btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .cancel-btn {
+            background: #444;
+            color: #fff;
+        }
+
+        .confirm-btn {
+            background: #8a65ff;
+            color: #fff;
+        }
+
+        /* Collection Stats */
+        .collection-stats {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .chart-container {
+            background: rgba(30, 30, 30, 0.5);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #444;
+        }
+
+        /* Loading Indicator for Images */
+        .image-loading-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 30, 30, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+            .image-loading-indicator .spinner {
+                width: 40px;
+                height: 40px;
+                border-width: 3px;
+            }
+
+        /* Contract Address Display */
+        .contract-address {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #9e9e9e;
+            margin-bottom: 1.5rem;
+        }
+
+            .contract-address a {
+                color: #8a65ff;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+            }
+
+                .contract-address a:hover {
+                    text-decoration: underline;
+                }
+
+        /* Tippy Theme */
+        .tippy-box[data-theme~='ninja-theme'] {
+            background-color: #1e1e1e;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+            .tippy-box[data-theme~='ninja-theme'] .tippy-arrow {
+                color: #1e1e1e;
+            }
+
+        /* No Results State */
+        .no-results {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(255,152,0,0.04) 100%);
+            border-radius: 14px;
+            border: 1.5px solid #2d2d3a;
+            animation: fadeIn 0.5s;
+        }
+
+            .no-results .empty-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                opacity: 0.7;
+            }
+
+            .no-results h3 {
+                margin-top: 0;
+                margin-bottom: 0.5rem;
+            }
+
+            .no-results p {
+                color: #b0b0b0;
+                margin-bottom: 1.5rem;
+            }
+
+        /* Light Theme Styles */
+        body.light-theme {
+            background: radial-gradient(ellipse at 60% 10%, #f0f0f5 0%, #e0e0e5 100%);
+            color: #333;
+        }
+
+            body.light-theme h1,
+            body.light-theme h2,
+            body.light-theme h3 {
+                color: #333;
+            }
+
+            body.light-theme .stat-card,
+            body.light-theme .controls,
+            body.light-theme .kitty-card,
+            body.light-theme .detailed-card,
+            body.light-theme .empty-state {
+                background: #fff;
+                border-color: #ddd;
+                box-shadow: 0 4px 18px rgba(138,101,255,0.15);
+            }
+
+            body.light-theme .filter-group select,
+            body.light-theme .search-container input,
+            body.light-theme .view-btn,
+            body.light-theme .page-btn {
+                background: #f5f5f5;
+                color: #333;
+                border-color: #ddd;
+            }
+
+            body.light-theme .kitty-name,
+            body.light-theme .detailed-content h2 {
+                color: #333;
+            }
+
+            body.light-theme .trait {
+                background: rgba(138, 101, 255, 0.1);
+                color: #6035e0;
+            }
+
+            body.light-theme .kitty-traits .trait:hover {
+                background: rgba(138, 101, 255, 0.2);
+                color: #333;
+            }
+
+        /* Theme transition overlay */
+        .theme-transition-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Progress indicator */
+        .progress-indicator {
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+            .progress-indicator .progress-bar {
+                height: 8px;
+                margin-top: 0.75rem;
+            }
+
+        .progress-text {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+
+        /* Search results count */
+        #searchResults {
+            display: none;
+            margin: 0.5rem 0;
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+
+        /* Element specific styling */
+        .trait.element-fire {
+            color: #ff7043;
+            border-color: rgba(255, 112, 67, 0.3);
+        }
+
+        .trait.element-water {
+            color: #42a5f5;
+            border-color: rgba(66, 165, 245, 0.3);
+        }
+
+        .trait.element-earth {
+            color: #66bb6a;
+            border-color: rgba(102, 187, 106, 0.3);
+        }
+
+        .trait.element-air {
+            color: #b0bec5;
+            border-color: rgba(176, 190, 197, 0.3);
+        }
+
+        .trait.element-void {
+            color: #9c27b0;
+            border-color: rgba(156, 39, 176, 0.3);
+        }
+
+        .trait.element-lightning {
+            color: #ffeb3b;
+            border-color: rgba(255, 235, 59, 0.3);
+        }
+
+        .trait.element-thunder {
+            color: #ffc107;
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .trait.element-ice {
+            color: #81d4fa;
+            border-color: rgba(129, 212, 250, 0.3);
+        }
+
+        .trait.element-shadow {
+            color: #7e57c2;
+            border-color: rgba(126, 87, 194, 0.3);
+        }
+
+        .trait.element-light {
+            color: #fff176;
+            border-color: rgba(255, 241, 118, 0.3);
+        }
+
+        .trait.element-cosmic {
+            color: #e040fb;
+            border-color: rgba(224, 64, 251, 0.3);
+        }
+
+        /* Highlight search results */
+        mark {
+            background: rgba(255, 152, 0, 0.3);
+            color: inherit;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body>
@@ -858,11 +1492,61 @@
             </div>
         </div>
 
-        <!-- Controls -->
+        <!-- Search and advanced controls -->
         <div class="controls" id="controls" style="display:none;">
+            <!-- Top Controls Section -->
+            <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 1rem;">
+                <div class="search-container">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Search your ninja cats..." aria-label="Search">
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button id="selectAllBtn" class="action-btn">Select Multiple</button>
+
+                    <button id="galleryModeBtn" class="action-btn" data-tippy-content="View as Slideshow (Alt+M)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                            <line x1="7" y1="2" x2="7" y2="22"></line>
+                            <line x1="17" y1="2" x2="17" y2="22"></line>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                        </svg>
+                        Gallery
+                    </button>
+
+                    <div class="theme-switch-wrapper">
+                        <span class="theme-icon">🌙</span>
+                        <label class="theme-switch">
+                            <input type="checkbox" id="themeSwitcher">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="theme-icon">☀️</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search results count -->
+            <div id="searchResults" style="display: none;"></div>
+
+            <!-- Active Filters -->
+            <div id="activeFilters" class="active-filters"></div>
+
+            <!-- Batch Actions Panel -->
+            <div id="batchActionsPanel" class="batch-actions-panel">
+                <div>Selected: <span id="selectedCount">0</span> NFTs</div>
+                <button id="selectAllCardsBtn" class="batch-btn">Select All</button>
+                <div style="flex: 1;"></div>
+                <button id="batchShareBtn" class="batch-btn">Share Selected</button>
+                <button id="batchTransferBtn" class="batch-btn">Transfer Selected</button>
+            </div>
+
+            <!-- Filter Controls -->
             <div class="filter-controls">
                 <div class="filter-group">
-                    <label for="breedFilter">Filter:</label>
+                    <label for="breedFilter">Breed:</label>
                     <select id="breedFilter">
                         <option value="">All Breeds</option>
                         <option value="Bengal">Bengal</option>
@@ -874,19 +1558,102 @@
                 </div>
 
                 <div class="filter-group">
+                    <label for="elementFilter">Element:</label>
+                    <select id="elementFilter">
+                        <option value="">All Elements</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Water">Water</option>
+                        <option value="Earth">Earth</option>
+                        <option value="Air">Air</option>
+                        <option value="Lightning">Lightning</option>
+                        <option value="Thunder">Thunder</option>
+                        <option value="Ice">Ice</option>
+                        <option value="Shadow">Shadow</option>
+                        <option value="Light">Light</option>
+                        <option value="Void">Void</option>
+                        <option value="Cosmic">Cosmic</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="weaponFilter">Weapon:</label>
+                    <select id="weaponFilter">
+                        <option value="">All Weapons</option>
+                        <option value="Katana">Katana</option>
+                        <option value="Shuriken">Shuriken</option>
+                        <option value="Nunchucks">Nunchucks</option>
+                        <option value="Kunai">Kunai</option>
+                        <option value="Sai">Sai</option>
+                        <option value="Bo Staff">Bo Staff</option>
+                        <option value="Twin Blades">Twin Blades</option>
+                        <option value="Kusarigama">Kusarigama</option>
+                        <option value="War Fan">War Fan</option>
+                        <option value="Ghost Dagger">Ghost Dagger</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="stanceFilter">Stance:</label>
+                    <select id="stanceFilter">
+                        <option value="">All Stances</option>
+                        <option value="Attack">Attack</option>
+                        <option value="Defense">Defense</option>
+                        <option value="Stealth">Stealth</option>
+                        <option value="Agility">Agility</option>
+                        <option value="Focus">Focus</option>
+                        <option value="Shadow">Shadow</option>
+                        <option value="Berserker">Berserker</option>
+                        <option value="Crane">Crane</option>
+                        <option value="Dragon">Dragon</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="rankFilter">Rank:</label>
+                    <select id="rankFilter">
+                        <option value="">All Ranks</option>
+                        <option value="Novice">Novice</option>
+                        <option value="Adept">Adept</option>
+                        <option value="Elite">Elite</option>
+                        <option value="Veteran">Veteran</option>
+                        <option value="Master">Master</option>
+                        <option value="Shadow Master">Shadow Master</option>
+                        <option value="Mystic">Mystic</option>
+                        <option value="Warlord">Warlord</option>
+                        <option value="Legendary">Legendary</option>
+                        <option value="Immortal">Immortal</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="rarityFilter">Rarity:</label>
+                    <select id="rarityFilter">
+                        <option value="">All Rarities</option>
+                        <option value="common">Common</option>
+                        <option value="rare">Rare</option>
+                        <option value="epic">Epic</option>
+                        <option value="legendary">Legendary</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
                     <label for="sortBy">Sort by:</label>
                     <select id="sortBy">
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
-                        <option value="rarity">Rarity</option>
+                        <option value="rarity">Rarity (Highest)</option>
+                        <option value="rarityAsc">Rarity (Lowest)</option>
                         <option value="breed">Breed</option>
+                        <option value="custom">Custom Order</option>
                     </select>
                 </div>
+
+                <button id="resetFilters" class="action-btn">Reset Filters</button>
             </div>
 
             <div class="view-toggle">
-                <button class="view-btn active" data-view="grid">Grid</button>
-                <button class="view-btn" data-view="detailed">Detailed</button>
+                <button class="view-btn active" data-view="grid" data-tippy-content="Grid View (Alt+G)">Grid</button>
+                <button class="view-btn" data-view="detailed" data-tippy-content="Detailed View (Alt+D)">Detailed</button>
             </div>
         </div>
 
@@ -909,6 +1676,19 @@
 
         <!-- Detailed view (alternative) -->
         <div id="detailedView" class="detailed-view"></div>
+
+        <!-- Collection Stats with Charts -->
+        <div id="collectionStats" class="collection-stats">
+            <h2>Collection Analytics</h2>
+
+            <div class="chart-container">
+                <canvas id="breedChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="elementChart"></canvas>
+            </div>
+        </div>
 
         <!-- Pagination -->
         <div class="pagination-container" id="pagination" style="display:none;">
@@ -1007,7 +1787,7 @@
                 </div>
 
                 <div class="detailed-actions">
-                    <button class="btn">View on Etherscan</button>
+                    <button class="btn">View on Explorer</button>
                     <button class="btn">List for Sale</button>
                     <button class="btn share-btn">Share</button>
                 </div>
@@ -1015,46 +1795,8 @@
         </div>
     </template>
 
+    <!-- Pagination functionality remains unchanged -->
     <script>
-        // View toggle functionality
-        document.addEventListener('DOMContentLoaded', function () {
-            // Toggle view buttons
-            const viewBtns = document.querySelectorAll('.view-btn');
-            viewBtns.forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const view = this.dataset.view;
-
-                    // Update active button
-                    viewBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-
-                    // Show correct view
-                    if (view === 'grid') {
-                        document.getElementById('grid').style.display = 'grid';
-                        document.getElementById('detailedView').classList.remove('active');
-                    } else {
-                        document.getElementById('grid').style.display = 'none';
-                        document.getElementById('detailedView').classList.add('active');
-                    }
-                });
-            });
-
-            // Add animation to stats on page load
-            setTimeout(() => {
-                const stats = document.querySelectorAll('.stat-value');
-                stats.forEach(stat => {
-                    stat.style.opacity = '0';
-                    stat.style.transform = 'translateY(20px)';
-
-                    setTimeout(() => {
-                        stat.style.transition = 'all 0.8s ease';
-                        stat.style.opacity = '1';
-                        stat.style.transform = 'translateY(0)';
-                    }, 100);
-                });
-            }, 500);
-        });
-
         // Pagination functionality
         class Pagination {
             constructor(itemsPerPage = 9) {
@@ -1235,7 +1977,7 @@
                 pagination.changeItemsPerPage(parseInt(e.target.value));
             });
 
-            // Custom event for when data is loaded (to be triggered from my-kitties.js)
+            // Custom event for when data is loaded
             document.addEventListener('kittyDataLoaded', function (e) {
                 const totalItems = e.detail.count;
                 pagination.setup(totalItems);
@@ -1244,8 +1986,6 @@
             // Custom event for page changes
             document.addEventListener('pageChanged', function (e) {
                 const { page, itemsPerPage } = e.detail;
-                // This event should be handled in my-kitties.js to update the displayed items
-
                 // Scroll to top of grid
                 document.getElementById('grid').scrollIntoView({ behavior: 'smooth' });
             });
@@ -1253,16 +1993,13 @@
     </script>
 
     <!-- IMPORTANT: Import wallet connection before gallery.js -->
-    <!-- Make sure this is in the right place at the bottom of my-kitties.html -->
     <script type="module" src="js/connect-only.js"></script>
     <script type="module" src="js/my-kitties.js"></script>
     <script src="js/gallery.js"></script>
 
     <!-- Include the footer -->
     <footer id="footer"></footer>
-
     <script src="js/footer.js"></script>
-
     <script src="js/navbar.js"></script>
 </body>
 </html>
