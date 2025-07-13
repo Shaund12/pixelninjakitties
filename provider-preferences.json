@@ -4,8 +4,9 @@
     "timestamp": 1752299590237
   },
   "26": {
-    "provider": "stability",
-    "timestamp": 1752300137156
+    "provider": "dall-e",
+    "timestamp": 1752441429397,
+    "options": {}
   },
   "28": {
     "provider": "stability",
@@ -147,12 +148,8 @@
   },
   "47": {
     "provider": "dall-e",
-    "timestamp": 1752428128077,
-    "options": {
-      "model": "dall-e-3",
-      "quality": "hd",
-      "style": "vivid"
-    }
+    "timestamp": 1752443355296,
+    "options": {}
   },
   "48": {
     "provider": "dall-e",

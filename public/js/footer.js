@@ -1,4 +1,7 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+﻿// Import the contract configuration
+import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI } from './config.js';
+
+document.addEventListener('DOMContentLoaded', function () {
     // Load footer component
     fetch('/components/footer.html')
         .then(response => response.text())
@@ -395,115 +398,102 @@
             document.getElementById('footer').innerHTML = '<p class="error">Footer could not be loaded</p>';
         });
 
-    // Function to fetch real blockchain stats
+    // Function to fetch real blockchain stats - MODIFIED TO USE IMPORTED CONFIG
     async function fetchBlockchainStats() {
         try {
-            // Wait for window.NFT_CONFIG to be available
-            let attempts = 0;
-            const maxAttempts = 10;
+            console.log('Fetching blockchain stats from imported config');
 
-            const checkConfig = async () => {
-                if (window.NFT_CONFIG && window.ethers) {
-                    try {
-                        const provider = new ethers.JsonRpcProvider(window.NFT_CONFIG.RPC_URL);
-                        const contract = new ethers.Contract(
-                            window.NFT_CONFIG.CONTRACT_ADDRESS,
-                            window.NFT_CONFIG.NFT_ABI,
-                            provider
-                        );
+            try {
+                // Use imported values instead of window.NFT_CONFIG
+                const provider = new ethers.JsonRpcProvider(RPC_URL);
+                const contract = new ethers.Contract(
+                    CONTRACT_ADDRESS,
+                    NFT_ABI,
+                    provider
+                );
 
-                        // Get total supply
-                        const totalSupply = await contract.totalSupply();
-                        updateStatElement('total-minted', totalSupply.toString());
+                // Get total supply
+                const totalSupply = await contract.totalSupply();
+                updateStatElement('total-minted', totalSupply.toString());
 
-                        // Get next token ID
-                        const nextTokenId = await contract.nextTokenId();
-                        updateStatElement('next-token-id', nextTokenId.toString());
+                // Get next token ID
+                const nextTokenId = await contract.nextTokenId();
+                updateStatElement('next-token-id', nextTokenId.toString());
 
-                        // Get royalty percentage
-                        const royaltyBps = await contract.royaltyBps();
-                        const royaltyPercent = (Number(royaltyBps) / 100).toFixed(2) + '%';
-                        updateStatElement('royalty-percent', royaltyPercent);
+                // Get royalty percentage
+                const royaltyBps = await contract.royaltyBps();
+                const royaltyPercent = (Number(royaltyBps) / 100).toFixed(2) + '%';
+                updateStatElement('royalty-percent', royaltyPercent);
 
-                        // Check contract status (paused/active/test mode)
-                        const isPaused = await contract.paused();
+                // Check contract status (paused/active/test mode)
+                const isPaused = await contract.paused();
 
-                        // Fixed: Handle testMode properly - use a try-catch to handle if the function doesn't exist
-                        let isTestMode = false;
-                        try {
-                            // Try the function as a property first
-                            if (typeof contract.testMode === 'function') {
-                                isTestMode = await contract.testMode();
-                            } else {
-                                // Try calling it directly - this might be what's causing the error
-                                const testModeCall = await provider.call({
-                                    to: window.NFT_CONFIG.CONTRACT_ADDRESS,
-                                    data: '0xcd9ea342' // Function selector for testMode()
-                                });
-                                isTestMode = testModeCall !== '0x' && testModeCall !== '0x0000000000000000000000000000000000000000000000000000000000000000';
-                            }
-                        } catch (testModeError) {
-                            console.warn("Could not check test mode status:", testModeError.message);
-                            isTestMode = false;
-                        }
-
-                        const statusIndicator = document.getElementById('contract-status-indicator');
-                        const statusText = document.getElementById('contract-status-text');
-
-                        if (statusIndicator && statusText) {
-                            if (isPaused) {
-                                statusIndicator.className = 'status-indicator status-paused';
-                                statusText.textContent = 'Contract Paused';
-                            } else if (isTestMode) {
-                                statusIndicator.className = 'status-indicator status-test';
-                                statusText.textContent = 'Test Mode';
-                            } else {
-                                statusIndicator.className = 'status-indicator status-active';
-                                statusText.textContent = 'Active';
-                            }
-                        }
-
-                    } catch (error) {
-                        console.error("Error fetching blockchain stats:", error);
-
-                        // Add fallback UI updates when the data can't be loaded
-                        const statusIndicator = document.getElementById('contract-status-indicator');
-                        const statusText = document.getElementById('contract-status-text');
-
-                        if (statusIndicator && statusText) {
-                            statusIndicator.className = 'status-indicator';
-                            statusText.textContent = 'Status Unknown';
-                        }
-
-                        updateStatElement('total-minted', '---');
-                        updateStatElement('next-token-id', '---');
-                        updateStatElement('royalty-percent', '---');
+                // Fixed: Handle testMode properly - use a try-catch to handle if the function doesn't exist
+                let isTestMode = false;
+                try {
+                    // Try the function as a property first
+                    if (typeof contract.testMode === 'function') {
+                        isTestMode = await contract.testMode();
+                    } else {
+                        // Try calling it directly - this might be what's causing the error
+                        const testModeCall = await provider.call({
+                            to: CONTRACT_ADDRESS,
+                            data: '0xcd9ea342' // Function selector for testMode()
+                        });
+                        isTestMode = testModeCall !== '0x' && testModeCall !== '0x0000000000000000000000000000000000000000000000000000000000000000';
                     }
-                } else if (attempts < maxAttempts) {
-                    attempts++;
-                    // Wait and try again
-                    setTimeout(checkConfig, 500);
-                } else {
-                    // Max attempts reached, provide fallback UI
-                    const statusIndicator = document.getElementById('contract-status-indicator');
-                    const statusText = document.getElementById('contract-status-text');
-
-                    if (statusIndicator && statusText) {
-                        statusIndicator.className = 'status-indicator';
-                        statusText.textContent = 'Could not connect';
-                    }
-
-                    updateStatElement('total-minted', '---');
-                    updateStatElement('next-token-id', '---');
-                    updateStatElement('royalty-percent', '---');
+                } catch (testModeError) {
+                    console.warn("Could not check test mode status:", testModeError.message);
+                    isTestMode = false;
                 }
-            };
 
-            // Start checking for config
-            checkConfig();
+                const statusIndicator = document.getElementById('contract-status-indicator');
+                const statusText = document.getElementById('contract-status-text');
 
+                if (statusIndicator && statusText) {
+                    if (isPaused) {
+                        statusIndicator.className = 'status-indicator status-paused';
+                        statusText.textContent = 'Contract Paused';
+                    } else if (isTestMode) {
+                        statusIndicator.className = 'status-indicator status-test';
+                        statusText.textContent = 'Test Mode';
+                    } else {
+                        statusIndicator.className = 'status-indicator status-active';
+                        statusText.textContent = 'Active';
+                    }
+                }
+
+            } catch (error) {
+                console.error("Error fetching blockchain stats:", error);
+
+                // Add fallback UI updates when the data can't be loaded
+                const statusIndicator = document.getElementById('contract-status-indicator');
+                const statusText = document.getElementById('contract-status-text');
+
+                if (statusIndicator && statusText) {
+                    statusIndicator.className = 'status-indicator';
+                    statusText.textContent = 'Status Unknown';
+                }
+
+                updateStatElement('total-minted', '---');
+                updateStatElement('next-token-id', '---');
+                updateStatElement('royalty-percent', '---');
+            }
         } catch (error) {
             console.error("Error in fetchBlockchainStats:", error);
+
+            // Fallback UI
+            const statusIndicator = document.getElementById('contract-status-indicator');
+            const statusText = document.getElementById('contract-status-text');
+
+            if (statusIndicator && statusText) {
+                statusIndicator.className = 'status-indicator';
+                statusText.textContent = 'Could not connect';
+            }
+
+            updateStatElement('total-minted', '---');
+            updateStatElement('next-token-id', '---');
+            updateStatElement('royalty-percent', '---');
         }
     }
 

@@ -1,7 +1,8 @@
 ﻿/* global ethers, fetch, gsap, Sortable */
 // Properly integrate with the wallet.js system
 import {
-    CONTRACT_ADDRESS, NFT_ABI, RPC_URL
+    CONTRACT_ADDRESS, NFT_ABI, RPC_URL,
+    USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT
 } from './config.js';
 import {
     getAddress, connectWallet, short, EVENTS as WALLET_EVENTS
@@ -2116,6 +2117,252 @@ function updateCollectionStats(breedCounts, elementCounts) {
         });
     }
 }
+
+// Add this code to my-kitties.js
+
+// Regeneration functionality
+let regeneratingTokenId = null;
+
+function setupRegenerationHandlers() {
+    // Setup modal close functionality
+    const modal = document.getElementById('regenerateModal');
+    const closeBtn = document.querySelector('.close-modal');
+    const cancelBtn = document.getElementById('cancelRegenerateBtn');
+
+    closeBtn.onclick = () => modal.style.display = 'none';
+    cancelBtn.onclick = () => modal.style.display = 'none';
+
+    window.onclick = (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    // Handle regenerate button clicks (delegated to parent container)
+    document.getElementById('grid').addEventListener('click', (e) => {
+        if (e.target.closest('.regenerate-btn')) {
+            const card = e.target.closest('.kitty-card');
+            if (card) {
+                const tokenId = card.dataset.tokenId;
+                const imageUrl = card.querySelector('.kitty-image').src;
+                openRegenerateModal(tokenId, imageUrl);
+            }
+        }
+    });
+
+    document.getElementById('detailedView').addEventListener('click', (e) => {
+        if (e.target.closest('.regenerate-btn')) {
+            const card = e.target.closest('.detailed-card');
+            if (card) {
+                const tokenId = card.dataset.tokenId;
+                const imageUrl = card.querySelector('.detailed-image').src;
+                openRegenerateModal(tokenId, imageUrl);
+            }
+        }
+    });
+
+    // Handle confirmation button
+    document.getElementById('confirmRegenerateBtn').addEventListener('click', handleRegenerateConfirm);
+}
+
+function openRegenerateModal(tokenId, imageUrl) {
+    regeneratingTokenId = tokenId;
+
+    // Set token ID in modal
+    document.getElementById('regenerateTokenId').textContent = tokenId;
+
+    // Set current image
+    document.getElementById('currentTokenImage').src = imageUrl;
+
+    // Show modal
+    document.getElementById('regenerateModal').style.display = 'block';
+}
+
+async function handleRegenerateConfirm() {
+    if (!regeneratingTokenId) return;
+
+    // Get values from form
+    const imageProvider = document.getElementById('regenerateProvider').value;
+    const promptExtras = document.getElementById('regeneratePrompt').value;
+    const negativePrompt = document.getElementById('regenerateNegativePrompt').value;
+
+    // Show loading state
+    const statusEl = document.getElementById('regenerateStatus');
+    const statusTextEl = document.getElementById('regenerateStatusText');
+    statusEl.style.display = 'block';
+    statusTextEl.textContent = 'Connecting to wallet...';
+
+    const confirmBtn = document.getElementById('confirmRegenerateBtn');
+    confirmBtn.disabled = true;
+
+    try {
+        // 1. Connect wallet
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        if (!address) throw new Error("Failed to connect wallet");
+
+        statusTextEl.textContent = 'Checking USDC balance...';
+
+        // 2. Create USDC contract instance
+        const usdcContract = new ethers.Contract(
+            USDC_ADDRESS,
+            [
+                "function transfer(address,uint256) returns (bool)",
+                "function balanceOf(address) view returns (uint256)",
+                "function decimals() view returns (uint8)"
+            ],
+            signer
+        );
+
+        // 3. Check user's USDC balance
+        const decimals = await usdcContract.decimals();
+        const regenerationFee = ethers.parseUnits(REGENERATION_FEE_AMOUNT, decimals);
+        const balance = await usdcContract.balanceOf(address);
+
+        if (balance < regenerationFee) {
+            throw new Error(`Insufficient USDC balance. You need ${REGENERATION_FEE_AMOUNT} USDC to regenerate.`);
+        }
+
+        // 4. Transfer USDC directly to fee recipient
+        statusTextEl.textContent = `Sending ${REGENERATION_FEE_AMOUNT} USDC fee...`;
+        const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, regenerationFee);
+
+        statusTextEl.textContent = 'Confirming payment...';
+        await tx.wait();
+
+        // 5. Call server API to start regeneration process
+        statusTextEl.textContent = `Starting image regeneration with ${imageProvider}...`;
+
+        // FIXED: Changed endpoint from /api/regenerate/ to /api/process/
+        const apiUrl = new URL(`/api/process/${regeneratingTokenId}`, window.location.origin);
+
+        // ADD THIS: Force parameter to allow regenerating already processed tokens
+        apiUrl.searchParams.append('force', 'true');
+
+        // ADD THIS: Explicitly flag this as a regeneration request
+        apiUrl.searchParams.append('regenerate', 'true');
+
+        apiUrl.searchParams.append('imageProvider', imageProvider);
+        apiUrl.searchParams.append('paid', 'true');
+        apiUrl.searchParams.append('paymentTx', tx.hash);
+
+        if (promptExtras) apiUrl.searchParams.append('promptExtras', promptExtras);
+        if (negativePrompt) apiUrl.searchParams.append('negativePrompt', negativePrompt);
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // 6. Start polling for status if we have a task ID
+        if (data.taskId) {
+            await pollRegenerationStatus(data.taskId, regeneratingTokenId);
+        } else {
+            statusTextEl.textContent = 'Regeneration request sent! The new image will appear soon.';
+            setTimeout(() => {
+                document.getElementById('regenerateModal').style.display = 'none';
+                // Refresh the NFT display
+                refreshNFTDisplay(regeneratingTokenId);
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Regeneration failed:', error);
+        statusTextEl.textContent = `Failed: ${error.message}`;
+        statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
+    } finally {
+        confirmBtn.disabled = false;
+    }
+}
+
+async function pollRegenerationStatus(taskId, tokenId) {
+    const statusTextEl = document.getElementById('regenerateStatusText');
+    const statusEl = document.getElementById('regenerateStatus');
+
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes at 5-second intervals
+
+    const checkStatus = async () => {
+        attempts++;
+
+        if (attempts > maxAttempts) {
+            statusTextEl.textContent = "Timed out. Please check back later.";
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/task/${taskId}`);
+            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+
+            const data = await response.json();
+            console.log('Task status:', data);
+
+            if (data.status === 'completed') {
+                statusTextEl.textContent = 'Image regenerated successfully!';
+                statusEl.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+
+                // Close modal and refresh display after a short delay
+                setTimeout(() => {
+                    document.getElementById('regenerateModal').style.display = 'none';
+                    refreshNFTDisplay(tokenId);
+                }, 2000);
+
+                return;
+            } else if (data.status === 'failed') {
+                statusTextEl.textContent = `Failed: ${data.error || 'Unknown error'}`;
+                statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
+                return;
+            } else {
+                // Still processing
+                const progress = data.progress || 0;
+                const message = data.message || 'Processing...';
+                statusTextEl.textContent = `${message} (${progress}%)`;
+
+                // Schedule next check
+                setTimeout(checkStatus, 5000);
+            }
+        } catch (error) {
+            console.error('Error checking task status:', error);
+            statusTextEl.textContent = `Error checking status: ${error.message}`;
+            statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
+        }
+    };
+
+    // Start the first check
+    await checkStatus();
+}
+
+function refreshNFTDisplay(tokenId) {
+    // Refresh the specific NFT card with new image
+    // This will be a no-cache request to make sure we get the latest image
+
+    // Find the card(s) for this token
+    const gridCard = document.querySelector(`.kitty-card[data-token-id="${tokenId}"]`);
+    const detailedCard = document.querySelector(`.detailed-card[data-token-id="${tokenId}"]`);
+
+    // Add a timestamp to force a reload
+    const timestamp = Date.now();
+
+    // Reload the image with a cache-busting parameter
+    if (gridCard) {
+        const img = gridCard.querySelector('.kitty-image');
+        const currentSrc = img.src.split('?')[0]; // Remove any existing query params
+        img.src = `${currentSrc}?t=${timestamp}`;
+    }
+
+    if (detailedCard) {
+        const img = detailedCard.querySelector('.detailed-image');
+        const currentSrc = img.src.split('?')[0];
+        img.src = `${currentSrc}?t=${timestamp}`;
+    }
+}
+
+// Initialize regeneration functionality when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    setupRegenerationHandlers();
+});
 
 // Helper function to show toast notifications
 function showToast(message, type = 'info', duration = 5000) {

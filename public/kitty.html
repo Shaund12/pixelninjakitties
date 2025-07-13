@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
     <meta property="og:title" content="Pixel Ninja Cat NFT">
     <meta property="og:description" content="Check out this unique AI-generated Pixel Ninja Cat NFT!">
     <meta property="og:image" content="assets/detailed_ninja_cat_64.png">
@@ -20,11 +23,12 @@
             letter-spacing: 0.01em;
             min-height: 100vh;
             margin: 0;
+            overflow-x: hidden;
         }
 
         .wrapper {
             background: transparent;
-            max-width: 980px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
@@ -46,6 +50,20 @@
             border: 1.5px solid #2d2d3a;
             background: linear-gradient(135deg, #18181c 60%, #23263a 100%);
             animation: fadeInUp 1s;
+            transition: transform 0.3s ease-out;
+            transform-style: preserve-3d;
+        }
+
+        /* 3D effect */
+        .glare {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            transition: background 0.3s ease;
         }
 
         .kitty-image {
@@ -53,15 +71,49 @@
             height: auto;
             border-radius: 14px;
             background: #1a1a1a;
-            transition: transform 0.5s cubic-bezier(.4,2,.6,1);
+            transition: all 0.5s ease;
             object-fit: contain;
             box-shadow: 0 4px 24px #8a65ff22;
+            z-index: 1;
+            position: relative;
         }
 
             .kitty-image:hover {
-                transform: scale(1.05) rotate(-2deg);
                 box-shadow: 0 12px 40px #8a65ff44;
             }
+
+        /* Element overlay on the image */
+        .element-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+
+        .fire-overlay {
+            background: linear-gradient(45deg, #ff7043aa 0%, transparent 60%);
+        }
+
+        .water-overlay {
+            background: linear-gradient(45deg, #42a5f5aa 0%, transparent 60%);
+        }
+
+        .earth-overlay {
+            background: linear-gradient(45deg, #66bb6aaa 0%, transparent 60%);
+        }
+
+        .air-overlay {
+            background: linear-gradient(45deg, #b0bec5aa 0%, transparent 60%);
+        }
+
+        .void-overlay {
+            background: linear-gradient(45deg, #9c27b0aa 0%, transparent 60%);
+        }
 
         .rarity-badge {
             position: absolute;
@@ -349,212 +401,391 @@
             height: 100%;
             background: linear-gradient(90deg, #8a65ff, #2775ca);
             border-radius: 4px;
-            transition: width 1s cubic-bezier(.4,2,.6,1);
+            transition: width 1.2s cubic-bezier(.4,2,.6,1);
             width: 0;
         }
 
-        .lore-block {
-            background: linear-gradient(120deg, #23263a 80%, #1e1e1e 100%);
-            padding: 2rem 1.5rem;
-            border-radius: 14px;
-            border-left: 4px solid #8a65ff;
-            box-shadow: 0 8px 24px #8a65ff22;
-            line-height: 1.7;
-            color: #d0d0d0;
-            margin-bottom: 2.2rem;
-            font-size: 1.08rem;
-        }
-
-            .lore-block p:first-of-type {
-                margin-top: 0;
-            }
-
-            .lore-block p:last-of-type {
-                margin-bottom: 0;
-            }
-
-        .transaction-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 2.2rem;
-        }
-
-        .transaction-item {
-            padding: 1.1rem;
-            border-bottom: 1px solid #8a65ff22;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.3s;
-            font-size: 1.02em;
-        }
-
-            .transaction-item:hover {
-                background: #23263a;
-            }
-
-            .transaction-item:last-child {
-                border-bottom: none;
-            }
-
-        .tx-type {
-            background: #23263a;
-            padding: 0.3rem 0.7rem;
-            border-radius: 5px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-block;
-            margin-right: 0.5rem;
-            color: #8a65ff;
-            letter-spacing: 0.01em;
-        }
-
-        .tx-mint {
-            background: rgba(138, 101, 255, 0.2);
-            color: #b79fff;
-        }
-
-        .tx-transfer {
-            background: rgba(75, 192, 192, 0.2);
-            color: #85d8d8;
-        }
-
-        .tx-hash {
-            color: #b0b0b0;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-            .tx-hash:hover {
-                color: #8a65ff;
-                text-decoration: underline;
-            }
-
-        .tx-date {
-            color: #9e9e9e;
-            font-size: 0.95rem;
-        }
-
-        .share-section {
-            margin-top: 2.2rem;
+        /* Combat Chart styling */
+        .combat-chart-container {
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto 2rem;
             padding: 1.5rem;
             background: linear-gradient(120deg, #23263a 80%, #1e1e1e 100%);
             border-radius: 14px;
-            text-align: center;
             border: 1.5px solid #2d2d3a;
-            box-shadow: 0 2px 8px #8a65ff11;
+            box-shadow: 0 8px 25px #8a65ff22;
         }
 
-            .share-section h3 {
+        /* Story timeline styling */
+        .story-timeline {
+            position: relative;
+            padding: 1rem 0;
+            margin: 2rem 0;
+        }
+
+            .story-timeline::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 20px;
+                width: 2px;
+                background: linear-gradient(to bottom, transparent, #8a65ff, transparent);
+            }
+
+        .story-point {
+            position: relative;
+            padding-left: 60px;
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease;
+        }
+
+            .story-point.active {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .story-point:last-child {
+                margin-bottom: 0;
+            }
+
+        .story-icon {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            background: #23263a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #8a65ff;
+            box-shadow: 0 0 0 4px #1e1e24;
+            z-index: 1;
+        }
+
+            .story-icon svg {
+                stroke: #8a65ff;
+            }
+
+        .story-content {
+            background: linear-gradient(120deg, #23263a 80%, #1e1e1e 100%);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 3px solid #8a65ff;
+            box-shadow: 0 4px 12px #8a65ff11;
+        }
+
+            .story-content h4 {
                 margin-top: 0;
                 margin-bottom: 0.5rem;
                 color: #fff;
             }
 
-        .share-options {
-            display: flex;
-            gap: 1.2rem;
-            margin-top: 1.5rem;
-            justify-content: center;
+            .story-content p {
+                margin: 0;
+                color: #b0b0b0;
+                line-height: 1.6;
+            }
+
+        /* Transaction timeline styling */
+        .transaction-timeline {
+            position: relative;
+            padding: 1rem 0;
+            margin: 2rem 0;
         }
 
-        .share-btn {
-            width: 52px;
-            height: 52px;
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 1.5rem;
+            border-left: 2px solid #2d2d3a;
+            padding: 1rem 1rem 1rem 30px;
+            transition: all 0.3s;
+        }
+
+            .timeline-item:hover {
+                background: rgba(138, 101, 255, 0.05);
+            }
+
+            .timeline-item.first {
+                border-top-left-radius: 8px;
+            }
+
+            .timeline-item.last {
+                border-bottom-left-radius: 8px;
+                margin-bottom: 0;
+            }
+
+        .timeline-point {
+            position: absolute;
+            left: -12px;
+            top: 1.5rem;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
+            background: #23263a;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #23263a;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px #8a65ff22;
+            border: 2px solid #8a65ff;
+            box-shadow: 0 0 0 4px #1e1e24;
         }
 
-            .share-btn:hover {
-                transform: translateY(-3px) scale(1.07);
-                box-shadow: 0 8px 20px #8a65ff44;
+            .timeline-point.mint {
+                border-color: #b79fff;
             }
 
-            .share-btn.twitter:hover {
-                background: #1DA1F2;
+            .timeline-point.transfer {
+                border-color: #85d8d8;
             }
 
-            .share-btn.discord:hover {
-                background: #7289DA;
+            .timeline-point svg {
+                stroke: #8a65ff;
+                width: 14px;
+                height: 14px;
             }
 
-            .share-btn.copy:hover {
-                background: #8a65ff;
-            }
+        .timeline-content {
+            padding: 0.5rem 0;
+        }
 
-            .share-btn svg {
-                width: 24px;
-                height: 24px;
-                stroke: #b0b0b0;
-                transition: stroke 0.3s;
-            }
+        .timeline-date {
+            font-size: 0.85rem;
+            color: #9e9e9e;
+            margin-bottom: 0.25rem;
+        }
 
-            .share-btn:hover svg {
-                stroke: #fff;
-            }
-
-        .property-pill {
-            display: inline-block;
-            background: rgba(138, 101, 255, 0.1);
-            color: #8a65ff;
-            padding: 0.3rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.95rem;
-            margin-right: 0.5rem;
+        .timeline-title {
+            margin-bottom: 0.5rem;
             font-weight: 600;
         }
 
-        .address-display {
+        .timeline-details {
+            font-size: 0.9rem;
+            color: #b0b0b0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .transfer-addresses {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .copy-address {
-            cursor: pointer;
-            opacity: 0.7;
-            transition: all 0.3s;
-            stroke: #b0b0b0;
+        /* Achievements styling */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 1.5rem;
         }
 
-            .copy-address:hover {
-                opacity: 1;
+        .achievement {
+            background: linear-gradient(120deg, #23263a 80%, #1e1e1e 100%);
+            padding: 1.3rem;
+            border-radius: 10px;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            border: 1.5px solid #2d2d3a;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px #8a65ff11;
+        }
+
+            .achievement:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px #8a65ff33;
+                background: linear-gradient(120deg, #8a65ff11 0%, #23263a 100%);
+                border-color: #8a65ff55;
+            }
+
+        .achievement-icon {
+            width: 40px;
+            height: 40px;
+            background: #1e1e24;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+            .achievement-icon svg {
                 stroke: #8a65ff;
             }
 
-        .eth-logo {
-            width: 16px;
-            height: 16px;
-            opacity: 0.7;
-            vertical-align: middle;
+        .achievement-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: #fff;
         }
 
-        /* Animation for image */
-        @keyframes float {
-            0% {
-                transform: translateY(0px) scale(1);
+        .achievement-desc {
+            font-size: 0.85rem;
+            color: #b0b0b0;
+        }
+
+        /* Regeneration modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            display: none;
+        }
+
+        .modal-dialog {
+            background: #23263a;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 550px;
+            padding: 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1.5px solid #2d2d3a;
+            overflow: hidden;
+            animation: modalSlideIn 0.4s ease-out forwards;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
             }
 
-            50% {
-                transform: translateY(-10px) scale(1.01);
-            }
-
-            100% {
-                transform: translateY(0px) scale(1);
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        .floating {
-            animation: float 6s ease-in-out infinite;
+        .modal-header {
+            background: linear-gradient(90deg, #1e1e24, #23263a);
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2d2d3a;
         }
 
-        /* Toast notification */
+            .modal-header h3 {
+                margin: 0;
+                color: #fff;
+            }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #b0b0b0;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+            .close-modal:hover {
+                color: #fff;
+            }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            border-top: 1px solid #2d2d3a;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-btn {
+            padding: 0.7rem 1.4rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .cancel-btn {
+            background: #2d2d3a;
+            color: #e0e0e0;
+        }
+
+        .confirm-btn {
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            color: white;
+        }
+
+        .regenerate-form-group {
+            margin-bottom: 1.2rem;
+        }
+
+            .regenerate-form-group label {
+                display: block;
+                margin-bottom: 0.5rem;
+                color: #e0e0e0;
+                font-weight: 500;
+            }
+
+            .regenerate-form-group select,
+            .regenerate-form-group textarea,
+            .regenerate-form-group input {
+                width: 100%;
+                padding: 0.8rem;
+                background: #1e1e24;
+                border: 1px solid #2d2d3a;
+                border-radius: 8px;
+                color: #e0e0e0;
+                font-family: 'Poppins', sans-serif;
+            }
+
+        .regenerate-status {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(138, 101, 255, 0.1);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .style-preview {
+            height: 120px;
+            margin-top: 1rem;
+            border-radius: 8px;
+            background-position: center;
+            background-size: cover;
+            transition: all 0.3s;
+        }
+
+        .style-dall-e {
+            background-image: url('assets/style-dalle.jpg');
+        }
+
+        .style-stability {
+            background-image: url('assets/style-stability.jpg');
+        }
+
+        .style-huggingface {
+            background-image: url('assets/style-huggingface.jpg');
+        }
+
+        /* Toast styling with types */
         #toast {
             position: fixed;
             bottom: 30px;
@@ -571,6 +802,7 @@
             font-size: 1.08em;
             font-weight: 600;
             letter-spacing: 0.01em;
+            border-left: 4px solid #8a65ff;
         }
 
             #toast.visible {
@@ -578,7 +810,183 @@
                 opacity: 1;
             }
 
-        /* Special rarities styling */
+            #toast.success {
+                border-left-color: #4caf50;
+            }
+
+            #toast.error {
+                border-left-color: #f44336;
+            }
+
+            #toast.warning {
+                border-left-color: #ff9800;
+            }
+
+        /* Audio controls */
+        .audio-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: #23263a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+            .audio-control:hover {
+                transform: scale(1.1);
+                background: #8a65ff;
+            }
+
+            .audio-control svg {
+                stroke: #b0b0b0;
+            }
+
+            .audio-control.active svg {
+                stroke: #fff;
+            }
+
+        /* Enhanced sharing */
+        .share-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.2rem;
+            margin-top: 1.5rem;
+        }
+
+        .share-panel {
+            background: linear-gradient(120deg, #23263a 80%, #1e1e1e 100%);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1.5px solid #2d2d3a;
+            text-align: center;
+        }
+
+        .share-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #qrCodeContainer {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .download-qr {
+            background: #8a65ff22;
+            border: none;
+            color: #8a65ff;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            font-weight: 600;
+        }
+
+            .download-qr:hover {
+                background: #8a65ff;
+                color: white;
+            }
+
+        /* Social share grid */
+        .social-share-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+        }
+
+        .share-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem;
+            background: #23263a;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            gap: 0.6rem;
+        }
+
+            .share-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            .share-btn.twitter:hover {
+                background: #1DA1F2;
+            }
+
+            .share-btn.discord:hover {
+                background: #7289DA;
+            }
+
+            .share-btn.telegram:hover {
+                background: #0088cc;
+            }
+
+            .share-btn.whatsapp:hover {
+                background: #25D366;
+            }
+
+            .share-btn svg {
+                stroke: #b0b0b0;
+            }
+
+            .share-btn:hover svg {
+                stroke: #fff;
+            }
+
+            .share-btn span {
+                color: #b0b0b0;
+                font-weight: 600;
+            }
+
+            .share-btn:hover span {
+                color: #fff;
+            }
+
+        /* Trait sparkle effect */
+        .trait-sparkle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-image: url('assets/sparkle.gif');
+            background-size: cover;
+            opacity: 0.2;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        /* Weapon card specific styling */
+        .weapon-card {
+            background-image: url('assets/weapon-bg.png');
+            background-size: contain;
+            background-position: right bottom;
+            background-repeat: no-repeat;
+            background-blend-mode: soft-light;
+        }
+
+        /* Enhanced specific rarities styling */
         .legendary-badge {
             background: linear-gradient(135deg, #FFD700, #FFA500) !important;
             color: #23263a !important;
@@ -599,6 +1007,30 @@
         .uncommon-badge {
             background: linear-gradient(135deg, #90EE90, #3CB371) !important;
             border: 1.5px solid #90EE90 !important;
+        }
+
+        .common-badge {
+            background: linear-gradient(135deg, #B0B0B0, #808080) !important;
+            border: 1.5px solid #B0B0B0 !important;
+        }
+
+        /* Mythic badge with animation */
+        .mythic-badge {
+            background: linear-gradient(135deg, #FFD700, #FF00FF) !important;
+            color: #23263a !important;
+            border: 1.5px solid #FFD700 !important;
+            text-shadow: 0 1px 8px #FFD70055 !important;
+            animation: mythicGlow 2s infinite alternate !important;
+        }
+
+        @keyframes mythicGlow {
+            from {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 0, 255, 0.4);
+            }
         }
 
         /* Loading shimmer effect */
@@ -627,6 +1059,10 @@
 
             .kitty-showcase {
                 gap: 1.2rem;
+            }
+
+            .share-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -664,6 +1100,10 @@
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 0.7rem;
             }
+
+            .achievements-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 480px) {
@@ -687,6 +1127,10 @@
 
             .lore-block {
                 padding: 1rem 0.5rem;
+            }
+
+            .social-share-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -822,6 +1266,22 @@
             color: #e040fb;
         }
 
+        .element-nature .attribute-value {
+            color: #8BC34A;
+        }
+
+        .element-metal .attribute-value {
+            color: #B0BEC5;
+        }
+
+        .element-poison .attribute-value {
+            color: #8bc34a;
+        }
+
+        .element-psychic .attribute-value {
+            color: #e040fb;
+        }
+
         /* Divider for special traits section */
         .attributes-divider {
             grid-column: 1 / -1;
@@ -838,24 +1298,178 @@
                 font-weight: 600;
             }
 
-        /* Mythic badge styling */
-        .mythic-badge {
-            background: linear-gradient(135deg, #FFD700, #FF00FF) !important;
-            color: #23263a !important;
-            border: 1.5px solid #FFD700 !important;
-            text-shadow: 0 1px 8px #FFD70055 !important;
-            animation: mythicGlow 2s infinite alternate !important;
+        /* Copy success animation */
+        .share-btn.copied {
+            animation: copiedPulse 0.5s;
         }
 
-        @keyframes mythicGlow {
-            from {
-                box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        @keyframes copiedPulse {
+            0% {
+                transform: scale(1);
             }
 
+            50% {
+                transform: scale(1.1);
+                background: #4caf50;
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Add these to your existing CSS */
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(138, 101, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #8a65ff;
+            animation: spinner 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spinner {
             to {
-                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 0, 255, 0.4);
+                transform: rotate(360deg);
             }
         }
+
+        .success-icon, .error-icon, .warning-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .success-icon {
+            color: #4caf50;
+        }
+
+        .error-icon {
+            color: #f44336;
+        }
+
+        .warning-icon {
+            color: #ff9800;
+        }
+        /* Enhanced modal styling for regeneration */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none; /* Will be changed to flex when opened */
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Fix for form elements inside modal */
+        .regenerate-form-group select,
+        .regenerate-form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            background: #1e1e24;
+            border: 1px solid #2d2d3a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 0.5rem;
+            resize: vertical;
+        }
+
+            .regenerate-form-group select:focus,
+            .regenerate-form-group textarea:focus {
+                border-color: #8a65ff;
+                outline: none;
+                box-shadow: 0 0 0 2px rgba(138, 101, 255, 0.2);
+            }
+
+        /* Style preview container */
+        .style-preview {
+            height: 120px;
+            margin: 1rem 0;
+            border-radius: 8px;
+            background-position: center;
+            background-size: cover;
+            transition: all 0.3s;
+            border: 1px solid #2d2d3a;
+        }
+
+        /* Style for the status area */
+        .regenerate-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(138, 101, 255, 0.1);
+            border-radius: 8px;
+            display: none;
+            text-align: left;
+        }
+
+        /* Better buttons in the modal */
+        .modal-btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .cancel-btn {
+            background: #2d2d3a;
+            color: #e0e0e0;
+        }
+
+            .cancel-btn:hover {
+                background: #3d3d4a;
+            }
+
+        .confirm-btn {
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            color: white;
+        }
+
+            .confirm-btn:hover {
+                background: linear-gradient(135deg, #9b76ff, #3886db);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 10px rgba(138, 101, 255, 0.3);
+            }
+
+        /* Fallback QR code display */
+        .fallback-qr {
+            padding: 15px;
+            background: rgba(138, 101, 255, 0.05);
+            border: 1px solid rgba(138, 101, 255, 0.2);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+            .fallback-qr p {
+                margin: 0 0 8px 0;
+                color: #b0b0b0;
+                font-size: 0.9rem;
+            }
+
+            .fallback-qr a {
+                color: #8a65ff;
+                word-break: break-all;
+                font-size: 0.85rem;
+                text-decoration: none;
+            }
+
+                .fallback-qr a:hover {
+                    text-decoration: underline;
+                }
     </style>
 </head>
 <body>
@@ -879,8 +1493,9 @@
         <div id="kittyContent" style="display: none;">
             <div class="kitty-showcase">
                 <div class="kitty-image-container fade-in-up">
-                    <img id="catImg" class="kitty-image floating" src="" alt="Ninja Cat">
+                    <img id="catImg" class="kitty-image" src="" alt="Ninja Cat">
                     <div class="rarity-badge" id="rarityBadge">Legendary</div>
+                    <div class="element-overlay" id="elementOverlay"></div>
                 </div>
 
                 <div class="kitty-info">
@@ -903,6 +1518,12 @@
                                 <path d="M15.41 6.51L8.59 10.49"></path>
                             </svg>
                             Share
+                        </button>
+                        <button class="action-btn" id="regenerateBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                            </svg>
+                            Regenerate
                         </button>
                         <button class="action-btn" id="viewOnExplorerBtn">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -962,8 +1583,15 @@
                     </div>
 
                     <h3>Combat Skills</h3>
+                    <div class="combat-chart-container">
+                        <canvas id="combatChart"></canvas>
+                    </div>
                     <div class="attribute-grid" id="combatSkillsGrid">
                         <!-- Combat skills will be loaded dynamically -->
+                    </div>
+
+                    <div id="achievements">
+                        <!-- Achievements will be loaded dynamically -->
                     </div>
                 </div>
 
@@ -971,12 +1599,8 @@
                 <div class="tab-content" id="story-tab">
                     <h3>The Legend of <span id="catNameInStory"></span></h3>
 
-                    <div class="lore-block">
-                        <p id="catStoryPart1">Born during the third moon of the Great Bit-Eclipse, this ninja cat showed exceptional promise from the earliest days of training. Whispers spread through the Emerald Paw dojo of a young feline with reflexes unlike any seen before.</p>
-
-                        <p id="catStoryPart2">Master Kiyoto recognized the potential immediately, taking the kitten under his direct tutelage. Years of rigorous training in the ancient art of Paw-Hash-Do forged both mind and body into the perfect infiltration instrument.</p>
-
-                        <p id="catStoryPart3">Now a full-fledged Ninja, this cat specializes in network infiltration and smart contract protection, using the legendary Star-Iron katana to slice through malicious code with surgical precision.</p>
+                    <div id="storyTimeline">
+                        <!-- Story timeline will be loaded dynamically -->
                     </div>
 
                     <h3>Special Abilities</h3>
@@ -989,6 +1613,10 @@
                 <div class="tab-content" id="history-tab">
                     <h3>Blockchain History</h3>
 
+                    <div id="transactionTimeline">
+                        <!-- Transaction timeline will be loaded dynamically -->
+                    </div>
+
                     <ul class="transaction-list" id="transactionList">
                         <!-- Transaction history will be loaded dynamically -->
                     </ul>
@@ -997,23 +1625,55 @@
                         <h3>Share Your Ninja Cat</h3>
                         <p>Show off your rare ninja companion to the world!</p>
 
-                        <div class="share-options">
-                            <div class="share-btn twitter" id="shareTwitter" title="Share on Twitter">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
-                                </svg>
+                        <div class="share-grid">
+                            <div class="share-panel">
+                                <div class="share-title">Share on Social</div>
+                                <div class="social-share-grid">
+                                    <div class="share-btn twitter" id="shareTwitter">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
+                                        </svg>
+                                        <span>Twitter</span>
+                                    </div>
+                                    <div class="share-btn discord" id="shareDiscord">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 18l-3-3V4a1 1 0 00-1-1H7a1 1 0 00-1 1v13.5L3 21h18v-3z"></path>
+                                            <path d="M9.5 9.5c0 .5.3.5.5.5h4c.2 0 .5 0 .5-.5S14.5 9 14 9h-4c-.5 0-.5.3-.5.5z"></path>
+                                        </svg>
+                                        <span>Discord</span>
+                                    </div>
+                                    <div class="share-btn telegram" id="shareTelegram">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21.198 2.433a2.242 2.242 0 00-1.022.215l-16.5 7.5a2.25 2.25 0 00.75 4.3l3.855.508 1.641 5.124a2.25 2.25 0 003.565.906l2.024-1.5"></path>
+                                            <path d="M14.121 15.121L21 8.25"></path>
+                                        </svg>
+                                        <span>Telegram</span>
+                                    </div>
+                                    <div class="share-btn whatsapp" id="shareWhatsApp">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 21l1.65-5.65a9 9 0 113.4 2.25L3 21"></path>
+                                            <path d="M9 10a.5.5 0 001 0V7a.5.5 0 001 0"></path>
+                                            <path d="M13 10a.5.5 0 001 0V7a.5.5 0 001 0"></path>
+                                        </svg>
+                                        <span>WhatsApp</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="share-btn discord" id="shareDiscord" title="Share on Discord">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M9 11.5a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm6 0a1 1 0 1 0 2 0 1 1 0 0 0-2 0zM3.5 8C4 12 5.5 16 9 16c1.8 0 2.5-1 3-1s1.2 1 3 1c3.5 0 5-4 5.5-8m-13-1.5c4 0 5 1 8 1s4-1 8-1-1 4-4 4h-1"></path>
-                                    <path d="M8.5 16c0 2 1 4 4 4s4-2 4-4"></path>
-                                </svg>
+
+                            <div class="share-panel">
+                                <div class="share-title">QR Code</div>
+                                <div class="qr-container">
+                                    <div id="qrCodeContainer"></div>
+                                    <button class="download-qr" id="downloadQrBtn">Download QR</button>
+                                </div>
                             </div>
-                            <div class="share-btn copy" id="copyLink" title="Copy Link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+                            <div class="share-btn copy" id="copyLink">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                                 </svg>
+                                <span>Copy Link to Share</span>
                             </div>
                         </div>
                     </div>
@@ -1022,7 +1682,7 @@
 
             <div class="footer-note">
                 <p>
-                    Each Ninja Cat is uniquely generated using OpenAI's DALL-E. Your cat is one-of-a-kind!
+                    Each Ninja Cat is uniquely generated using advanced AI. Your cat is one-of-a-kind!
                 </p>
                 <a href="my-kitties.html" class="back-btn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 0.5rem;">
@@ -1034,6 +1694,51 @@
             </div>
         </div>
     </div>
+
+    <!-- Regeneration Modal -->
+    <div class="modal-overlay" id="regenerateModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Regenerate Ninja Cat <span id="tokenIdDisplay"></span></h3>
+                <button class="close-modal" id="closeRegenerateModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Choose a new style for your Ninja Cat. This will cost 10 USDC and cannot be reversed.</p>
+
+                <div class="regenerate-form-group">
+                    <label for="regenerateProvider">Select Art Style:</label>
+                    <select id="regenerateProvider" class="form-control">
+                        <option value="dall-e">DALL-E 3 (Detailed Realistic)</option>
+                        <option value="stability">Stability AI (Artistic Style)</option>
+                        <option value="huggingface">Hugging Face (Anime Style)</option>
+                    </select>
+                </div>
+
+                <div class="style-preview" id="stylePreview"></div>
+                <p id="styleDescription" style="text-align: center; margin-top: 0.5rem; color: #b0b0b0;">Select a style to see preview</p>
+
+                <div class="regenerate-form-group">
+                    <label for="regeneratePrompt">Additional Prompt (Optional):</label>
+                    <textarea id="regeneratePrompt" class="form-control" rows="3" placeholder="Additional details or style preferences..."></textarea>
+                </div>
+
+                <div class="regenerate-form-group">
+                    <label for="regenerateNegativePrompt">Negative Prompt (Optional):</label>
+                    <textarea id="regenerateNegativePrompt" class="form-control" rows="2" placeholder="Things to avoid in the image..."></textarea>
+                </div>
+
+                <div class="regenerate-status" id="regenerateStatus">
+                    <p id="regenerateStatusText">Processing...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" id="cancelRegenerateBtn">Cancel</button>
+                <button class="modal-btn confirm-btn" id="confirmRegenerateBtn">Pay 10 USDC & Regenerate</button>
+            </div>
+        </div>
+    </div>
+
+   
 
     <!-- Toast notification -->
     <div id="toast">Link copied to clipboard!</div>
@@ -1054,6 +1759,14 @@
                     document.getElementById(`${button.dataset.tab}-tab`).classList.add('active');
                 });
             });
+
+            // Handle regenerate modal close button
+            document.getElementById('cancelRegenerateBtn').addEventListener('click', function () {
+                document.getElementById('regenerateModal').style.display = 'none';
+            });
+
+            // Initialize style preview
+            document.getElementById('regenerateProvider').dispatchEvent(new Event('change'));
         });
     </script>
 
@@ -1066,8 +1779,9 @@
     <script src="js/kitty.js"></script>
 
     <!-- Include the footer -->
+    <script src="/js/audio-player.js"></script>
     <footer id="footer"></footer>
-    <script src="js/footer.js"></script>
+    <script type="module" src="js/footer.js"></script>
 
     <script type="module" src="js/navbar.js"></script>
 </body>

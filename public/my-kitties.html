@@ -21,6 +21,178 @@
     <!-- Optional: Include Tippy.js for tooltips -->
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        /* Regeneration specific styles */
+        .regenerate-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: white;
+        }
+
+            .regenerate-btn:hover {
+                background: linear-gradient(135deg, #ff5722, #ff9800);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+            }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #1e1e2e;
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 650px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1.5px solid #3d3d5a;
+            animation: modalFadeIn 0.3s;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            .close-modal:hover {
+                color: #fff;
+            }
+
+        .regenerate-options {
+            margin: 20px 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background: #2d2d3e;
+            border: 1.5px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+        }
+
+            .form-control:focus {
+                border-color: #8a65ff;
+                outline: none;
+                box-shadow: 0 0 8px rgba(138, 101, 255, 0.3);
+            }
+
+        textarea.form-control {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .regenerate-preview {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .current-image {
+            text-align: center;
+        }
+
+            .current-image img {
+                max-width: 200px;
+                max-height: 200px;
+                border-radius: 10px;
+                border: 2px solid #3d3d5a;
+            }
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+        }
+
+        .btn-secondary {
+            background: #3d3d5a;
+        }
+
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            background: rgba(138, 101, 255, 0.1);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .fee-info {
+            background: rgba(138, 101, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-top: 15px;
+        }
+
+        .fee-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+            .fee-details p {
+                margin: 0;
+            }
+
+        .fee-note {
+            font-size: 0.85em;
+            color: #aaa;
+        }
+    </style>
 </head>
 <body>
     <div id="navbar-container"></div>
@@ -320,6 +492,15 @@
                 </div>
                 <div class="actions">
                     <button class="action-btn view-details">View Details</button>
+                    <button class="action-btn regenerate-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6"></path>
+                            <path d="M1 20v-6h6"></path>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                            <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                        </svg>
+                        Regenerate
+                    </button>
                     <button class="action-btn share-btn">List for Sale</button>
                     <button class="action-btn burn-btn">Burn NFT</button>
                 </div>
@@ -342,6 +523,15 @@
 
                 <div class="detailed-actions">
                     <button class="btn">View on Explorer</button>
+                    <button class="btn regenerate-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6"></path>
+                            <path d="M1 20v-6h6"></path>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                            <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                        </svg>
+                        Regenerate
+                    </button>
                     <button class="btn">List for Sale</button>
                     <button class="btn share-btn">Share</button>
                     <button class="btn burn-btn">Burn NFT</button>
@@ -349,6 +539,64 @@
             </div>
         </div>
     </template>
+
+    <!-- Regenerate Modal -->
+    <div id="regenerateModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Regenerate Ninja Cat #<span id="regenerateTokenId"></span></h2>
+            <p>Create a new image for your ninja cat for 10 USDC</p>
+
+            <div class="regenerate-options">
+                <div class="form-group">
+                    <label for="regenerateProvider">Choose AI Provider:</label>
+                    <select id="regenerateProvider" class="form-control">
+                        <option value="dall-e">DALL-E 3 (OpenAI)</option>
+                        <option value="stability">Stability AI (SDXL)</option>
+                        <option value="huggingface">HuggingFace (Free)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="regeneratePrompt">Custom Prompt Details (optional):</label>
+                    <textarea id="regeneratePrompt" class="form-control"
+                              placeholder="Add specific details for your ninja cat (e.g., 'with glowing eyes, golden armor')"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="regenerateNegativePrompt">Negative Prompt (optional):</label>
+                    <textarea id="regenerateNegativePrompt" class="form-control"
+                              placeholder="Specify what you don't want (e.g., 'blurry, text, watermarks')"></textarea>
+                </div>
+
+                <div class="form-group fee-info">
+                    <div class="fee-details">
+                        <p>Regeneration Fee: <strong>10 USDC</strong></p>
+                        <p class="fee-note">Fee covers AI image generation costs and supports project development</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="regenerate-preview">
+                <div class="current-image">
+                    <h4>Current Image</h4>
+                    <img id="currentTokenImage" src="" alt="Current NFT image">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="cancelRegenerateBtn" class="btn btn-secondary">Cancel</button>
+                <button id="confirmRegenerateBtn" class="btn btn-primary">
+                    Regenerate for 10 USDC
+                </button>
+            </div>
+
+            <div id="regenerateStatus" class="status-message" style="display: none;">
+                <div class="spinner"></div>
+                <span id="regenerateStatusText">Processing...</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Pagination functionality remains unchanged -->
     <script>
@@ -550,11 +798,12 @@
     <!-- IMPORTANT: Import wallet connection before gallery.js -->
     <script type="module" src="js/wallet.js"></script>
     <script type="module" src="js/my-kitties.js"></script>
-    
+
 
     <!-- Include the footer -->
     <footer id="footer"></footer>
     <script type="module" src="js/footer.js"></script>
+    <script src="/js/audio-player.js"></script>
     <!-- Replace the existing navbar script line at the bottom of the page with this: -->
     <script type="module" src="js/navbar.js"></script>
 </body>

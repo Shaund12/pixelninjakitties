@@ -188,7 +188,7 @@ app.get('/api/reset-block/:blockNumber', async (req, res) => {
     }
 });
 
-// Force process specific token ID with options
+/// Force process specific token ID with options
 app.get('/api/process/:tokenId', async (req, res) => {
     const tokenId = parseInt(req.params.tokenId);
     if (isNaN(tokenId)) {
@@ -196,8 +196,11 @@ app.get('/api/process/:tokenId', async (req, res) => {
     }
 
     try {
-        // Check if the token has already been processed
-        if (processedTokens.has(tokenId)) {
+        // Check if the token has already been processed - BUT ALLOW REGENERATION
+        const forceProcess = req.query.force === 'true';
+        const isRegeneration = req.query.regenerate === 'true';
+
+        if (processedTokens.has(tokenId) && !forceProcess) {
             console.log(`⏭️ Token #${tokenId} has already been processed, skipping`);
             return res.json({
                 status: "already_processed",
@@ -206,16 +209,8 @@ app.get('/api/process/:tokenId', async (req, res) => {
             });
         }
 
-        // Check if token is already in the queue to prevent duplication
-        const existingTask = mintQueue.find(task => Number(task.tokenId) === tokenId);
-        if (existingTask) {
-            console.log(`⏭️ Token #${tokenId} is already in the processing queue with provider ${existingTask.imageProvider}`);
-            return res.json({
-                status: "already_queued",
-                message: `Token #${tokenId} is already in the processing queue`,
-                provider: existingTask.imageProvider,
-                tokenId
-            });
+        if (processedTokens.has(tokenId) && forceProcess) {
+            console.log(`🔄 Force regenerating token #${tokenId} that was previously processed`);
         }
 
         // Get parameters from query - CRITICAL: Log all incoming parameters for debugging
@@ -292,7 +287,9 @@ app.get('/api/process/:tokenId', async (req, res) => {
             promptExtras,
             negativePrompt,
             providerOptions,
-            taskId
+            taskId,
+            forceProcess,       // Add this to pass the force flag
+            isRegeneration      // Add this to indicate this is a regeneration
         });
 
         // Start queue processing
@@ -486,14 +483,20 @@ async function getBlockchainInfo() {
 }
 
 // Process a single mint task with rate limiting
+// Process a single mint task with rate limiting
 async function processMintTask(task) {
-    const { tokenId, breed, buyer, imageProvider, promptExtras, negativePrompt, taskId: existingTaskId } = task;
+    const { tokenId, breed, buyer, imageProvider, promptExtras, negativePrompt, taskId: existingTaskId, forceProcess, isRegeneration } = task;
     const id = Number(tokenId);
 
     // CHECK IF TOKEN WAS ALREADY PROCESSED WHILE WAITING IN QUEUE
-    if (processedTokens.has(id)) {
+    // BUT ALLOW REGENERATION IF FORCE FLAG IS SET
+    if (processedTokens.has(id) && !forceProcess) {
         console.log(`⏭️ Token #${id} was already processed while in queue, skipping duplicate processing`);
         return; // Skip processing entirely
+    }
+
+    if (processedTokens.has(id) && forceProcess) {
+        console.log(`🔄 Allowing regeneration of previously processed token #${id}`);
     }
 
     // CRITICAL FIX: Ensure we use the explicitly passed imageProvider and never fall back to default
@@ -762,6 +765,7 @@ async function checkForEvents() {
                 console.log(`📝 Queueing token #${id} (${breed}) from buyer ${buyer}`);
                 console.log(`🎨 Selected image provider: ${storedProvider || IMAGE_PROVIDER}`);
 
+                // Add to processing queue with explicit provider and all options
                 mintQueue.push({
                     tokenId,
                     buyer,
@@ -769,6 +773,7 @@ async function checkForEvents() {
                     imageProvider: storedProvider || IMAGE_PROVIDER,
                     promptExtras: storedPromptExtras || "",
                     negativePrompt: storedNegativePrompt || ""
+                    // No force or regeneration flags for regular events
                 });
             } catch (err) {
                 console.error(`❌ Error processing log:`, err);

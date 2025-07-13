@@ -1,4 +1,4 @@
-﻿/* global ethers */
+﻿/* global ethers, Chart */
 
 // Helper function to safely set text content
 function safeSetTextContent(elementId, text) {
@@ -36,11 +36,13 @@ function formatDate(timestamp) {
     });
 }
 
-// Show a toast message
-function showToast(message, duration = 3000) {
+// Show a toast message with enhanced styling and animation
+function showToast(message, type = 'info', duration = 3000) {
     const toast = document.getElementById('toast');
     if (!toast) return;
 
+    // Set type-specific styling
+    toast.className = `toast ${type}`;
     toast.textContent = message;
     toast.classList.add('visible');
 
@@ -49,20 +51,31 @@ function showToast(message, duration = 3000) {
     }, duration);
 }
 
-// Copy text to clipboard
+// Copy text to clipboard with enhanced feedback
 async function copyToClipboard(text) {
     try {
         await navigator.clipboard.writeText(text);
-        showToast('Copied to clipboard!');
+        showToast('Copied to clipboard!', 'success');
+
+        // Trigger confetti effect for a fun interaction
+        if (window.confetti) {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
     } catch (err) {
         console.error('Failed to copy: ', err);
-        showToast('Failed to copy to clipboard');
+        showToast('Failed to copy to clipboard', 'error');
     }
 }
 
-// Download image from URL
+// Download image from URL with progress feedback
 async function downloadImage(url, filename) {
     try {
+        showToast('Starting download...', 'info');
+
         // If it's an IPFS URL, convert it
         if (url.startsWith('ipfs://')) {
             url = `https://ipfs.io/ipfs/${url.replace('ipfs://', '')}`;
@@ -79,14 +92,14 @@ async function downloadImage(url, filename) {
 
         // Clean up
         URL.revokeObjectURL(objectURL);
-        showToast('Image downloaded successfully!');
+        showToast('Image downloaded successfully!', 'success');
     } catch (error) {
         console.error('Error downloading image:', error);
-        showToast('Failed to download image');
+        showToast('Failed to download image', 'error');
     }
 }
 
-// Fetch transaction history for a token
+// Fetch transaction history for a token with enhanced details
 async function fetchTokenHistory(provider, tokenId, contractAddress) {
     try {
         // Define the Transfer event signature
@@ -104,9 +117,15 @@ async function fetchTokenHistory(provider, tokenId, contractAddress) {
             toBlock: 'latest'
         });
 
-        // Format the logs into usable transactions
+        // Format the logs into usable transactions with enhanced details
         const transactions = await Promise.all(logs.map(async (log) => {
             const block = await provider.getBlock(log.blockNumber);
+            const tx = await provider.getTransaction(log.transactionHash);
+
+            // Get gas price and estimate cost
+            const gasCost = tx ? (tx.gasPrice * tx.gasLimit) : null;
+            const gasCostEth = gasCost ? ethers.formatEther(gasCost) : "Unknown";
+
             return {
                 type: log.topics[1] === '0x0000000000000000000000000000000000000000000000000000000000000000'
                     ? 'Mint' : 'Transfer',
@@ -114,7 +133,9 @@ async function fetchTokenHistory(provider, tokenId, contractAddress) {
                 blockNumber: log.blockNumber,
                 timestamp: block ? block.timestamp : null,
                 from: ethers.dataSlice(log.topics[1], 12), // format from address
-                to: ethers.dataSlice(log.topics[2], 12)    // format to address
+                to: ethers.dataSlice(log.topics[2], 12),   // format to address
+                gasCost: gasCostEth,
+                confirmations: block ? await provider.getBlockNumber() - block.number : 0
             };
         }));
 
@@ -126,47 +147,145 @@ async function fetchTokenHistory(provider, tokenId, contractAddress) {
     }
 }
 
-// Set up sharing functionality
+// Set up enhanced sharing functionality with more platforms
 function setupSharing(metadata, tokenId) {
     // Get the current URL without query parameters
     const baseUrl = window.location.origin + window.location.pathname;
     const shareUrl = `${baseUrl}?id=${tokenId}`;
+    const nftName = metadata?.name || `Pixel Ninja Cat #${tokenId}`;
+    const description = metadata?.description || `Check out my awesome Ninja Cat NFT!`;
+    const imageUrl = metadata?.image || '';
 
-    // Set up Twitter share
+    // Set up Twitter share with enhanced content
     safeUpdateElement('shareTwitter', el => {
         el.addEventListener('click', () => {
-            const nftName = metadata?.name || `Pixel Ninja Cat #${tokenId}`;
-            const tweetText = encodeURIComponent(`Check out my ${nftName} NFT! #PixelNinjaCats #NFT`);
+            const traits = metadata?.attributes?.map(a => a.trait_type === 'Element' || a.trait_type === 'Weapon' ? `#${a.value.replace(/\s/g, '')}` : '').filter(Boolean).join(' ');
+            const tweetText = encodeURIComponent(`Check out my ${nftName} NFT! ${traits} #PixelNinjaCats #NFT #Vitruveo`);
             const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(shareUrl)}`;
             window.open(twitterUrl, '_blank');
         });
     });
 
-    // Set up Discord share (opens Discord with pre-filled message)
+    // Set up Discord share with enhanced formatting
     safeUpdateElement('shareDiscord', el => {
         el.addEventListener('click', () => {
-            const nftName = metadata?.name || `Pixel Ninja Cat #${tokenId}`;
-            // Discord doesn't have a direct share API, but we can at least copy a formatted message
-            const discordText = `Check out my ${nftName} NFT!\n${shareUrl}`;
+            const rarity = metadata?.ninja_data?.rarity?.tier || '';
+            const discordText = `**${nftName}** ${rarity ? `[${rarity}]` : ''}\n${description}\n${shareUrl}`;
             copyToClipboard(discordText);
-            showToast('Discord message copied! Paste it in your Discord chat.');
+            showToast('Discord message copied! Paste it in your Discord chat.', 'success');
         });
     });
 
-    // Set up link copy
+    // Add new Telegram share
+    safeUpdateElement('shareTelegram', el => {
+        if (el) {
+            el.addEventListener('click', () => {
+                const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`Check out my ${nftName} NFT!`)}`;
+                window.open(telegramUrl, '_blank');
+            });
+        }
+    });
+
+    // Add WhatsApp share
+    safeUpdateElement('shareWhatsApp', el => {
+        if (el) {
+            el.addEventListener('click', () => {
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Check out my ${nftName} NFT! ${shareUrl}`)}`;
+                window.open(whatsappUrl, '_blank');
+            });
+        }
+    });
+
+    // Set up link copy with visual feedback
     safeUpdateElement('copyLink', el => {
         el.addEventListener('click', () => {
             copyToClipboard(shareUrl);
+
+            // Add visual feedback
+            el.classList.add('copied');
+            setTimeout(() => el.classList.remove('copied'), 1000);
         });
     });
 
-    // Main share button
+    // Generate QR Code if the library is available
+    if (window.QRCode) {
+        const qrCodeContainer = document.getElementById('qrCodeContainer');
+        if (qrCodeContainer) {
+            try {
+                // First check if QRCode is actually a constructor function
+                if (typeof QRCode === 'function') {
+                    // Different QR libraries have different APIs
+                    const options = {
+                        text: shareUrl,
+                        width: 128,
+                        height: 128,
+                        colorDark: "#8a65ff",
+                        colorLight: "#ffffff"
+                    };
+
+                    new QRCode(qrCodeContainer, options);
+
+                    // Add download QR code button
+                    const downloadQrBtn = document.getElementById('downloadQrBtn');
+                    if (downloadQrBtn) {
+                        downloadQrBtn.addEventListener('click', () => {
+                            const canvas = qrCodeContainer.querySelector('canvas');
+                            if (canvas) {
+                                const link = document.createElement('a');
+                                link.href = canvas.toDataURL('image/png');
+                                link.download = `${nftName.replace(/\s/g, '_')}_QR.png`;
+                                link.click();
+                            }
+                        });
+                    }
+                } else {
+                    // QRCode exists but is not a constructor
+                    throw new Error('QRCode is not properly initialized');
+                }
+            } catch (err) {
+                console.error('QR code generation failed:', err);
+
+                // Create a simple fallback QR code display
+                qrCodeContainer.innerHTML = `
+                <div class="fallback-qr">
+                    <p>Direct link to this NFT:</p>
+                    <a href="${shareUrl}" target="_blank">${shareUrl}</a>
+                </div>
+            `;
+
+                // Hide the download button since we don't have a canvas
+                const downloadQrBtn = document.getElementById('downloadQrBtn');
+                if (downloadQrBtn) {
+                    downloadQrBtn.style.display = 'none';
+                }
+            }
+        }
+    } else {
+        // QRCode library not available at all
+        const qrCodeContainer = document.getElementById('qrCodeContainer');
+        if (qrCodeContainer) {
+            qrCodeContainer.innerHTML = `
+            <div class="fallback-qr">
+                <p>Direct link to this NFT:</p>
+                <a href="${shareUrl}" target="_blank">${shareUrl}</a>
+            </div>
+        `;
+
+            // Hide the download button
+            const downloadQrBtn = document.getElementById('downloadQrBtn');
+            if (downloadQrBtn) {
+                downloadQrBtn.style.display = 'none';
+            }
+        }
+    }
+
+    // Main share button with native sharing if available
     safeUpdateElement('shareBtn', el => {
         el.addEventListener('click', function () {
             if (navigator.share) {
                 navigator.share({
-                    title: metadata?.name || `Pixel Ninja Cat #${tokenId}`,
-                    text: 'Check out my awesome Pixel Ninja Cat NFT!',
+                    title: nftName,
+                    text: description,
                     url: shareUrl
                 })
                     .catch(console.error);
@@ -178,24 +297,338 @@ function setupSharing(metadata, tokenId) {
     });
 }
 
-// Animate skill bars
+// Set up regeneration modal and functionality
+function setupRegenerationInterface(tokenId) {
+    const regenerateBtn = document.getElementById('regenerateBtn');
+    const regenerateModal = document.getElementById('regenerateModal');
+    const closeRegenerateModal = document.getElementById('closeRegenerateModal');
+    const confirmRegenerateBtn = document.getElementById('confirmRegenerateBtn');
+    const cancelBtn = document.getElementById('cancelRegenerateBtn');
+
+    if (!regenerateBtn || !regenerateModal) return;
+
+    // Open regeneration modal
+    regenerateBtn.addEventListener('click', () => {
+        regenerateModal.style.display = 'block';
+        document.getElementById('tokenIdDisplay').textContent = tokenId;
+
+        // Reset any previous status
+        const statusEl = document.getElementById('regenerateStatus');
+        if (statusEl) statusEl.style.display = 'none';
+
+        // Reset form inputs
+        const promptEl = document.getElementById('regeneratePrompt');
+        const negativePromptEl = document.getElementById('regenerateNegativePrompt');
+        if (promptEl) promptEl.value = '';
+        if (negativePromptEl) negativePromptEl.value = '';
+    });
+
+    // Close modal buttons
+    if (closeRegenerateModal) {
+        closeRegenerateModal.addEventListener('click', () => {
+            regenerateModal.style.display = 'none';
+        });
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            regenerateModal.style.display = 'none';
+        });
+    }
+
+    // Close on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === regenerateModal) {
+            regenerateModal.style.display = 'none';
+        }
+    });
+
+    // Handle provider selection changes - update preview style
+    const providerSelect = document.getElementById('regenerateProvider');
+    if (providerSelect) {
+        providerSelect.addEventListener('change', () => {
+            const provider = providerSelect.value;
+            const previewBox = document.getElementById('stylePreview');
+
+            if (previewBox) {
+                // Update preview style based on selected provider
+                previewBox.className = 'style-preview';
+                previewBox.classList.add(`style-${provider}`);
+
+                // Update preview text
+                const styleDesc = document.getElementById('styleDescription');
+                if (styleDesc) {
+                    switch (provider) {
+                        case 'dall-e':
+                            styleDesc.textContent = 'OpenAI DALL-E 3: Hyper-realistic, detailed art style';
+                            break;
+                        case 'stability':
+                            styleDesc.textContent = 'Stability AI: Dreamlike, artistic style with vibrant colors';
+                            break;
+                        case 'huggingface':
+                            styleDesc.textContent = 'Hugging Face: Anime-inspired, cartoon style';
+                            break;
+                        default:
+                            styleDesc.textContent = 'Select a style to see preview';
+                    }
+                }
+            }
+        });
+    }
+
+    // Confirm regeneration button - FULLY IMPLEMENTED
+    // Confirm regeneration button - FULLY IMPLEMENTED
+    if (confirmRegenerateBtn) {
+        confirmRegenerateBtn.addEventListener('click', async () => {
+            try {
+                // Get form values
+                const provider = document.getElementById('regenerateProvider').value;
+                const promptExtras = document.getElementById('regeneratePrompt').value || '';
+                const negativePrompt = document.getElementById('regenerateNegativePrompt').value || '';
+
+                // Update UI to show processing
+                const statusEl = document.getElementById('regenerateStatus');
+                const statusTextEl = document.getElementById('regenerateStatusText');
+                confirmRegenerateBtn.disabled = true;
+                confirmRegenerateBtn.textContent = 'Processing...';
+
+                if (statusEl && statusTextEl) {
+                    statusEl.style.display = 'block';
+                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Initiating payment transaction...`;
+                }
+
+                // Validate inputs
+                if (!provider) {
+                    throw new Error('Please select an art style');
+                }
+
+                // First handle the USDC payment
+                try {
+                    // Check if MetaMask is installed
+                    if (typeof window.ethereum === 'undefined') {
+                        throw new Error('MetaMask or compatible wallet not found. Please install it to continue.');
+                    }
+
+                    // Import config values
+                    const { USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT } = await import('./config.js');
+
+                    // Calculate the amount in wei (USDC has 6 decimals)
+                    const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6); // Use config value instead of hardcoded "10"
+
+                    // Request account access
+                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Connecting to wallet...`;
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    if (accounts.length === 0) {
+                        throw new Error('No accounts found. Please connect your wallet.');
+                    }
+                    const userAddress = accounts[0];
+
+                    // Get the web3 provider - using ethers v6 syntax
+                    const web3Provider = new ethers.BrowserProvider(window.ethereum);
+                    const signer = await web3Provider.getSigner();
+
+                    // USDC ABI for the transfer function
+                    const usdcAbi = [
+                        "function transfer(address to, uint256 value) returns (bool)",
+                        "function balanceOf(address owner) view returns (uint256)"
+                    ];
+
+                    const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
+
+                    // Check USDC balance
+                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Checking USDC balance...`;
+                    const balance = await usdcContract.balanceOf(userAddress);
+                    if (balance < AMOUNT) {
+                        throw new Error(`Insufficient USDC balance. You need at least 10 USDC.`);
+                    }
+
+                    // Send the transaction
+                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Sending payment transaction...`;
+                    const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, AMOUNT);
+
+                    // Wait for confirmation
+                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Confirming payment transaction...`;
+                    await tx.wait();
+
+                    // Payment successful, now proceed with regeneration
+                    statusTextEl.innerHTML = `<div class="success-icon">✓</div>Payment successful! Initiating regeneration...`;
+
+                } catch (paymentError) {
+                    console.error('Payment failed:', paymentError);
+                    throw new Error(`Payment failed: ${paymentError.message || 'Unknown error'}`);
+                }
+
+                // Construct API URL with query parameters
+                const apiUrl = new URL(`/api/process/${tokenId}`, window.location.origin);
+                apiUrl.searchParams.append('force', 'true');
+                apiUrl.searchParams.append('regenerate', 'true');
+                apiUrl.searchParams.append('imageProvider', provider);
+
+                // Only add these if they have values
+                if (promptExtras) apiUrl.searchParams.append('promptExtras', promptExtras);
+                if (negativePrompt) apiUrl.searchParams.append('negativePrompt', negativePrompt);
+
+                // Get breed from page if available
+                const breedEl = document.getElementById('catBreed');
+                const breed = breedEl ? breedEl.textContent : 'Tabby';
+                apiUrl.searchParams.append('breed', breed);
+
+                // Make the API call
+                statusTextEl.innerHTML = `<div class="loading-spinner"></div>Submitting regeneration request...`;
+
+                const response = await fetch(apiUrl.toString());
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to start regeneration process');
+                }
+
+                const responseData = await response.json();
+                const { taskId } = responseData;
+
+                if (!taskId) {
+                    throw new Error('No task ID returned from server');
+                }
+
+                statusTextEl.innerHTML = `<div class="loading-spinner"></div>Request accepted! Monitoring progress...`;
+
+                // Start polling for status
+                await pollTaskStatus(taskId, statusTextEl);
+
+            } catch (error) {
+                console.error('Regeneration failed:', error);
+                const statusTextEl = document.getElementById('regenerateStatusText');
+                if (statusTextEl) {
+                    statusTextEl.innerHTML = `<div class="error-icon">❌</div> Error: ${error.message}`;
+                }
+                showToast(error.message, 'error');
+            } finally {
+                // Re-enable button
+                confirmRegenerateBtn.disabled = false;
+                confirmRegenerateBtn.textContent = 'Pay 10 USDC & Regenerate';
+            }
+        });
+    }
+
+    // Poll for task status and update UI
+    async function pollTaskStatus(taskId, statusElement) {
+        let completed = false;
+        let attempts = 0;
+        const maxAttempts = 300; // 5 minutes at 1-second intervals
+
+        // Add status tracking variables
+        let lastProgress = 0;
+        let lastStatus = '';
+
+        while (!completed && attempts < maxAttempts) {
+            try {
+                const response = await fetch(`/api/status/${taskId}`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to get task status');
+                }
+
+                const taskData = await response.json();
+                const { status, progress, message } = taskData;
+
+                // Only update if something changed
+                if (status !== lastStatus || progress !== lastProgress) {
+                    lastStatus = status;
+                    lastProgress = progress || 0;
+
+                    // Update status message with progress
+                    let statusMsg = '';
+
+                    switch (status) {
+                        case 'processing':
+                            statusMsg = `<div class="loading-spinner"></div>${message || 'Processing'} - ${progress || 0}%`;
+                            break;
+                        case 'completed':
+                            statusMsg = `<div class="success-icon">✓</div>Image regenerated successfully!`;
+                            completed = true;
+                            break;
+                        case 'failed':
+                            statusMsg = `<div class="error-icon">❌</div>Failed: ${message || 'Unknown error'}`;
+                            completed = true;
+                            break;
+                        default:
+                            statusMsg = `<div class="loading-spinner"></div>${message || status} - ${progress || 0}%`;
+                    }
+
+                    if (statusElement) {
+                        statusElement.innerHTML = statusMsg;
+                    }
+                }
+
+                // If completed or failed, break the loop
+                if (status === 'completed' || status === 'failed') {
+                    completed = true;
+
+                    // If completed successfully, reload the page to show the new image
+                    if (status === 'completed') {
+                        setTimeout(() => {
+                            statusElement.innerHTML = `<div class="success-icon">✓</div>Reloading page to show your new image...`;
+
+                            // Reload the page after a brief delay
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        }, 1000);
+                    }
+
+                    break;
+                }
+
+                // Wait 1 second before next poll
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                attempts++;
+
+            } catch (error) {
+                console.error('Error polling task status:', error);
+
+                if (statusElement) {
+                    statusElement.innerHTML = `<div class="warning-icon">⚠️</div>Error checking status: ${error.message}`;
+                }
+
+                // Wait a bit longer if there's an error
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                attempts++;
+            }
+        }
+
+        // If we reached max attempts without completion
+        if (!completed) {
+            if (statusElement) {
+                statusElement.innerHTML = `<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check "My Kitties" page later.`;
+            }
+        }
+    }
+}
+
+// Animate skill bars with improved transitions
 function animateSkillBars() {
     const skillBars = document.querySelectorAll('.skill-progress');
 
-    skillBars.forEach(bar => {
+    skillBars.forEach((bar, index) => {
         const width = bar.style.width;
         bar.style.width = '0%';
 
-        // Trigger reflow
-        void bar.offsetWidth;
+        // Staggered animation for each bar
+        setTimeout(() => {
+            // Trigger reflow
+            void bar.offsetWidth;
 
-        // Set the final width
-        bar.style.width = width;
+            // Set the final width with easing
+            bar.style.transition = 'width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            bar.style.width = width;
+        }, index * 150); // Stagger each bar by 150ms
     });
 }
 
 // Get the appropriate CSS class for a rarity tier
 function getRarityClass(rarity) {
+    if (!rarity) return '';
+
     const tier = rarity.toLowerCase();
     switch (tier) {
         case 'legendary':
@@ -215,26 +648,34 @@ function getRarityClass(rarity) {
     }
 }
 
-// Get color class for specific elements
+// Get color class for specific elements with expanded elements
 function getElementClass(element) {
     if (!element) return '';
     const elementLower = element.toLowerCase();
 
-    if (elementLower === 'fire') return 'element-fire';
-    if (elementLower === 'water') return 'element-water';
-    if (elementLower === 'earth') return 'element-earth';
-    if (elementLower === 'air' || elementLower === 'wind') return 'element-air';
-    if (elementLower === 'void') return 'element-void';
-    if (elementLower === 'lightning' || elementLower === 'thunder') return 'element-lightning';
-    if (elementLower === 'ice') return 'element-ice';
-    if (elementLower === 'shadow') return 'element-shadow';
-    if (elementLower === 'light') return 'element-light';
-    if (elementLower === 'cosmic') return 'element-cosmic';
+    const elementMap = {
+        'fire': 'element-fire',
+        'water': 'element-water',
+        'earth': 'element-earth',
+        'air': 'element-air',
+        'wind': 'element-air',
+        'void': 'element-void',
+        'lightning': 'element-lightning',
+        'thunder': 'element-lightning',
+        'ice': 'element-ice',
+        'shadow': 'element-shadow',
+        'light': 'element-light',
+        'cosmic': 'element-cosmic',
+        'nature': 'element-nature',
+        'metal': 'element-metal',
+        'poison': 'element-poison',
+        'psychic': 'element-psychic'
+    };
 
-    return '';
+    return elementMap[elementLower] || '';
 }
 
-// Format special/mythic traits with highlights
+// Format special/mythic traits with enhanced styling
 function formatSpecialTrait(trait) {
     const isSpecial = trait.rarity === 'Unique';
     const isMythic = trait.rarity === 'Mythic';
@@ -242,13 +683,14 @@ function formatSpecialTrait(trait) {
     if (!isSpecial && !isMythic) return trait.value;
 
     if (isMythic) {
-        return `<span class="mythic-trait">${trait.value}</span>`;
+        return `<span class="mythic-trait">${trait.value}</span>
+                <span class="trait-sparkle"></span>`;
     } else {
         return `<span class="special-trait">${trait.value}</span>`;
     }
 }
 
-// Generate HTML for a trait card based on trait information
+// Generate HTML for a trait card based on trait information with improved styling
 function createTraitCard(attr, showRarity = true) {
     // Get rarity from the attribute or use default
     const rarity = attr.rarity || "Common";
@@ -277,8 +719,11 @@ function createTraitCard(attr, showRarity = true) {
     const isSpecial = rarity === 'Unique' || rarity === 'Mythic';
     const specialClass = isSpecial ? 'special-attribute-card' : '';
 
+    // Add weapon class if needed
+    const weaponClass = attr.trait_type === 'Weapon' ? 'weapon-card' : '';
+
     return `
-    <div class="attribute-card ${specialClass} ${elementClass}">
+    <div class="attribute-card ${specialClass} ${elementClass} ${weaponClass}" data-trait="${attr.trait_type}" data-value="${attr.value}">
         <div class="attribute-type">${attr.trait_type}</div>
         <div class="attribute-value">${isSpecial ? formatSpecialTrait(attr) : attr.value}</div>
         <div class="skill-bar">
@@ -287,6 +732,321 @@ function createTraitCard(attr, showRarity = true) {
         ${showRarity ? `<div class="attribute-rarity">${rarity}</div>` : ''}
     </div>
     `;
+}
+
+// Create interactive combat stats radar chart
+function createCombatChart(stats) {
+    const ctx = document.getElementById('combatChart');
+    if (!ctx || !window.Chart) return;
+
+    const chartData = {
+        labels: ['Agility', 'Stealth', 'Power', 'Intelligence'],
+        datasets: [{
+            label: 'Combat Stats',
+            data: [
+                stats.agility || 5,
+                stats.stealth || 5,
+                stats.power || 5,
+                stats.intelligence || 5
+            ],
+            backgroundColor: 'rgba(138, 101, 255, 0.5)',
+            borderColor: '#8a65ff',
+            borderWidth: 2,
+            pointBackgroundColor: '#2775ca',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#8a65ff'
+        }]
+    };
+
+    return new Chart(ctx, {
+        type: 'radar',
+        data: chartData,
+        options: {
+            scales: {
+                r: {
+                    angleLines: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    pointLabels: {
+                        color: '#b0b0b0',
+                        font: {
+                            family: 'Poppins',
+                            size: 12
+                        }
+                    },
+                    ticks: {
+                        color: '#9e9e9e',
+                        backdropColor: 'transparent',
+                        stepSize: 2
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 10
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return `${context.label}: ${context.raw}/10`;
+                        }
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.2
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
+
+// Create a timeline visualization for the NFT history
+function createTimelineVisualization(transactions) {
+    if (!transactions || !transactions.length) return;
+
+    const timelineEl = document.getElementById('transactionTimeline');
+    if (!timelineEl) return;
+
+    let timelineHTML = '';
+
+    transactions.forEach((tx, index) => {
+        const isFirst = index === 0;
+        const isLast = index === transactions.length - 1;
+        const date = tx.timestamp ? formatDate(tx.timestamp) : 'Unknown date';
+
+        timelineHTML += `
+            <div class="timeline-item ${isFirst ? 'first' : ''} ${isLast ? 'last' : ''}">
+                <div class="timeline-point ${tx.type.toLowerCase() === 'mint' ? 'mint' : 'transfer'}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        ${tx.type.toLowerCase() === 'mint'
+                ? '<path d="M12 2L20 7V17L12 22L4 17V7L12 2Z"></path>'
+                : '<path d="M22 12H2M16 6l6 6-6 6"></path>'}
+                    </svg>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-date">${date}</div>
+                    <div class="timeline-title">
+                        <span class="tx-type ${tx.type.toLowerCase() === 'mint' ? 'tx-mint' : 'tx-transfer'}">${tx.type}</span>
+                        <a href="https://explorer.vitruveo.xyz/tx/${tx.hash}" class="tx-hash" target="_blank">
+                            ${tx.hash.substring(0, 6)}...${tx.hash.substring(tx.hash.length - 4)}
+                        </a>
+                    </div>
+                    <div class="timeline-details">
+                        ${tx.type === 'Transfer'
+                ? `<div class="transfer-addresses">
+                                <span class="from-address">${formatAddress(tx.from)}</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="2">
+                                    <path d="M5 12h14M12 5l7 7-7 7"></path>
+                                </svg>
+                                <span class="to-address">${formatAddress(tx.to)}</span>
+                              </div>`
+                : `<div class="mint-detail">Original creation on Vitruveo</div>`
+            }
+                        <div class="tx-gas">Gas: ${tx.gasCost} ETH</div>
+                        <div class="tx-confirmations">${tx.confirmations} confirmations</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    timelineEl.innerHTML = timelineHTML;
+}
+
+// Create and animate visual timeline for ninja story
+function createStoryTimeline(metadata) {
+    const storyEl = document.getElementById('storyTimeline');
+    if (!storyEl) return;
+
+    // Extract story parts
+    const backstory = metadata?.ninja_data?.backstory || {};
+    const origin = backstory.origin || "Born during the third moon of the Great Bit-Eclipse, this ninja cat showed exceptional promise from the earliest days of training.";
+    const training = backstory.training || "Years of rigorous training in the ancient art of Paw-Hash-Do forged both mind and body into the perfect infiltration instrument.";
+    const currentRole = backstory.currentRole || "Now a full-fledged Ninja, this cat specializes in network infiltration and smart contract protection.";
+
+    storyEl.innerHTML = `
+        <div class="story-timeline">
+            <div class="story-point birth">
+                <div class="story-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </div>
+                <div class="story-content">
+                    <h4>Origins</h4>
+                    <p>${origin}</p>
+                </div>
+            </div>
+            <div class="story-point training">
+                <div class="story-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                    </svg>
+                </div>
+                <div class="story-content">
+                    <h4>Training</h4>
+                    <p>${training}</p>
+                </div>
+            </div>
+            <div class="story-point present">
+                <div class="story-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <div class="story-content">
+                    <h4>Present Day</h4>
+                    <p>${currentRole}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Animate the story timeline points
+    const storyPoints = document.querySelectorAll('.story-point');
+    storyPoints.forEach((point, index) => {
+        setTimeout(() => {
+            point.classList.add('active');
+        }, 500 + (index * 700));
+    });
+}
+
+// Set up 3D tilt effect for the NFT image
+function setupTiltEffect() {
+    const card = document.querySelector('.kitty-image-container');
+    const img = document.querySelector('.kitty-image');
+
+    if (!card || !img) return;
+
+    card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const percentX = (e.clientX - centerX) / (rect.width / 2);
+        const percentY = (e.clientY - centerY) / (rect.height / 2);
+
+        const tiltAmount = 10; // Max tilt in degrees
+        const tiltX = -percentY * tiltAmount;
+        const tiltY = percentX * tiltAmount;
+
+        card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+        img.style.transform = `translateZ(30px) scale(1.05)`;
+
+        // Light reflection effect
+        const glare = card.querySelector('.glare');
+        if (glare) {
+            const glareX = 100 * (percentX + 1) / 2; // Convert to 0-100 range
+            const glareY = 100 * (percentY + 1) / 2; // Convert to 0-100 range
+            glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 60%)`;
+        }
+    });
+
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+        img.style.transform = 'translateZ(0) scale(1)';
+
+        const glare = card.querySelector('.glare');
+        if (glare) {
+            glare.style.background = 'none';
+        }
+    });
+
+    // Add glare effect element
+    const glare = document.createElement('div');
+    glare.className = 'glare';
+    card.appendChild(glare);
+}
+
+// Add visual achievement badges based on metadata
+function setupAchievements(metadata) {
+    const achievementsEl = document.getElementById('achievements');
+    if (!achievementsEl) return;
+
+    const achievements = [];
+
+    // Check for special rarity
+    if (metadata?.ninja_data?.rarity?.tier === 'Legendary' ||
+        metadata?.ninja_data?.rarity?.tier === 'Mythic') {
+        achievements.push({
+            name: 'Legendary Status',
+            description: 'One of the rarest ninja cats in existence',
+            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+        });
+    }
+
+    // Check for special abilities
+    if (metadata?.ninja_data?.special_abilities?.length > 0) {
+        achievements.push({
+            name: 'Master of Techniques',
+            description: `Possesses ${metadata.ninja_data.special_abilities.length} special abilities`,
+            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>'
+        });
+    }
+
+    // Check for combat stats
+    const combatStats = metadata?.ninja_data?.combat_stats;
+    if (combatStats) {
+        const totalPoints = (combatStats.agility || 5) +
+            (combatStats.stealth || 5) +
+            (combatStats.power || 5) +
+            (combatStats.intelligence || 5);
+
+        if (totalPoints >= 28) {
+            achievements.push({
+                name: 'Combat Specialist',
+                description: 'Elite combat skills across all disciplines',
+                icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>'
+            });
+        }
+    }
+
+    // Check for specific element mastery
+    const elementTrait = metadata?.attributes?.find(t =>
+        t.trait_type === 'Element' || t.trait_type === 'Power'
+    );
+
+    if (elementTrait) {
+        achievements.push({
+            name: `${elementTrait.value} Master`,
+            description: `Complete mastery of the ${elementTrait.value} element`,
+            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L4 12l8 3 8-3z"></path><path d="M4 12v6l8 4 8-4v-6"></path></svg>'
+        });
+    }
+
+    // Render achievements
+    if (achievements.length > 0) {
+        let achievementsHTML = `<h3>Achievements</h3><div class="achievements-grid">`;
+
+        achievements.forEach(achievement => {
+            achievementsHTML += `
+                <div class="achievement">
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">${achievement.name}</div>
+                        <div class="achievement-desc">${achievement.description}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        achievementsHTML += `</div>`;
+        achievementsEl.innerHTML = achievementsHTML;
+    }
 }
 
 // Main function
@@ -368,6 +1128,9 @@ document.addEventListener('DOMContentLoaded', async function () {
                     downloadImage(metadata.image, `${metadata.name.replace(/ /g, '_')}.png`);
                 });
             });
+
+            // Setup 3D tilt effect for the image
+            setupTiltEffect();
 
             // Set name
             safeSetTextContent('catName', metadata.name);
@@ -490,10 +1253,13 @@ document.addEventListener('DOMContentLoaded', async function () {
                     }
                 });
 
-                // Display combat stats
-                safeUpdateElement('combatSkillsGrid', el => {
-                    // Use combat_stats from ninja_data if available, otherwise use attributes
-                    if (metadata.ninja_data && metadata.ninja_data.combat_stats) {
+                // Create combat stats with radar chart
+                if (metadata.ninja_data && metadata.ninja_data.combat_stats) {
+                    // Render the radar chart
+                    createCombatChart(metadata.ninja_data.combat_stats);
+
+                    // Also display traditional bars for mobile users
+                    safeUpdateElement('combatSkillsGrid', el => {
                         const stats = metadata.ninja_data.combat_stats;
                         const combatStatsArray = [
                             { trait_type: 'Agility', value: stats.agility || 5, display_type: "number" },
@@ -517,13 +1283,17 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 `;
                             })
                             .join('');
-                    } else if (combatStats.length > 0) {
-                        // Use combat stats from attributes
+                    });
+                } else if (combatStats.length > 0) {
+                    // Use combat stats from attributes
+                    safeUpdateElement('combatSkillsGrid', el => {
                         el.innerHTML = combatStats
                             .map(stat => createTraitCard(stat, false))
                             .join('');
-                    } else {
-                        // Generate default combat stats
+                    });
+                } else {
+                    // Generate default combat stats
+                    safeUpdateElement('combatSkillsGrid', el => {
                         el.innerHTML = `
                             <div class="attribute-card">
                                 <div class="attribute-type">Agility</div>
@@ -554,48 +1324,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 </div>
                             </div>
                         `;
-                    }
-                });
-
-                // Display backstory if available in ninja_data
-                if (metadata.ninja_data && metadata.ninja_data.backstory) {
-                    const backstory = metadata.ninja_data.backstory;
-
-                    if (backstory.origin) {
-                        safeSetTextContent('catStoryPart1', backstory.origin);
-                    }
-
-                    if (backstory.training) {
-                        safeSetTextContent('catStoryPart2', backstory.training);
-                    }
-
-                    if (backstory.currentRole) {
-                        safeSetTextContent('catStoryPart3', backstory.currentRole);
-                    }
-                } else if (metadata.description) {
-                    // If no structured backstory, use the description field
-                    // Split the description into paragraphs
-                    const paragraphs = metadata.description.split('. ');
-
-                    if (paragraphs.length >= 3) {
-                        // If we have at least 3 sentences, split them into 3 parts
-                        const third = Math.floor(paragraphs.length / 3);
-
-                        safeSetTextContent('catStoryPart1', paragraphs.slice(0, third).join('. ') + '.');
-                        safeSetTextContent('catStoryPart2', paragraphs.slice(third, third * 2).join('. ') + '.');
-                        safeSetTextContent('catStoryPart3', paragraphs.slice(third * 2).join('. '));
-                    } else {
-                        // If fewer than 3 paragraphs, use what we have
-                        safeSetTextContent('catStoryPart1', paragraphs[0] + '.');
-                        if (paragraphs.length > 1) {
-                            safeSetTextContent('catStoryPart2', paragraphs[1] + '.');
-                            safeSetTextContent('catStoryPart3', paragraphs.slice(2).join('. '));
-                        } else {
-                            safeSetTextContent('catStoryPart2', 'Through years of disciplined training, this ninja cat mastered the ancient arts of stealth and combat.');
-                            safeSetTextContent('catStoryPart3', 'Now a formidable warrior, they protect the blockchain realm from threats seen and unseen.');
-                        }
-                    }
+                    });
                 }
+
+                // Create interactive story timeline
+                createStoryTimeline(metadata);
 
                 // Display special abilities from ninja_data if available
                 if (metadata.ninja_data && metadata.ninja_data.special_abilities && metadata.ninja_data.special_abilities.length > 0) {
@@ -637,13 +1370,16 @@ document.addEventListener('DOMContentLoaded', async function () {
                         `;
                     });
                 }
+
+                // Setup achievements based on metadata
+                setupAchievements(metadata);
             }
 
             // Set owner information
             safeSetTextContent('catOwner', formatAddress(owner));
 
             // Setup copy owner address
-            document.querySelector('.copy-address').addEventListener('click', function () {
+            document.querySelector('.copy-address')?.addEventListener('click', function () {
                 copyToClipboard(owner);
             });
 
@@ -653,7 +1389,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 transactions = await fetchTokenHistory(provider, id, CONTRACT);
             }
 
-            // Update transaction history section
+            // Update transaction history section with traditional list view
             safeUpdateElement('transactionList', el => {
                 if (transactions && transactions.length > 0) {
                     // Real transaction history
@@ -680,6 +1416,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                     } else {
                         safeSetTextContent('mintDate', formatDate());
                     }
+
+                    // Also create visual timeline
+                    createTimelineVisualization(transactions);
+
                 } else {
                     // Fallback to placeholder
                     const txHash = "0x" + parseInt(id).toString(16).padStart(8, '0') + "..." + (parseInt(id) * 2).toString(16).padStart(4, '0');
@@ -705,6 +1445,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             // Set up sharing functionality
             setupSharing(metadata, id);
+
+            // Set up regeneration interface
+            setupRegenerationInterface(id);
 
             // Animate skill bars after a short delay
             setTimeout(animateSkillBars, 500);
@@ -732,3 +1475,4 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error("Fatal error:", error);
     }
 });
+

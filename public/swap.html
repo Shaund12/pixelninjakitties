@@ -1652,8 +1652,8 @@
             const disclaimerEl = document.querySelector('.disclaimer');
             if (disclaimerEl) {
                 disclaimerEl.innerHTML = `
-            <strong>Disclaimer:</strong> This swap interface connects to the official Vitruveo Protocol swap router (0x3295fd27D6e44529c51Ef05a5d16Ca17Fb9e10A8). We charge a small facility fee of ${FEE_PERCENTAGE}% on swaps to support development and maintenance. We are not responsible for the operation of the swap router or liquidity pools. Always verify transactions before confirming them.
-        `;
+                <strong>Disclaimer:</strong> This swap interface connects to the official Vitruveo Protocol swap router (0x3295fd27D6e44529c51Ef05a5d16Ca17Fb9e10A8). We charge a small facility fee of ${FEE_PERCENTAGE}% on swaps to support development and maintenance. We are not responsible for the operation of the swap router or liquidity pools. Always verify transactions before confirming them.
+            `;
             }
         }
 
@@ -1702,9 +1702,9 @@
                 feeRow.className = 'preview-row';
                 feeRow.id = 'preview-facility-fee-row';
                 feeRow.innerHTML = `
-            <div>Facility Fee (${FEE_PERCENTAGE}%)</div>
-            <div class="preview-value" id="preview-facility-fee">0 ${currentToToken}</div>
-        `;
+                <div>Facility Fee (${FEE_PERCENTAGE}%)</div>
+                <div class="preview-value" id="preview-facility-fee">0 ${currentToToken}</div>
+            `;
 
                 // Create net received row
                 const netRow = document.createElement('div');
@@ -1713,9 +1713,9 @@
                 netRow.style.marginTop = '8px';
                 netRow.style.paddingTop = '8px';
                 netRow.innerHTML = `
-            <div><strong>Net Received</strong></div>
-            <div class="preview-value" id="preview-net-amount"><strong>0 ${currentToToken}</strong></div>
-        `;
+                <div><strong>Net Received</strong></div>
+                <div class="preview-value" id="preview-net-amount"><strong>0 ${currentToToken}</strong></div>
+            `;
 
                 // Insert before the path row
                 transactionPreview.insertBefore(feeRow, pathRow);
@@ -2161,15 +2161,15 @@
             const image = tokenInfo.image || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9ImN1cnJlbnRDb2xvciIgZD0iTTEyIDIuMjVjNS42NiAwIDEwLjI1IDQuNTkgMTAuMjUgMTAuMjVTMTcuNjYgMjIuNzUgMTIgMjIuNzVTMS43NSAxOC4xNiAxLjc1IDEyLjVTNi4zNCAyLjI1IDEyIDIuMjVabTAgMS41Yy00LjgzIDAtOC43NSAzLjkyLTguNzUgOC43NXMzLjkyIDguNzUgOC43NSA4Ljc1czguNzUtMy45MiA4Ljc1LTguNzVzLTMuOTItOC43NS04Ljc1LTguNzVaIi8+PHBhdGggZmlsbD0iY3VycmVudENvbG9yIiBkPSJNMTIgNmExIDEgMCAxIDAgMCAyYTEgMSAwIDAgMCAwLTJabS0uNSA0YS41LjUgMCAwIDAgMCAxaDF2NGgtMWEuNS41IDAgMCAwIDAgMWgzYS41LjUgMCAwIDAgMC0xaC0xVjEwLjVhLjUuNSAwIDAgMC0uNS0uNWgtMloiLz48L3N2Zz4='; // Default token icon as SVG data URI
 
             tokenItem.innerHTML = `
-                    <div class="token-list-icon">
-                        <img src="${image}" alt="${tokenInfo.symbol}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9ImN1cnJlbnRDb2xvciIgZD0iTTEyIDIuMjVjNS42NiAwIDEwLjI1IDQuNTkgMTAuMjUgMTAuMjVTMTcuNjYgMjIuNzUgMTIgMjIuNzVTMS43NSAxOC4xNiAxLjc1IDEyLjVTNi4zNCAyLjI1IDEyIDIuMjVabTAgMS41Yy00LjgzIDAtOC43NSAzLjkyLTguNzUgOC43NXMzLjkyIDguNzUgOC43NSA4Ljc1czguNzUtMy45MiA4Ljc1LTguNzVzLTMuOTItOC43NS04Ljc1LTguNzVaIi8+PHBhdGggZmlsbD0iY3VycmVudENvbG9yIiBkPSJNMTIgNmExIDEgMCAxIDAgMCAyYTEgMSAwIDAgMCAwLTJabS0uNSA0YS41LjUgMCAwIDAgMCAxaDF2NGgtMWEuNS41IDAgMCAwIDAgMWgzYS41LjUgMCAwIDAgMC0xaC0xVjEwLjVhLjUuNSAwIDAgMC0uNS0uNWgtMloiLz48L3N2Zz4='">
-                    </div>
-                    <div class="token-list-details">
-                        <div class="token-list-name">${tokenInfo.name}</div>
-                        <div class="token-list-symbol">${tokenInfo.symbol}</div>
-                    </div>
-                    <div class="token-list-balance" id="token-balance-${tokenInfo.symbol}">0.0</div>
-                `;
+                        <div class="token-list-icon">
+                            <img src="${image}" alt="${tokenInfo.symbol}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9ImN1cnJlbnRDb2xvciIgZD0iTTEyIDIuMjVjNS42NiAwIDEwLjI1IDQuNTkgMTAuMjUgMTAuMjVTMTcuNjYgMjIuNzUgMTIgMjIuNzVTMS43NSAxOC4xNiAxLjc1IDEyLjVTNi4zNCAyLjI1IDEyIDIuMjVabTAgMS41Yy00LjgzIDAtOC43NSAzLjkyLTguNzUgOC43NXMzLjkyIDguNzUgOC43NSA4Ljc1czguNzUtMy45MiA4Ljc1LTguNzVzLTMuOTItOC43NS04Ljc1LTguNzVaIi8+PHBhdGggZmlsbD0iY3VycmVudENvbG9yIiBkPSJNMTIgNmExIDEgMCAxIDAgMCAyYTEgMSAwIDAgMCAwLTJabS0uNSA0YS41LjUgMCAwIDAgMCAxaDF2NGgtMWEuNS41IDAgMCAwIDAgMWgzYS41LjUgMCAwIDAgMC0xaC0xVjEwLjVhLjUuNSAwIDAgMC0uNS0uNWgtMloiLz48L3N2Zz4='">
+                        </div>
+                        <div class="token-list-details">
+                            <div class="token-list-name">${tokenInfo.name}</div>
+                            <div class="token-list-symbol">${tokenInfo.symbol}</div>
+                        </div>
+                        <div class="token-list-balance" id="token-balance-${tokenInfo.symbol}">0.0</div>
+                    `;
 
             tokenList.appendChild(tokenItem);
         }
@@ -2293,9 +2293,10 @@
     </script>
 
     <!-- Include the footer -->
+    <script src="/js/audio-player.js"></script>
     <footer id="footer"></footer>
-    <script src="js/footer.js"></script>
+    <script type="module" src="js/footer.js"></script>
     <!-- Include the navbar script -->
-     <script type="module" src="js/navbar.js"></script>
+    <script type="module" src="js/navbar.js"></script>
 </body>
 </html>
