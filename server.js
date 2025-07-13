@@ -40,8 +40,12 @@ import {
     secureLogging,
     errorHandler
 } from './scripts/middleware.js';
+import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
 import fs from 'fs/promises';
 import path from 'path';
+
+// Initialize uptime tracker
+const uptimeTracker = new UptimeTracker();
 
 
 /* ───── Env checks ───────────────────────────────────────────── */
@@ -88,7 +92,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Apply rate limiting to API routes
 app.use('/api/', rateLimitMiddleware(100, 60000)); // 100 requests per minute
 
-// Request timeout and input sanitization
+// Request timeout and input sanitization with tracking
+app.use((req, res, next) => {
+    uptimeTracker.recordRequest();
+    next();
+});
 app.use(requestTimeout(30000)); // 30 second timeout
 app.use(sanitizeInput);
 app.use(secureLogging);
@@ -114,19 +122,98 @@ app.get('/api/task/:taskId', (req, res) => {
 });
 
 // API endpoint for health check
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        uptime: process.uptime(),
-        queueLength: mintQueue.length,
-        lastProcessed: lastBlock,
-        defaultImageProvider: IMAGE_PROVIDER,
-        availableProviders: {
-            'dall-e': !!process.env.OPENAI_API_KEY,
-            'huggingface': !!process.env.HUGGING_FACE_TOKEN,
-            'stability': !!process.env.STABILITY_API_KEY
-        }
-    });
+app.get('/api/health', async (req, res) => {
+    try {
+        uptimeTracker.recordRequest();
+        
+        const healthCheck = await performHealthCheck();
+        const uptimeStats = uptimeTracker.getStats();
+        
+        const response = {
+            status: healthCheck.status,
+            timestamp: healthCheck.timestamp,
+            uptime: uptimeStats.uptime,
+            queueLength: mintQueue.length,
+            lastProcessed: lastBlock,
+            defaultImageProvider: IMAGE_PROVIDER,
+            availableProviders: {
+                'dall-e': !!process.env.OPENAI_API_KEY,
+                'huggingface': !!process.env.HUGGING_FACE_TOKEN,
+                'stability': !!process.env.STABILITY_API_KEY
+            },
+            checks: healthCheck.checks,
+            stats: {
+                requests: uptimeStats.requests,
+                errors: uptimeStats.errors,
+                errorRate: uptimeStats.errorRate
+            }
+        };
+        
+        res.json(response);
+    } catch (error) {
+        uptimeTracker.recordError();
+        console.error('Error in /api/health:', sanitizeForLogging(error.message));
+        res.status(500).json(createSafeErrorResponse(error, process.env.NODE_ENV === 'development'));
+    }
+});
+
+// Enhanced health check endpoint with detailed diagnostics
+app.get('/api/health/detailed', async (req, res) => {
+    try {
+        uptimeTracker.recordRequest();
+        
+        const healthCheck = await performHealthCheck();
+        const uptimeStats = uptimeTracker.getStats();
+        
+        res.json({
+            ...healthCheck,
+            uptime: uptimeStats,
+            queueStatus: {
+                length: mintQueue.length,
+                processing: processingQueue,
+                lastProcessedBlock: lastBlock,
+                processedTokensCount: processedTokens.size
+            }
+        });
+    } catch (error) {
+        uptimeTracker.recordError();
+        console.error('Error in /api/health/detailed:', sanitizeForLogging(error.message));
+        res.status(500).json(createSafeErrorResponse(error, process.env.NODE_ENV === 'development'));
+    }
+});
+
+// Metrics endpoint for monitoring
+app.get('/api/metrics', (req, res) => {
+    try {
+        const uptimeStats = uptimeTracker.getStats();
+        const memoryUsage = process.memoryUsage();
+        
+        res.json({
+            uptime: uptimeStats,
+            memory: {
+                heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+                heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+                external: Math.round(memoryUsage.external / 1024 / 1024),
+                rss: Math.round(memoryUsage.rss / 1024 / 1024),
+                unit: 'MB'
+            },
+            process: {
+                pid: process.pid,
+                version: process.version,
+                platform: process.platform,
+                arch: process.arch
+            },
+            queue: {
+                length: mintQueue.length,
+                processing: processingQueue,
+                lastProcessedBlock: lastBlock,
+                processedTokensCount: processedTokens.size
+            }
+        });
+    } catch (error) {
+        console.error('Error in /api/metrics:', sanitizeForLogging(error.message));
+        res.status(500).json(createSafeErrorResponse(error, process.env.NODE_ENV === 'development'));
+    }
 });
 
 // Debug information API endpoint
@@ -440,8 +527,11 @@ app.get('/api/docs', (req, res) => {
 
 app.listen(PORT, () => console.log(`🌐 Ninja Kitty server running on port ${PORT}`));
 
-// Add error handling middleware
-app.use(errorHandler);
+// Add error handling middleware with tracking
+app.use((err, req, res, next) => {
+    uptimeTracker.recordError();
+    errorHandler(err, req, res, next);
+});
 
 /* ───── Provider + signer + contract ─────────────────────────── */
 const provider = new ethers.JsonRpcProvider(RPC_URL);
@@ -515,7 +605,20 @@ async function getBlockchainInfo() {
 }
 
 // Process a single mint task with rate limiting
-// Process a single mint task with rate limiting
+/**
+ * Process a single mint task with rate limiting and enhanced error handling
+ * @param {Object} task - The mint task to process
+ * @param {number} task.tokenId - The token ID to mint
+ * @param {string} task.breed - The breed of the NFT
+ * @param {string} task.buyer - The buyer's address
+ * @param {string} task.imageProvider - The AI image provider to use
+ * @param {string} task.promptExtras - Additional prompt text
+ * @param {string} task.negativePrompt - Negative prompt text
+ * @param {string} task.taskId - The task ID for tracking
+ * @param {boolean} task.forceProcess - Whether to force process already processed tokens
+ * @param {boolean} task.isRegeneration - Whether this is a regeneration request
+ * @returns {Promise<void>}
+ */
 async function processMintTask(task) {
     const { tokenId, breed, buyer, imageProvider, promptExtras, negativePrompt, taskId: existingTaskId, forceProcess, isRegeneration } = task;
     const id = Number(tokenId);
@@ -663,7 +766,10 @@ async function processMintTask(task) {
     }
 }
 
-// Process the queue with a controlled flow
+/**
+ * Process the mint queue with controlled flow
+ * @returns {Promise<void>}
+ */
 async function processQueue() {
     if (processingQueue || mintQueue.length === 0) return;
 
@@ -684,7 +790,10 @@ const STATE_FILE = path.join(process.cwd(), 'event-state.json');
 let processedTokens = new Set();
 let lastBlock = 0;
 
-// Load state from file or initialize if file doesn't exist
+/**
+ * Load state from persistent storage
+ * @returns {Promise<void>}
+ */
 async function loadState() {
     try {
         const stateData = await fs.readFile(STATE_FILE, 'utf8');
@@ -702,7 +811,10 @@ async function loadState() {
     }
 }
 
-// Save state to file
+/**
+ * Save current state to persistent storage
+ * @returns {Promise<void>}
+ */
 async function saveState() {
     const state = {
         lastBlock,

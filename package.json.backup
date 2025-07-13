@@ -9,7 +9,7 @@
   "dependencies": {
     "@huggingface/inference": "^4.5.1",
     "@ipld/car": "^5.4.2",
-    "@web3-storage/access": "^20.3.0",
+    "@web3-storage/access": "^5.0.2",
     "@web3-storage/w3up-client": "^17.3.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
