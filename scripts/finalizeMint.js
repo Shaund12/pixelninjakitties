@@ -522,6 +522,7 @@ function generateTraits(breed, tokenId) {
             { value: 'Tabby', rarity: 'Common', rarityScore: 30, keywords: ['striped', 'orange', 'common'] },
             { value: 'Siamese', rarity: 'Common', rarityScore: 25, keywords: ['cream', 'pointed', 'sleek'] },
             { value: 'Calico', rarity: 'Uncommon', rarityScore: 20, keywords: ['patched', 'tricolor', 'spots'] },
+            { value: 'Maine Coon', rarity: 'Uncommon', rarityScore: 18, keywords: ['large', 'fluffy', 'powerful'] },
             { value: 'Bengal', rarity: 'Rare', rarityScore: 15, keywords: ['spotted', 'wild', 'agile'] },
             { value: 'Bombay', rarity: 'Rare', rarityScore: 14, keywords: ['black', 'sleek', 'shadow'] },
             { value: 'Persian', rarity: 'Epic', rarityScore: 10, keywords: ['fluffy', 'round', 'ornate'] },
@@ -602,6 +603,11 @@ function generateTraits(breed, tokenId) {
             stances: ['Stealth', 'Agility'],
             elements: ['Water', 'Wind'],
             accessories: ['Face Mask', 'Scarf']
+        },
+        'Maine Coon': {
+            weapons: ['Bo Staff', 'Kusarigama'],
+            stances: ['Defense', 'Focus'],
+            elements: ['Earth', 'Ice']
         },
         'Bengal': {
             weapons: ['Twin Blades', 'Kunai'],
@@ -770,6 +776,10 @@ function generateTraits(breed, tokenId) {
                 break;
             case 'Siamese':
                 baseStats.stealth += 2;
+                baseStats.intelligence += 1;
+                break;
+            case 'Maine Coon':
+                baseStats.power += 3;
                 baseStats.intelligence += 1;
                 break;
             case 'Bengal':
@@ -942,8 +952,14 @@ function generateTraits(breed, tokenId) {
     };
 
     /* ─── Generate core traits ─────────────────────────────────── */
-    // Generate core traits
-    const breedTrait = getWeightedTrait(weightedCategories.breeds, 'breed');
+    // Generate core traits - use the specified breed instead of random selection
+    let breedTrait = traitCategories.breeds.find(b => b.value === breed);
+    if (!breedTrait) {
+        console.log(`⚠️ Breed "${breed}" not found in available breeds, using random selection`);
+        breedTrait = getWeightedTrait(weightedCategories.breeds, 'breed');
+    } else {
+        console.log(`TokenId ${tokenId} - Selected breed: ${breedTrait.value} (${breedTrait.rarity}) [${breedTrait.rarityScore}] - USER SPECIFIED`);
+    }
     const weaponTrait = getWeightedTrait(weightedCategories.weapons, 'weapon');
     const stanceTrait = getWeightedTrait(weightedCategories.stances, 'stance');
     const elementTrait = getWeightedTrait(weightedCategories.elements, 'element');
@@ -1084,6 +1100,7 @@ function generateNinjaCatDescription(tokenId, breed, attributes) {
     const clans = {
         'Tabby': 'Tora Clan',
         'Siamese': 'Twin Moon Clan',
+        'Maine Coon': 'Mountain Peak Clan',
         'Bengal': 'Spotted Fang Clan',
         'Bombay': 'Night Shadow Clan',
         'Calico': 'Three Colors Clan',
@@ -1200,6 +1217,7 @@ function calculateRarityScore(attributes) {
         { type1: 'Breed', value1: 'Nyan', type2: 'Element', value2: 'Cosmic', bonus: 15 },
         { type1: 'Breed', value1: 'Bengal', type2: 'Element', value2: 'Fire', bonus: 10 },
         { type1: 'Breed', value1: 'Siamese', type2: 'Element', value2: 'Water', bonus: 10 },
+        { type1: 'Breed', value1: 'Maine Coon', type2: 'Element', value2: 'Earth', bonus: 10 },
 
         // Weapon + Stance combinations
         { type1: 'Weapon', value1: 'Katana', type2: 'Stance', value2: 'Attack', bonus: 8 },
