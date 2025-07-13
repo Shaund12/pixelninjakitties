@@ -115,8 +115,8 @@ const PROVIDERS = {
             quality: "hd",
             style: "vivid",
             size: "1024x1024",
-            prompt_prefix: "32x32 pixel art of a ninja cat: ",
-            prompt_suffix: ". Retro game style, extremely limited color palette, cute, charming, high-contrast pixel art. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS.",
+            prompt_prefix: "32x32 pixel art sprite of a ninja cat: ",
+            prompt_suffix: ". Retro game style, chunky pixels, extremely limited color palette, cute, charming, high-contrast pixel art. NES/SNES era game graphics, no anti-aliasing, blocky pixel edges. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS.",
             backgrounds: [
                 { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
                 { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
@@ -137,10 +137,10 @@ const PROVIDERS = {
         },
         free: false,
         pixelSettings: {
-            cfg_scale: 9.0,
-            steps: 35,
-            prompt_prefix: "32x32 pixel art of a ninja cat: ",
-            prompt_suffix: ", retro game style, limited palette, NES style, clean pixel art",
+            cfg_scale: 9.5, // Increased for better prompt adherence
+            steps: 40, // Increased for better quality
+            prompt_prefix: "32x32 pixel art sprite of a ninja cat: ",
+            prompt_suffix: ", retro game style, limited color palette (8-16 colors max), chunky pixels, no anti-aliasing, clean pixel art, NES/SNES aesthetic",
             backgrounds: [
                 { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
                 { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
@@ -1064,6 +1064,46 @@ async function generateDallEImage(prompt, options = {}) {
 }
 
 /**
+ * Enhance pixel art quality with better processing
+ * @param {Object} imageResult - Result from image generator 
+ * @returns {Promise<Object>} - Enhanced processed image
+ */
+async function enhancePixelArt(processedImage) {
+    if (!sharp) return processedImage; // Skip if sharp isn't available
+
+    try {
+        const enhancedPath = path.join(processedImage.directory, 'enhanced.png');
+
+        // Apply pixel art optimization:
+        // 1. Resize to ensure proper pixel grid
+        // 2. Quantize colors to create a limited palette
+        // 3. Remove anti-aliasing by making pixels more blocky
+        await sharp(processedImage.path)
+            .resize(512, 512, {
+                kernel: 'nearest', // Use nearest neighbor for blocky pixel scaling
+                fit: 'contain'
+            })
+            // Quantize to limited palette (optional - can sometimes make images look more "pixel art")
+            .png({
+                palette: true,  // Use palette-based PNG
+                colors: 16,     // Limit to 16 colors
+                compressionLevel: 9,
+                effort: 10
+            })
+            .toFile(enhancedPath);
+
+        console.log("✅ Applied pixel art enhancements");
+        return {
+            path: enhancedPath,
+            directory: processedImage.directory
+        };
+    } catch (error) {
+        console.warn(`⚠️ Pixel art enhancement failed: ${error.message}`);
+        return processedImage; // Return original on failure
+    }
+}
+
+/**
  * Generate an image using Stability AI
  * @param {string} prompt - The base prompt to generate an image from
  * @param {Object} options - Optional configuration
@@ -1403,12 +1443,46 @@ async function generateHuggingFaceImage(prompt, options = {}) {
 }
 
 /**
- * Try to generate an image using the requested provider with NO FALLBACKS
+ * Generate an image using the requested provider with NO FALLBACKS
  * @param {string} prompt - The prompt to generate an image from
  * @param {Object} options - Generation options
  * @returns {Promise<Object>} The generated image data
  */
 async function generateImage(prompt, options = {}) {
+    // Add pixel art style enhancers based on provider
+    const enhancedOptions = { ...options };
+
+    // Enhance prompts based on provider for better pixel art results
+    if (!options.useCustomPrompt) {
+        const requestedProvider = options.imageProvider?.toLowerCase()?.trim();
+        const basePixelArtEnhancer = ", true pixel art, 16-bit style, limited color palette, no anti-aliasing, pixel perfect";
+
+        if (requestedProvider === 'dall-e') {
+            prompt = `${prompt}${basePixelArtEnhancer}, clean edges, blocky style, NES/SNES era game sprite`;
+            // DALL-E specific parameters for better pixel results
+            enhancedOptions.quality = enhancedOptions.quality || "hd";
+        }
+        else if (requestedProvider === 'stability') {
+            prompt = `${prompt}${basePixelArtEnhancer}, crisp pixels, 8-16 colors maximum`;
+            // Stability specific parameters for better pixel results
+            enhancedOptions.cfgScale = enhancedOptions.cfgScale || 9.5; // Stronger prompt adherence
+            enhancedOptions.stylePreset = enhancedOptions.stylePreset || "pixel-art";
+        }
+        else if (requestedProvider === 'huggingface') {
+            prompt = `${prompt}${basePixelArtEnhancer}, 32x32 resolution, gameboy style, pixel perfect`;
+            // HuggingFace specific parameters
+            enhancedOptions.guidance_scale = enhancedOptions.guidance_scale || 9.0;
+            enhancedOptions.num_inference_steps = enhancedOptions.num_inference_steps || 60;
+        }
+
+        // Enhanced negative prompt for better pixel art
+        if (!enhancedOptions.negativePrompt) {
+            const pixelArtNegative = "blurry, anti-aliasing, smooth edges, high detail, realistic, 3D, shading, gradient, " +
+                "photorealistic, text, signature, watermark, blur, noise, grain, high-resolution detail";
+            enhancedOptions.negativePrompt = pixelArtNegative;
+        }
+    }
+
     // Normalize the requested provider name to lowercase and trim
     const requestedProvider = options.imageProvider?.toLowerCase()?.trim();
 
@@ -1432,21 +1506,17 @@ async function generateImage(prompt, options = {}) {
 
         // Use ONLY the requested provider - no fallbacks whatsoever
         if (requestedProvider === 'stability') {
-            return await generateStabilityImage(prompt, options);
+            return await generateStabilityImage(prompt, enhancedOptions);
         }
         else if (requestedProvider === 'huggingface') {
-            return await generateHuggingFaceImage(prompt, options);
+            return await generateHuggingFaceImage(prompt, enhancedOptions);
         }
         else if (requestedProvider === 'dall-e') {
-            return await generateDallEImage(prompt, options);
+            return await generateDallEImage(prompt, enhancedOptions);
         }
     }
 
     // Default behavior (only used when no provider is specified)
-    console.log(`Using default provider with fallbacks: ${IMAGE_PROVIDER}`);
-
-
-    // Default behavior (no specific provider requested)
     console.log(`Using default provider with fallbacks: ${IMAGE_PROVIDER}`);
 
     // Try each available provider in order of preference
@@ -1455,13 +1525,13 @@ async function generateImage(prompt, options = {}) {
     // Try preferred provider first
     try {
         if (IMAGE_PROVIDER === 'stability' && STABILITY_API_KEY) {
-            return await generateStabilityImage(prompt, options);
+            return await generateStabilityImage(prompt, enhancedOptions);
         }
         else if (IMAGE_PROVIDER === 'huggingface' && HUGGING_FACE_TOKEN) {
-            return await generateHuggingFaceImage(prompt, options);
+            return await generateHuggingFaceImage(prompt, enhancedOptions);
         }
         else if (IMAGE_PROVIDER === 'dall-e' && OPENAI_API_KEY) {
-            return await generateDallEImage(prompt, options);
+            return await generateDallEImage(prompt, enhancedOptions);
         }
     } catch (error) {
         errors.push(`Default provider ${IMAGE_PROVIDER}: ${error.message}`);
@@ -1470,7 +1540,7 @@ async function generateImage(prompt, options = {}) {
     // Try any available provider as fallback
     if (STABILITY_API_KEY) {
         try {
-            return await generateStabilityImage(prompt, options);
+            return await generateStabilityImage(prompt, enhancedOptions);
         } catch (error) {
             errors.push(`Stability: ${error.message}`);
         }
@@ -1478,7 +1548,7 @@ async function generateImage(prompt, options = {}) {
 
     if (HUGGING_FACE_TOKEN) {
         try {
-            return await generateHuggingFaceImage(prompt, options);
+            return await generateHuggingFaceImage(prompt, enhancedOptions);
         } catch (error) {
             errors.push(`HuggingFace: ${error.message}`);
         }
@@ -1486,7 +1556,7 @@ async function generateImage(prompt, options = {}) {
 
     if (OPENAI_API_KEY) {
         try {
-            return await generateDallEImage(prompt, options);
+            return await generateDallEImage(prompt, enhancedOptions);
         } catch (error) {
             errors.push(`DALL-E: ${error.message}`);
         }
@@ -1909,6 +1979,9 @@ export async function finalizeMint({
         const processedImage = await processImage(imageResult);
         const processTime = ((Date.now() - processingStartTime) / 1000).toFixed(2);
         console.log(`✅ Image processed in ${processTime}s`);
+
+        // Add pixel art enhancements (optional - only if sharp is available)
+        const enhancedImage = await enhancePixelArt(processedImage);
 
         // Update task status for IPFS upload
         if (taskManager) {
