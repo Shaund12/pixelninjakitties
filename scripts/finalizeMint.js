@@ -7,10 +7,11 @@
  *
  * Rich metadata generation includes:
  * - Core traits (Breed, Weapon, Stance, Element, Rank, Accessory)
+ * - Enhanced backgrounds with breed affinities and rarities
  * - Combat stats (Agility, Stealth, Power, Intelligence)
- * - Backstory based on traits
- * - Special abilities
- * - Rarity indicators
+ * - Immersive backstory based on traits and background
+ * - Special abilities and synergies
+ * - Detailed rarity indicators
  *
  * PROVIDER CONFIGURATION:
  * Set IMAGE_PROVIDER to one of:
@@ -72,7 +73,7 @@ const {
     IPFS_GATEWAY = "https://ipfs.io/ipfs/"
 } = process.env;
 
-// Provider configuration - easily add/modify providers here
+// Enhanced provider configuration with expanded background options and storytelling
 const PROVIDERS = {
     huggingface: {
         name: "HuggingFace",
@@ -92,14 +93,116 @@ const PROVIDERS = {
             prompt_prefix: "32x32 pixel art of a ninja cat, ",
             prompt_suffix: ", retro game style, limited color palette, charming, detailed pixel art, NES style",
             backgrounds: [
-                { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
-                { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
-                { name: "night", description: "under a starlit night sky with a full moon" },
-                { name: "temple", description: "at an ancient mountain temple with stone lanterns" },
-                { name: "city", description: "on city rooftops with neon signs in the background" },
-                { name: "pixel-void", description: "against a simple pixel art background with minimal details" }
+                {
+                    name: "Dojo",
+                    description: "in a traditional Japanese dojo with wooden floors and training equipment",
+                    rarity: "Common",
+                    rarityScore: 30,
+                    keywords: ["training", "wooden", "indoor"],
+                    affinityBreeds: ["Tabby", "Bengal"],
+                    statBonus: { power: 1 }
+                },
+                {
+                    name: "Bamboo Forest",
+                    description: "in a dense bamboo forest with dappled light filtering through",
+                    rarity: "Common",
+                    rarityScore: 25,
+                    keywords: ["green", "nature", "peaceful"],
+                    affinityBreeds: ["Calico", "Siamese"],
+                    statBonus: { stealth: 1 }
+                },
+                {
+                    name: "Night Sky",
+                    description: "under a starlit night sky with a full moon illuminating the scene",
+                    rarity: "Uncommon",
+                    rarityScore: 20,
+                    keywords: ["dark", "moon", "stars"],
+                    affinityBreeds: ["Bombay", "Shadow"],
+                    statBonus: { stealth: 1 }
+                },
+                {
+                    name: "Mountain Temple",
+                    description: "at an ancient mountain temple with stone lanterns and cherry blossoms",
+                    rarity: "Uncommon",
+                    rarityScore: 18,
+                    keywords: ["spiritual", "ancient", "stone"],
+                    affinityBreeds: ["Persian", "Sphynx"],
+                    statBonus: { intelligence: 1 }
+                },
+                {
+                    name: "Neon City",
+                    description: "on city rooftops with vibrant neon signs illuminating the night",
+                    rarity: "Rare",
+                    rarityScore: 15,
+                    keywords: ["urban", "bright", "modern"],
+                    affinityBreeds: ["Bengal", "Nyan"],
+                    statBonus: { agility: 1 }
+                },
+                {
+                    name: "Pixel Void",
+                    description: "against a simple pixel art background with minimal details",
+                    rarity: "Common",
+                    rarityScore: 28,
+                    keywords: ["minimal", "clean", "simple"],
+                    affinityBreeds: [],
+                    statBonus: {}
+                },
+                {
+                    name: "Sakura Garden",
+                    description: "in a tranquil garden with falling cherry blossom petals",
+                    rarity: "Rare",
+                    rarityScore: 12,
+                    keywords: ["pink", "peaceful", "flowers"],
+                    affinityBreeds: ["Persian", "Calico"],
+                    statBonus: { intelligence: 1 }
+                },
+                {
+                    name: "Ninja Fortress",
+                    description: "inside a secret fortress with training dummies and weapon racks",
+                    rarity: "Rare",
+                    rarityScore: 15,
+                    keywords: ["fortress", "training", "weapons"],
+                    affinityBreeds: ["Tabby", "Siamese"],
+                    statBonus: { power: 1, stealth: 1 }
+                },
+                {
+                    name: "Cosmic Dimension",
+                    description: "in a strange dimension with swirling cosmic energies and floating platforms",
+                    rarity: "Epic",
+                    rarityScore: 8,
+                    keywords: ["space", "magical", "otherworldly"],
+                    affinityBreeds: ["Nyan", "Shadow"],
+                    statBonus: { power: 1, intelligence: 1 }
+                },
+                {
+                    name: "Lava Cavern",
+                    description: "inside a volcanic cavern with bubbling lava and glowing crystals",
+                    rarity: "Epic",
+                    rarityScore: 10,
+                    keywords: ["hot", "danger", "orange"],
+                    affinityBreeds: ["Bengal", "Tabby"],
+                    statBonus: { power: 2 }
+                },
+                {
+                    name: "Ancient Scroll",
+                    description: "depicted on an ancient scroll painting with ink wash style",
+                    rarity: "Legendary",
+                    rarityScore: 5,
+                    keywords: ["scroll", "painting", "ink"],
+                    affinityBreeds: ["Sphynx", "Persian"],
+                    statBonus: { intelligence: 2 }
+                },
+                {
+                    name: "Spirit Realm",
+                    description: "in the ethereal spirit realm with glowing wisps and floating lanterns",
+                    rarity: "Legendary",
+                    rarityScore: 3,
+                    keywords: ["spiritual", "glowing", "magical"],
+                    affinityBreeds: ["Shadow", "Nyan"],
+                    statBonus: { stealth: 1, intelligence: 1, agility: 1 }
+                }
             ],
-            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures"
+            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality"
         }
     },
     "dall-e": {
@@ -118,12 +221,114 @@ const PROVIDERS = {
             prompt_prefix: "32x32 pixel art sprite of a ninja cat: ",
             prompt_suffix: ". Retro game style, chunky pixels, extremely limited color palette, cute, charming, high-contrast pixel art. NES/SNES era game graphics, no anti-aliasing, blocky pixel edges. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS.",
             backgrounds: [
-                { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
-                { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
-                { name: "night", description: "under a starlit night sky with a full moon" },
-                { name: "temple", description: "at an ancient mountain temple with stone lanterns" },
-                { name: "city", description: "on city rooftops with neon signs in the background" },
-                { name: "pixel-void", description: "against a simple pixel art background with minimal details" }
+                {
+                    name: "Dojo",
+                    description: "in a traditional Japanese dojo with wooden floors and training equipment",
+                    rarity: "Common",
+                    rarityScore: 30,
+                    keywords: ["training", "wooden", "indoor"],
+                    affinityBreeds: ["Tabby", "Bengal"],
+                    statBonus: { power: 1 }
+                },
+                {
+                    name: "Bamboo Forest",
+                    description: "in a dense bamboo forest with dappled light filtering through",
+                    rarity: "Common",
+                    rarityScore: 25,
+                    keywords: ["green", "nature", "peaceful"],
+                    affinityBreeds: ["Calico", "Siamese"],
+                    statBonus: { stealth: 1 }
+                },
+                {
+                    name: "Night Sky",
+                    description: "under a starlit night sky with a full moon illuminating the scene",
+                    rarity: "Uncommon",
+                    rarityScore: 20,
+                    keywords: ["dark", "moon", "stars"],
+                    affinityBreeds: ["Bombay", "Shadow"],
+                    statBonus: { stealth: 1 }
+                },
+                {
+                    name: "Mountain Temple",
+                    description: "at an ancient mountain temple with stone lanterns and cherry blossoms",
+                    rarity: "Uncommon",
+                    rarityScore: 18,
+                    keywords: ["spiritual", "ancient", "stone"],
+                    affinityBreeds: ["Persian", "Sphynx"],
+                    statBonus: { intelligence: 1 }
+                },
+                {
+                    name: "Neon City",
+                    description: "on city rooftops with vibrant neon signs illuminating the night",
+                    rarity: "Rare",
+                    rarityScore: 15,
+                    keywords: ["urban", "bright", "modern"],
+                    affinityBreeds: ["Bengal", "Nyan"],
+                    statBonus: { agility: 1 }
+                },
+                {
+                    name: "Pixel Void",
+                    description: "against a simple pixel art background with minimal details",
+                    rarity: "Common",
+                    rarityScore: 28,
+                    keywords: ["minimal", "clean", "simple"],
+                    affinityBreeds: [],
+                    statBonus: {}
+                },
+                {
+                    name: "Sakura Garden",
+                    description: "in a tranquil garden with falling cherry blossom petals",
+                    rarity: "Rare",
+                    rarityScore: 12,
+                    keywords: ["pink", "peaceful", "flowers"],
+                    affinityBreeds: ["Persian", "Calico"],
+                    statBonus: { intelligence: 1 }
+                },
+                {
+                    name: "Ninja Fortress",
+                    description: "inside a secret fortress with training dummies and weapon racks",
+                    rarity: "Rare",
+                    rarityScore: 15,
+                    keywords: ["fortress", "training", "weapons"],
+                    affinityBreeds: ["Tabby", "Siamese"],
+                    statBonus: { power: 1, stealth: 1 }
+                },
+                {
+                    name: "Cosmic Dimension",
+                    description: "in a strange dimension with swirling cosmic energies and floating platforms",
+                    rarity: "Epic",
+                    rarityScore: 8,
+                    keywords: ["space", "magical", "otherworldly"],
+                    affinityBreeds: ["Nyan", "Shadow"],
+                    statBonus: { power: 1, intelligence: 1 }
+                },
+                {
+                    name: "Lava Cavern",
+                    description: "inside a volcanic cavern with bubbling lava and glowing crystals",
+                    rarity: "Epic",
+                    rarityScore: 10,
+                    keywords: ["hot", "danger", "orange"],
+                    affinityBreeds: ["Bengal", "Tabby"],
+                    statBonus: { power: 2 }
+                },
+                {
+                    name: "Ancient Scroll",
+                    description: "depicted on an ancient scroll painting with ink wash style",
+                    rarity: "Legendary",
+                    rarityScore: 5,
+                    keywords: ["scroll", "painting", "ink"],
+                    affinityBreeds: ["Sphynx", "Persian"],
+                    statBonus: { intelligence: 2 }
+                },
+                {
+                    name: "Spirit Realm",
+                    description: "in the ethereal spirit realm with glowing wisps and floating lanterns",
+                    rarity: "Legendary",
+                    rarityScore: 3,
+                    keywords: ["spiritual", "glowing", "magical"],
+                    affinityBreeds: ["Shadow", "Nyan"],
+                    statBonus: { stealth: 1, intelligence: 1, agility: 1 }
+                }
             ]
         }
     },
@@ -142,14 +347,116 @@ const PROVIDERS = {
             prompt_prefix: "32x32 pixel art sprite of a ninja cat: ",
             prompt_suffix: ", retro game style, limited color palette (8-16 colors max), chunky pixels, no anti-aliasing, clean pixel art, NES/SNES aesthetic",
             backgrounds: [
-                { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
-                { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
-                { name: "night", description: "under a starlit night sky with a full moon" },
-                { name: "temple", description: "at an ancient mountain temple with stone lanterns" },
-                { name: "city", description: "on city rooftops with neon signs in the background" },
-                { name: "pixel-void", description: "against a simple pixel art background with minimal details" }
+                {
+                    name: "Dojo",
+                    description: "in a traditional Japanese dojo with wooden floors and training equipment",
+                    rarity: "Common",
+                    rarityScore: 30,
+                    keywords: ["training", "wooden", "indoor"],
+                    affinityBreeds: ["Tabby", "Bengal"],
+                    statBonus: { power: 1 }
+                },
+                {
+                    name: "Bamboo Forest",
+                    description: "in a dense bamboo forest with dappled light filtering through",
+                    rarity: "Common",
+                    rarityScore: 25,
+                    keywords: ["green", "nature", "peaceful"],
+                    affinityBreeds: ["Calico", "Siamese"],
+                    statBonus: { stealth: 1 }
+                },
+                {
+                    name: "Night Sky",
+                    description: "under a starlit night sky with a full moon illuminating the scene",
+                    rarity: "Uncommon",
+                    rarityScore: 20,
+                    keywords: ["dark", "moon", "stars"],
+                    affinityBreeds: ["Bombay", "Shadow"],
+                    statBonus: { stealth: 1 }
+                },
+                {
+                    name: "Mountain Temple",
+                    description: "at an ancient mountain temple with stone lanterns and cherry blossoms",
+                    rarity: "Uncommon",
+                    rarityScore: 18,
+                    keywords: ["spiritual", "ancient", "stone"],
+                    affinityBreeds: ["Persian", "Sphynx"],
+                    statBonus: { intelligence: 1 }
+                },
+                {
+                    name: "Neon City",
+                    description: "on city rooftops with vibrant neon signs illuminating the night",
+                    rarity: "Rare",
+                    rarityScore: 15,
+                    keywords: ["urban", "bright", "modern"],
+                    affinityBreeds: ["Bengal", "Nyan"],
+                    statBonus: { agility: 1 }
+                },
+                {
+                    name: "Pixel Void",
+                    description: "against a simple pixel art background with minimal details",
+                    rarity: "Common",
+                    rarityScore: 28,
+                    keywords: ["minimal", "clean", "simple"],
+                    affinityBreeds: [],
+                    statBonus: {}
+                },
+                {
+                    name: "Sakura Garden",
+                    description: "in a tranquil garden with falling cherry blossom petals",
+                    rarity: "Rare",
+                    rarityScore: 12,
+                    keywords: ["pink", "peaceful", "flowers"],
+                    affinityBreeds: ["Persian", "Calico"],
+                    statBonus: { intelligence: 1 }
+                },
+                {
+                    name: "Ninja Fortress",
+                    description: "inside a secret fortress with training dummies and weapon racks",
+                    rarity: "Rare",
+                    rarityScore: 15,
+                    keywords: ["fortress", "training", "weapons"],
+                    affinityBreeds: ["Tabby", "Siamese"],
+                    statBonus: { power: 1, stealth: 1 }
+                },
+                {
+                    name: "Cosmic Dimension",
+                    description: "in a strange dimension with swirling cosmic energies and floating platforms",
+                    rarity: "Epic",
+                    rarityScore: 8,
+                    keywords: ["space", "magical", "otherworldly"],
+                    affinityBreeds: ["Nyan", "Shadow"],
+                    statBonus: { power: 1, intelligence: 1 }
+                },
+                {
+                    name: "Lava Cavern",
+                    description: "inside a volcanic cavern with bubbling lava and glowing crystals",
+                    rarity: "Epic",
+                    rarityScore: 10,
+                    keywords: ["hot", "danger", "orange"],
+                    affinityBreeds: ["Bengal", "Tabby"],
+                    statBonus: { power: 2 }
+                },
+                {
+                    name: "Ancient Scroll",
+                    description: "depicted on an ancient scroll painting with ink wash style",
+                    rarity: "Legendary",
+                    rarityScore: 5,
+                    keywords: ["scroll", "painting", "ink"],
+                    affinityBreeds: ["Sphynx", "Persian"],
+                    statBonus: { intelligence: 2 }
+                },
+                {
+                    name: "Spirit Realm",
+                    description: "in the ethereal spirit realm with glowing wisps and floating lanterns",
+                    rarity: "Legendary",
+                    rarityScore: 3,
+                    keywords: ["spiritual", "glowing", "magical"],
+                    affinityBreeds: ["Shadow", "Nyan"],
+                    statBonus: { stealth: 1, intelligence: 1, agility: 1 }
+                }
             ],
-            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures"
+            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality"
         },
         stylePresets: {
             "pixel-art": "Pixel Art",
@@ -314,6 +621,7 @@ function generateTraits(breed, tokenId) {
     };
 
     // Apply breed-based weightings to trait selection
+    // Apply breed-based weightings to trait selection
     function applyBreedWeightings(categories, breed) {
         // Check if we have specific weightings for this breed
         const weightings = breedWeightings[breed];
@@ -329,8 +637,9 @@ function generateTraits(breed, tokenId) {
             const preferredTraits = weightings[categoryName];
             weighted[categoryName].forEach(trait => {
                 if (preferredTraits.includes(trait.value)) {
-                    // Boost the chances of preferred traits (lower rarityScore makes them more common)
-                    trait.rarityScore = Math.max(3, Math.floor(trait.rarityScore * 0.6));
+                    // FIX: BOOST rarityScore for preferred traits (higher = more common)
+                    trait.rarityScore = Math.min(40, Math.floor(trait.rarityScore * 1.8));
+                    console.log(`👑 Breed affinity: ${breed} gets +80% chance for ${trait.value}`);
                 }
             });
         });
@@ -370,12 +679,14 @@ function generateTraits(breed, tokenId) {
     ];
 
     /* ─── Weighted selection function with logging ─────────────── */
+    /* ─── Weighted selection function with proper rarity distribution ─────────────── */
     const getWeightedTrait = (arr, traitType) => {
         const hash = getTraitHash(traitType, seed);
         const hashValue = parseInt(hash.substring(0, 8), 16) / (2 ** 32);
 
-        // Calculate total weight (inverse of rarityScore so lower scores are rarer)
-        const totalWeight = arr.reduce((sum, item) => sum + (1 / item.rarityScore), 0);
+        // Use rarityScore directly (higher score = higher chance)
+        // Square the rarityScore for more dramatic rarity effects
+        const totalWeight = arr.reduce((sum, item) => sum + Math.pow(item.rarityScore, 2), 0);
 
         // Generate a target value from the hash
         let target = hashValue * totalWeight;
@@ -383,9 +694,9 @@ function generateTraits(breed, tokenId) {
 
         // Find the item that corresponds to the target value
         for (const item of arr) {
-            cumulativeWeight += (1 / item.rarityScore);
+            cumulativeWeight += Math.pow(item.rarityScore, 2);
             if (target <= cumulativeWeight) {
-                console.log(`TokenId ${tokenId} - Selected ${traitType}: ${item.value} (${item.rarity})`);
+                console.log(`TokenId ${tokenId} - Selected ${traitType}: ${item.value} (${item.rarity}) [${item.rarityScore}]`);
                 return item;
             }
         }
@@ -737,7 +1048,7 @@ function generateTraits(breed, tokenId) {
     };
 }
 
-// Generate ninja cat backstory and description
+// Generate ninja cat backstory and description with enhanced background integration
 function generateNinjaCatDescription(tokenId, breed, attributes) {
     const seed = parseInt(tokenId);
     const hash = createHash('sha256').update(`${seed}-description`).digest('hex');
@@ -748,6 +1059,7 @@ function generateNinjaCatDescription(tokenId, breed, attributes) {
     const stance = attributes.find(attr => attr.trait_type === "Stance")?.value || "Attack";
     const rank = attributes.find(attr => attr.trait_type === "Rank")?.value || "Novice";
     const accessory = attributes.find(attr => attr.trait_type === "Accessory")?.value;
+    const background = attributes.find(attr => attr.trait_type === "Background")?.value;
 
     // Check for special/mythic traits
     const special = attributes.find(attr => attr.rarity === "Unique");
@@ -799,29 +1111,55 @@ function generateNinjaCatDescription(tokenId, breed, attributes) {
 
     const villain = villains[element] || "the Evil Overlord";
 
-    // Pattern selection with variety
-    const pattern = parseInt(hash.substring(0, 4), 16) % 6;
+    // Background flavor text integration
+    const backgroundFlavor = {
+        "Dojo": "where they train tirelessly to perfect their technique",
+        "Bamboo Forest": "where they meditate among the rustling bamboo",
+        "Night Sky": "where they blend with shadows under moonlight",
+        "Mountain Temple": "where ancient wisdom guides their path",
+        "Neon City": "where they prowl the rooftops unseen",
+        "Pixel Void": "where they hone their skills in isolation",
+        "Sakura Garden": "where falling petals mark their graceful movements",
+        "Ninja Fortress": "where they prepare for dangerous missions",
+        "Cosmic Dimension": "where reality bends to their will",
+        "Lava Cavern": "where they temper their spirit in extreme heat",
+        "Ancient Scroll": "where their legend is preserved for eternity",
+        "Spirit Realm": "where they commune with ancestral spirits"
+    };
 
-    // Build backstory based on pattern
+    const backgroundContext = background && backgroundFlavor[background]
+        ? backgroundFlavor[background]
+        : "where they pursue their ninja path";
+
+    // Pattern selection with expanded variety (8 patterns)
+    const pattern = parseInt(hash.substring(0, 4), 16) % 8;
+
+    // Build backstory based on pattern with background integration
     let description;
 
     if (pattern === 0) {
-        description = `A ${rank.toLowerCase()} ${breed} ninja cat from the ${clan}, wielding a ${weapon.toLowerCase()} infused with ${element.toLowerCase()} energy. Known for ${specialty}, this warrior has sworn to defeat ${villain} and restore peace to the realm.`;
+        description = `A ${rank.toLowerCase()} ${breed} ninja cat from the ${clan}, wielding a ${weapon.toLowerCase()} infused with ${element.toLowerCase()} energy. Known for ${specialty}, this warrior has sworn to defeat ${villain} and restore peace to the realm. They are often found in the ${background ? background.toLowerCase() : "shadows"}, ${backgroundContext}.`;
     }
     else if (pattern === 1) {
-        description = `Trained in the secret arts of the ${clan}, this ${breed} ninja cat has mastered the ${stance.toLowerCase()} stance. Armed with a legendary ${weapon.toLowerCase()} and commanding ${element.toLowerCase()} techniques, the ${rank.toLowerCase()} warrior excels at ${specialty}.`;
+        description = `Trained in the secret arts of the ${clan}, this ${breed} ninja cat has mastered the ${stance.toLowerCase()} stance. Armed with a legendary ${weapon.toLowerCase()} and commanding ${element.toLowerCase()} techniques, the ${rank.toLowerCase()} warrior excels at ${specialty}. The ${background ? background.toLowerCase() : "shadows"} ${backgroundContext}.`;
     }
     else if (pattern === 2) {
-        description = `This ${breed} ninja of ${rank.toLowerCase()} status serves the ancient ${clan}. Having perfected the ${stance.toLowerCase()} stance and carrying a trusty ${weapon.toLowerCase()}, they harness ${element.toLowerCase()} powers with exceptional skill in ${specialty}.`;
+        description = `This ${breed} ninja of ${rank.toLowerCase()} status serves the ancient ${clan}. Having perfected the ${stance.toLowerCase()} stance and carrying a trusty ${weapon.toLowerCase()}, they harness ${element.toLowerCase()} powers with exceptional skill in ${specialty}. The ${background ? background.toLowerCase() : "dojo"} is ${backgroundContext}.`;
     }
     else if (pattern === 3) {
-        description = `A mysterious ${breed} warrior from the shadows of the ${clan}, this ${rank.toLowerCase()} ninja cat wields a deadly ${weapon.toLowerCase()}. Their mastery of ${element.toLowerCase()} techniques and ${stance.toLowerCase()} stance makes them formidable in ${specialty}.`;
+        description = `A mysterious ${breed} warrior from the shadows of the ${clan}, this ${rank.toLowerCase()} ninja cat wields a deadly ${weapon.toLowerCase()}. Their mastery of ${element.toLowerCase()} techniques and ${stance.toLowerCase()} stance makes them formidable in ${specialty}, especially when in the ${background ? background.toLowerCase() : "night"}, ${backgroundContext}.`;
     }
     else if (pattern === 4) {
-        description = `The ${clan} has produced few warriors as talented as this ${breed} ninja cat. Rising to the rank of ${rank.toLowerCase()}, they've become legendary for their ${stance.toLowerCase()} technique, ${weapon.toLowerCase()} prowess, and ${element.toLowerCase()} manipulation, particularly excelling in ${specialty}.`;
+        description = `The ${clan} has produced few warriors as talented as this ${breed} ninja cat. Rising to the rank of ${rank.toLowerCase()}, they've become legendary for their ${stance.toLowerCase()} technique, ${weapon.toLowerCase()} prowess, and ${element.toLowerCase()} manipulation, particularly excelling in ${specialty}. They seek sanctuary in the ${background ? background.toLowerCase() : "temple"}, ${backgroundContext}.`;
+    }
+    else if (pattern === 5) {
+        description = `Whispers speak of a ${breed} ninja cat from the ${clan}, who reached the ${rank.toLowerCase()} rank before age three. With unparalleled skill in the ${stance.toLowerCase()} stance and wielding a ${weapon.toLowerCase()} with deadly precision, they channel ${element.toLowerCase()} energy while specializing in ${specialty}. Legends say they emerged from the ${background ? background.toLowerCase() : "mist"}, ${backgroundContext}.`;
+    }
+    else if (pattern === 6) {
+        description = `Born under a rare celestial alignment, this ${breed} ninja of the ${clan} carries the mark of destiny. Their ${element.toLowerCase()} powers flow through their ${weapon.toLowerCase()} as they move with perfect ${stance.toLowerCase()} form. Now a ${rank.toLowerCase()} warrior known for ${specialty}, they've claimed the ${background ? background.toLowerCase() : "mountain"} as their domain, ${backgroundContext}.`;
     }
     else {
-        description = `Whispers speak of a ${breed} ninja cat from the ${clan}, who reached the ${rank.toLowerCase()} rank before age three. With unparalleled skill in the ${stance.toLowerCase()} stance and wielding a ${weapon.toLowerCase()} with deadly precision, they channel ${element.toLowerCase()} energy while specializing in ${specialty}.`;
+        description = `Neither friend nor foe can predict the movements of this ${breed} ninja from the ${clan}. Their ${stance.toLowerCase()} stance combined with masterful control of ${element.toLowerCase()} energy makes their ${weapon.toLowerCase()} strikes devastatingly effective. As a ${rank.toLowerCase()} who excels in ${specialty}, they've found their true calling in the ${background ? background.toLowerCase() : "forest"}, ${backgroundContext}.`;
     }
 
     // Add accessory detail if present
@@ -854,7 +1192,8 @@ function calculateRarityScore(attributes) {
     // Skip these types in calculation
     const skipTypes = ["Agility", "Stealth", "Power", "Intelligence"];
 
-    // Synergy pairs that boost score when appearing together
+    // Enhanced synergy pairs that boost score when appearing together
+    // Now includes background synergies
     const synergyPairs = [
         // Breed + Element combinations
         { type1: "Breed", value1: "Shadow", type2: "Element", value2: "Shadow", bonus: 15 },
@@ -874,7 +1213,22 @@ function calculateRarityScore(attributes) {
         { type1: "Element", value1: "Fire", type2: "Accessory", value2: "Headband", bonus: 7 },
         { type1: "Element", value1: "Water", type2: "Accessory", value2: "Scarf", bonus: 9 },
         { type1: "Element", value1: "Shadow", type2: "Accessory", value2: "Face Mask", bonus: 13 },
-        { type1: "Element", value1: "Cosmic", type2: "Accessory", value2: "Celestial Mark", bonus: 15 }
+        { type1: "Element", value1: "Cosmic", type2: "Accessory", value2: "Celestial Mark", bonus: 15 },
+
+        // Background + Breed combinations
+        { type1: "Background", value1: "Dojo", type2: "Breed", value2: "Tabby", bonus: 10 },
+        { type1: "Background", value1: "Bamboo Forest", type2: "Breed", value2: "Calico", bonus: 10 },
+        { type1: "Background", value1: "Night Sky", type2: "Breed", value2: "Bombay", bonus: 12 },
+        { type1: "Background", value1: "Night Sky", type2: "Breed", value2: "Shadow", bonus: 15 },
+        { type1: "Background", value1: "Night Sky", type2: "Breed", value2: "Shadow", bonus: 15 },
+        { type1: "Background", value1: "Mountain Temple", type2: "Breed", value2: "Persian", bonus: 12 },
+        { type1: "Background", value1: "Neon City", type2: "Breed", value2: "Nyan", bonus: 14 },
+        { type1: "Background", value1: "Sakura Garden", type2: "Element", value2: "Wind", bonus: 11 },
+        { type1: "Background", value1: "Ninja Fortress", type2: "Weapon", value2: "Katana", bonus: 8 },
+        { type1: "Background", value1: "Cosmic Dimension", type2: "Element", value2: "Cosmic", bonus: 16 },
+        { type1: "Background", value1: "Lava Cavern", type2: "Element", value2: "Fire", bonus: 13 },
+        { type1: "Background", value1: "Ancient Scroll", type2: "Rank", value2: "Legendary", bonus: 17 },
+        { type1: "Background", value1: "Spirit Realm", type2: "Element", value2: "Void", bonus: 18 }
     ];
 
     // Base rarityScore mapping by rarity level
@@ -1064,6 +1418,198 @@ async function generateDallEImage(prompt, options = {}) {
 }
 
 /**
+ * Generate an image using Stability AI's API
+ * @param {string} prompt - The prompt to generate an image from
+ * @param {Object} options - Optional configuration 
+ * @returns {Promise<Object>} Image generation result
+ */
+async function generateStabilityImage(prompt, options = {}) {
+    if (!STABILITY_API_KEY) throw new Error("Stability AI API not configured");
+
+    const settings = PROVIDERS.stability.pixelSettings;
+    const model = options.model || PROVIDERS.stability.model;
+    const stylePreset = options.stylePreset || PROVIDERS.stability.defaultStylePreset || "pixel-art";
+
+    // Allow using the prompt directly if specified
+    const enhancedPrompt = options.useCustomPrompt ? prompt :
+        `${settings.prompt_prefix}${prompt}${settings.prompt_suffix}`;
+
+    console.log(`🎨 Generating image with Stability AI (${model})...`);
+    console.log(`📝 ${options.useCustomPrompt ? 'Custom' : 'Enhanced'} prompt: "${enhancedPrompt}"`);
+    console.log(`🎭 Style preset: ${stylePreset}`);
+
+    // Track generation time
+    const startTime = Date.now();
+
+    // Build request for Stability AI
+    const requestBody = {
+        text_prompts: [
+            {
+                text: enhancedPrompt,
+                weight: 1
+            }
+        ],
+        cfg_scale: options.cfgScale || settings.cfg_scale || 9,
+        steps: options.steps || settings.steps || 40,
+        width: 1024,
+        height: 1024,
+        samples: 1
+    };
+
+    // Add negative prompt if provided
+    if (options.negativePrompt || settings.negativePrompt) {
+        requestBody.text_prompts.push({
+            text: options.negativePrompt || settings.negativePrompt,
+            weight: -1
+        });
+    }
+
+    // Add style preset if specified
+    if (stylePreset) {
+        requestBody.style_preset = stylePreset;
+    }
+
+    try {
+        // Make request to Stability AI API
+        const response = await fetch(
+            `https://api.stability.ai/v1/generation/${model}/text-to-image`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${STABILITY_API_KEY}`
+                },
+                body: JSON.stringify(requestBody)
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Stability AI error: ${response.status} - ${error}`);
+        }
+
+        const result = await response.json();
+
+        // Create temp file for the image
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'stability-'));
+        const imagePath = path.join(tmpDir, 'image.png');
+
+        // Save the image to disk
+        const base64Image = result.artifacts[0].base64;
+        await fs.writeFile(imagePath, Buffer.from(base64Image, 'base64'));
+
+        const generationTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`✅ Stability AI image generated successfully in ${generationTime}s!`);
+
+        return {
+            localPath: imagePath,
+            isLocal: true,
+            provider: "stability",
+            model: model,
+            prompt: enhancedPrompt,
+            base64: base64Image,
+            metadata: {
+                generationTime: parseFloat(generationTime),
+                width: 1024,
+                height: 1024,
+                stylePreset: stylePreset
+            }
+        };
+    } catch (error) {
+        console.error(`❌ Stability AI generation failed: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
+ * Generate an image using HuggingFace's API
+ * @param {string} prompt - The prompt to generate an image from
+ * @param {Object} options - Optional configuration
+ * @returns {Promise<Object>} Image generation result
+ */
+async function generateHuggingFaceImage(prompt, options = {}) {
+    if (!HUGGING_FACE_TOKEN) throw new Error("HuggingFace API not configured");
+
+    const settings = PROVIDERS.huggingface.pixelSettings;
+    const model = options.model || PROVIDERS.huggingface.model;
+
+    // Allow using the prompt directly if specified
+    const enhancedPrompt = options.useCustomPrompt ? prompt :
+        `${settings.prompt_prefix}${prompt}${settings.prompt_suffix}`;
+
+    console.log(`🎨 Generating image with HuggingFace (${model})...`);
+    console.log(`📝 ${options.useCustomPrompt ? 'Custom' : 'Enhanced'} prompt: "${enhancedPrompt}"`);
+
+    // Track generation time
+    const startTime = Date.now();
+
+    // Build request for HuggingFace
+    const requestBody = {
+        inputs: enhancedPrompt,
+        parameters: {
+            guidance_scale: options.guidance_scale || settings.guidance_scale || 7.5,
+            num_inference_steps: options.num_inference_steps || settings.num_inference_steps || 50,
+        }
+    };
+
+    // Add negative prompt if provided
+    if (options.negativePrompt || settings.negativePrompt) {
+        requestBody.parameters.negative_prompt = options.negativePrompt || settings.negativePrompt;
+    }
+
+    try {
+        // Make request to HuggingFace API
+        const response = await fetch(
+            `https://api-inference.huggingface.co/models/${model}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${HUGGING_FACE_TOKEN}`
+                },
+                body: JSON.stringify(requestBody)
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`HuggingFace error: ${response.status} - ${error}`);
+        }
+
+        // HuggingFace returns the image directly
+        const imageBuffer = await response.arrayBuffer();
+
+        // Create temp file for the image
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'huggingface-'));
+        const imagePath = path.join(tmpDir, 'image.png');
+
+        // Save the image to disk
+        await fs.writeFile(imagePath, Buffer.from(imageBuffer));
+
+        const generationTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`✅ HuggingFace image generated successfully in ${generationTime}s!`);
+
+        return {
+            localPath: imagePath,
+            isLocal: true,
+            provider: "huggingface",
+            model: model,
+            prompt: enhancedPrompt,
+            metadata: {
+                generationTime: parseFloat(generationTime),
+                model: model,
+                guidance_scale: requestBody.parameters.guidance_scale,
+                num_inference_steps: requestBody.parameters.num_inference_steps
+            }
+        };
+    } catch (error) {
+        console.error(`❌ HuggingFace generation failed: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
  * Enhance pixel art quality with better processing
  * @param {Object} imageResult - Result from image generator 
  * @returns {Promise<Object>} - Enhanced processed image
@@ -1104,468 +1650,467 @@ async function enhancePixelArt(processedImage) {
 }
 
 /**
- * Generate an image using Stability AI
- * @param {string} prompt - The base prompt to generate an image from
- * @param {Object} options - Optional configuration
- * @returns {Promise<Object>} Image generation result
- */
-async function generateStabilityImage(prompt, options = {}) {
-    if (!STABILITY_API_KEY) throw new Error("Stability API not configured");
-
-    const settings = PROVIDERS.stability.pixelSettings;
-    const model = PROVIDERS.stability.model;
-    const maxRetries = options.maxRetries || 2;
-
-    // Use custom prompt or enhance the provided one
-    const enhancedPrompt = options.useCustomPrompt ? prompt :
-        `${settings.prompt_prefix}${prompt}${settings.prompt_suffix}`;
-
-    console.log(`🎨 Generating image with Stability AI (${model})...`);
-    console.log(`📝 ${options.useCustomPrompt ? 'Custom' : 'Enhanced'} prompt: "${enhancedPrompt}"`);
-
-    // Track generation time
-    const startTime = Date.now();
-
-    // Build request body with configurable options
-    const requestBody = {
-        text_prompts: [
-            { text: enhancedPrompt, weight: 1 }
-        ],
-        cfg_scale: options.cfgScale || settings.cfg_scale,
-        height: options.height || 1024,
-        width: options.width || 1024,
-        samples: 1,
-        steps: options.steps || settings.steps,
-    };
-
-    // Add negative prompt if provided
-    if (options.negativePrompt) {
-        requestBody.text_prompts.push({
-            text: options.negativePrompt,
-            weight: -1
-        });
-        console.log(`🚫 Negative prompt: "${options.negativePrompt}"`);
-    }
-
-    // Add style preset - use specified one or fall back to default if available
-    const stylePreset = options.stylePreset || PROVIDERS.stability.defaultStylePreset;
-    if (stylePreset) {
-        requestBody.style_preset = stylePreset;
-        console.log(`🎭 Style preset: ${stylePreset}${options.stylePreset ? '' : ' (default)'}`);
-    }
-
-    // Use retries for robustness
-    let lastError = null;
-    let attempt = 0;
-
-    while (attempt <= maxRetries) {
-        try {
-            attempt++;
-
-            // Log retry attempts
-            if (attempt > 1) {
-                console.log(`🔄 Retry attempt ${attempt}/${maxRetries + 1} for Stability AI generation`);
-                // Add slight variation for content filtering issues
-                requestBody.seed = Math.floor(Math.random() * 2147483647);
-            }
-
-            const response = await fetch(
-                `https://api.stability.ai/v1/generation/${model}/text-to-image`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${STABILITY_API_KEY}`
-                    },
-                    body: JSON.stringify(requestBody)
-                }
-            );
-
-            if (!response.ok) {
-                const errorText = await response.text().catch(() => 'Unknown error');
-
-                // Handle specific error cases
-                if (response.status === 400) {
-                    throw new Error(`Stability API validation error: ${errorText}`);
-                } else if (response.status === 401) {
-                    throw new Error(`Stability API authentication error: Invalid API key`);
-                } else if (response.status === 403) {
-                    throw new Error(`Stability API authorization error: ${errorText}`);
-                } else if (response.status === 429) {
-                    throw new Error(`Stability API rate limit reached: ${errorText}`);
-                } else {
-                    throw new Error(`Stability API error: ${response.status} - ${errorText}`);
-                }
-            }
-
-            const result = await response.json();
-            const generationTime = ((Date.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Stability image generated successfully in ${generationTime}s!`);
-
-            if (!result.artifacts || result.artifacts.length === 0) {
-                throw new Error("Stability API returned no image artifacts");
-            }
-
-            const base64Image = result.artifacts[0].base64;
-            const seed = result.artifacts[0].seed;
-            const finishReason = result.artifacts[0].finishReason;
-
-            // Check for content filtering
-            if (finishReason === "CONTENT_FILTERED") {
-                // If this is our last retry, fail
-                if (attempt > maxRetries) {
-                    throw new Error("Stability API content filtered - prompt violated content policy");
-                }
-
-                console.warn("⚠️ Content filtered by Stability AI, trying a modified prompt...");
-
-                // Try to simplify/sanitize the prompt on next attempt
-                requestBody.text_prompts[0].text = enhancedPrompt
-                    .replace(/ninja/gi, "warrior cat")
-                    .replace(/weapon/gi, "tool")
-                    .replace(/battle/gi, "adventure");
-
-                continue; // Try again with modified prompt
-            }
-
-            // Create a temp file with the image data
-            const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "stability-"));
-            const imagePath = path.join(tmpDir, "image.png");
-            await fs.writeFile(imagePath, Buffer.from(base64Image, 'base64'));
-
-            // Return detailed result
-            return {
-                url: `file://${imagePath}`,
-                localPath: imagePath,
-                isLocal: true,
-                provider: "stability",
-                model: model,
-                prompt: enhancedPrompt,
-                metadata: {
-                    generationTime: parseFloat(generationTime),
-                    seed,
-                    cfgScale: requestBody.cfg_scale,
-                    steps: requestBody.steps,
-                    width: requestBody.width,
-                    height: requestBody.height,
-                    stylePreset: options.stylePreset,
-                    finishReason,
-                    attempts: attempt
-                }
-            };
-        } catch (error) {
-            lastError = error;
-
-            // Special handling for different error types
-            const errorMessage = error.message.toLowerCase();
-
-            // Rate limit errors - wait longer
-            if (errorMessage.includes('rate limit') || error.message.includes('429')) {
-                const waitTime = Math.min(5000 * attempt, 30000); // Up to 30 seconds
-                console.warn(`⏳ Rate limit hit, waiting ${waitTime / 1000}s before retry`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-                continue;
-            }
-
-            // Network errors - retry after short wait
-            if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
-                const waitTime = Math.min(2000 * attempt, 10000);
-                console.warn(`⚠️ Network error, waiting ${waitTime / 1000}s before retry: ${errorMessage}`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-                continue;
-            }
-
-            // Content policy violations - modify prompt and retry
-            if (errorMessage.includes('content') || errorMessage.includes('safety') || errorMessage.includes('policy')) {
-                if (attempt <= maxRetries) {
-                    console.warn(`⚠️ Content policy triggered: ${errorMessage}`);
-                    console.warn(`🔄 Simplifying prompt and retrying...`);
-
-                    // Simplify prompt for next attempt
-                    requestBody.text_prompts[0].text = enhancedPrompt
-                        .replace(/ninja/gi, "warrior cat")
-                        .replace(/weapon/gi, "tool")
-                        .replace(/battle/gi, "adventure");
-
-                    continue;
-                }
-            }
-
-            // If max retries reached or unrecoverable error
-            if (attempt > maxRetries) {
-                console.error(`❌ Stability AI generation failed after ${attempt} attempts: ${errorMessage}`);
-                throw error;
-            }
-        }
-    }
-
-    // If we exhaust all retries
-    throw lastError || new Error("Failed to generate image with Stability AI after multiple attempts");
-}
-
-/**
- * Generate an image using HuggingFace models
- * @param {string} prompt - The base prompt to generate an image from
- * @param {Object} options - Optional configuration
- * @returns {Promise<Object>} Image generation result
- */
-async function generateHuggingFaceImage(prompt, options = {}) {
-    if (!HUGGING_FACE_TOKEN) throw new Error("HuggingFace API token not configured");
-
-    const settings = PROVIDERS.huggingface.pixelSettings;
-    const model = options.model || PROVIDERS.huggingface.model;
-    const maxAttempts = options.maxAttempts || 3;
-    const loadingTimeout = options.loadingTimeout || 10;
-
-    // Allow using the prompt directly if specified
-    const enhancedPrompt = options.useCustomPrompt ? prompt :
-        `${settings.prompt_prefix}${prompt}${settings.prompt_suffix}`;
-
-    console.log(`🎨 Generating image with HuggingFace (${model})...`);
-    console.log(`📝 ${options.useCustomPrompt ? 'Custom' : 'Enhanced'} prompt: "${enhancedPrompt}"`);
-
-    // Track generation time
-    const startTime = Date.now();
-    let waitedForModelLoading = false;
-
-    // Configure generation parameters
-    const requestParameters = {
-        inputs: enhancedPrompt,
-        parameters: {
-            guidance_scale: options.guidance_scale || settings.guidance_scale,
-            num_inference_steps: options.num_inference_steps || settings.num_inference_steps
-        }
-    };
-
-    // Add negative prompt if provided
-    if (options.negativePrompt) {
-        requestParameters.parameters.negative_prompt = options.negativePrompt;
-        console.log(`🚫 Negative prompt: "${options.negativePrompt}"`);
-    }
-
-    // Function to handle model loading retry
-    async function handleModelLoading(error, attempt) {
-        const isLoadingError = error.message.includes("loading") ||
-            error.message.includes("not ready") ||
-            error.message.includes("currently loading") ||
-            error.message.includes("try again");
-
-        if (isLoadingError && attempt < maxAttempts) {
-            waitedForModelLoading = true;
-            const waitTime = loadingTimeout * 1000;
-            console.log(`⏳ Model still loading, waiting ${loadingTimeout}s before retry (attempt ${attempt + 1}/${maxAttempts})...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            return true; // Try again
-        }
-
-        return false; // Don't try again for this error type
-    }
-
-    // Try to generate multiple times with backoff
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        try {
-            const response = await fetch(
-                `https://api-inference.huggingface.co/models/${model}`,
-                {
-                    headers: {
-                        "Authorization": `Bearer ${HUGGING_FACE_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    method: "POST",
-                    body: JSON.stringify(requestParameters)
-                }
-            );
-
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`HuggingFace API error: ${response.status} - ${error}`);
-            }
-
-            // Check if we got JSON error response instead of image
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const errorJson = await response.json();
-                if (errorJson.error) {
-                    // Handle model loading case
-                    if (await handleModelLoading(new Error(errorJson.error), attempt)) continue;
-                    throw new Error(`HuggingFace API error: ${errorJson.error}`);
-                }
-            }
-
-            // If we get here, we should have an image
-            const imageBuffer = Buffer.from(await response.arrayBuffer());
-
-            // Create a temporary file to store the image
-            const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hf-image-'));
-            const imagePath = path.join(tmpDir, 'image.png');
-            await fs.writeFile(imagePath, imageBuffer);
-
-            const generationTime = ((Date.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ HuggingFace image generated successfully in ${generationTime}s!`);
-            if (waitedForModelLoading) {
-                console.log(`   (Included ${loadingTimeout}s model loading time)`);
-            }
-
-            return {
-                url: `file://${imagePath}`,
-                localPath: imagePath,
-                isLocal: true,
-                provider: "huggingface",
-                model: model,
-                prompt: enhancedPrompt,
-                metadata: {
-                    generationTime: parseFloat(generationTime),
-                    guidanceScale: requestParameters.parameters.guidance_scale,
-                    steps: requestParameters.parameters.num_inference_steps,
-                    modelName: model
-                }
-            };
-        } catch (error) {
-            // On the last attempt, just rethrow the error
-            if (attempt === maxAttempts - 1) {
-                console.error(`❌ HuggingFace generation failed after ${maxAttempts} attempts: ${error.message}`);
-                throw error;
-            }
-
-            // Handle model loading case
-            if (await handleModelLoading(error, attempt)) continue;
-
-            // For other errors, add exponential backoff
-            const backoffTime = Math.min(2000 * Math.pow(2, attempt), 10000);
-            console.warn(`⚠️ HuggingFace API error (attempt ${attempt + 1}/${maxAttempts}): ${error.message}`);
-            console.warn(`   Retrying in ${backoffTime / 1000}s...`);
-            await new Promise(resolve => setTimeout(resolve, backoffTime));
-        }
-    }
-
-    throw new Error("All HuggingFace generation attempts failed");
-}
-
-/**
- * Generate an image using the requested provider with NO FALLBACKS
- * @param {string} prompt - The prompt to generate an image from
+ * Generate and pin an NFT image + metadata for a ninja cat
  * @param {Object} options - Generation options
- * @returns {Promise<Object>} The generated image data
+ * @param {string} options.breed - Cat breed (defaults to "Tabby")
+ * @param {string|number} options.tokenId - NFT token ID
+ * @param {string} options.imageProvider - AI provider (stability, dall-e, huggingface)
+ * @param {string} options.promptExtras - Additional prompt instructions
+ * @param {string} options.negativePrompt - Negative prompt instructions
+ * @param {Object} options.providerOptions - Provider-specific options
+ * @param {string} options.taskId - Task ID for progress tracking
+ * @param {Object} options.metadataExtras - Additional metadata to include
+ * @returns {Promise<Object>} Image and metadata URLs
  */
-async function generateImage(prompt, options = {}) {
-    // Add pixel art style enhancers based on provider
-    const enhancedOptions = { ...options };
+export async function finalizeMint({
+    breed = "Tabby",
+    tokenId,
+    imageProvider,
+    promptExtras = "",
+    negativePrompt = "",
+    providerOptions = {},
+    metadataExtras = {},
+    taskId = null,
+    ...rest
+}) {
+    // CRITICAL: Capture the provider value immediately and make it immutable
+    const LOCKED_PROVIDER = imageProvider?.toLowerCase()?.trim();
+    console.log(`🔒 PROVIDER LOCKED: "${LOCKED_PROVIDER || 'default'}" will be used exclusively`);
 
-    // Enhance prompts based on provider for better pixel art results
-    if (!options.useCustomPrompt) {
-        const requestedProvider = options.imageProvider?.toLowerCase()?.trim();
-        const basePixelArtEnhancer = ", true pixel art, 16-bit style, limited color palette, no anti-aliasing, pixel perfect";
-
-        if (requestedProvider === 'dall-e') {
-            prompt = `${prompt}${basePixelArtEnhancer}, clean edges, blocky style, NES/SNES era game sprite`;
-            // DALL-E specific parameters for better pixel results
-            enhancedOptions.quality = enhancedOptions.quality || "hd";
-        }
-        else if (requestedProvider === 'stability') {
-            prompt = `${prompt}${basePixelArtEnhancer}, crisp pixels, 8-16 colors maximum`;
-            // Stability specific parameters for better pixel results
-            enhancedOptions.cfgScale = enhancedOptions.cfgScale || 9.5; // Stronger prompt adherence
-            enhancedOptions.stylePreset = enhancedOptions.stylePreset || "pixel-art";
-        }
-        else if (requestedProvider === 'huggingface') {
-            prompt = `${prompt}${basePixelArtEnhancer}, 32x32 resolution, gameboy style, pixel perfect`;
-            // HuggingFace specific parameters
-            enhancedOptions.guidance_scale = enhancedOptions.guidance_scale || 9.0;
-            enhancedOptions.num_inference_steps = enhancedOptions.num_inference_steps || 60;
-        }
-
-        // Enhanced negative prompt for better pixel art
-        if (!enhancedOptions.negativePrompt) {
-            const pixelArtNegative = "blurry, anti-aliasing, smooth edges, high detail, realistic, 3D, shading, gradient, " +
-                "photorealistic, text, signature, watermark, blur, noise, grain, high-resolution detail";
-            enhancedOptions.negativePrompt = pixelArtNegative;
+    // Import task management tools at the start
+    let taskManager = null;
+    if (taskId) {
+        try {
+            taskManager = await import('./taskManager.js');
+            // Set task to processing state
+            taskManager.updateTask(taskId, {
+                status: taskManager.TASK_STATES.PROCESSING,
+                progress: 10,
+                message: 'Starting NFT generation process'
+            });
+        } catch (err) {
+            console.warn(`⚠️ Could not initialize task manager: ${err.message}`);
         }
     }
 
-    // Normalize the requested provider name to lowercase and trim
-    const requestedProvider = options.imageProvider?.toLowerCase()?.trim();
+    // Start timing the entire process
+    const startTime = Date.now();
 
-    // ALWAYS respect the explicitly requested provider - without requiring strictMode flag
-    if (requestedProvider) {
-        console.log(`🔒 STRICT MODE: Using ONLY "${requestedProvider}" - NO FALLBACKS ALLOWED`);
-
-        // Validate provider and API key availability
-        if (requestedProvider === 'stability' && !STABILITY_API_KEY) {
-            throw new Error(`Cannot use requested provider "stability" - Missing STABILITY_API_KEY`);
-        }
-        else if (requestedProvider === 'huggingface' && !HUGGING_FACE_TOKEN) {
-            throw new Error(`Cannot use requested provider "huggingface" - Missing HUGGING_FACE_TOKEN`);
-        }
-        else if (requestedProvider === 'dall-e' && !OPENAI_API_KEY) {
-            throw new Error(`Cannot use requested provider "dall-e" - Missing OPENAI_API_KEY`);
-        }
-        else if (!['stability', 'huggingface', 'dall-e'].includes(requestedProvider)) {
-            throw new Error(`Unknown provider "${requestedProvider}" - Valid options: stability, huggingface, dall-e`);
-        }
-
-        // Use ONLY the requested provider - no fallbacks whatsoever
-        if (requestedProvider === 'stability') {
-            return await generateStabilityImage(prompt, enhancedOptions);
-        }
-        else if (requestedProvider === 'huggingface') {
-            return await generateHuggingFaceImage(prompt, enhancedOptions);
-        }
-        else if (requestedProvider === 'dall-e') {
-            return await generateDallEImage(prompt, enhancedOptions);
-        }
-    }
-
-    // Default behavior (only used when no provider is specified)
-    console.log(`Using default provider with fallbacks: ${IMAGE_PROVIDER}`);
-
-    // Try each available provider in order of preference
-    const errors = [];
-
-    // Try preferred provider first
     try {
-        if (IMAGE_PROVIDER === 'stability' && STABILITY_API_KEY) {
-            return await generateStabilityImage(prompt, enhancedOptions);
+        // Validate required parameters
+        if (!tokenId) {
+            throw new Error("TokenId is required");
         }
-        else if (IMAGE_PROVIDER === 'huggingface' && HUGGING_FACE_TOKEN) {
-            return await generateHuggingFaceImage(prompt, enhancedOptions);
+
+        // Normalize the breed name
+        if (typeof breed !== 'string' || breed.trim() === '') {
+            breed = 'Tabby';
         }
-        else if (IMAGE_PROVIDER === 'dall-e' && OPENAI_API_KEY) {
-            return await generateDallEImage(prompt, enhancedOptions);
+        const normalizedBreed = breed.charAt(0).toUpperCase() + breed.slice(1).toLowerCase();
+
+        // Generate traits based on breed and tokenId
+        console.log(`💫 Generating traits for #${tokenId}...`);
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 20,
+                message: 'Generating traits and attributes'
+            });
         }
+
+        const traits = generateTraits(normalizedBreed, tokenId);
+
+        // Build prompt from traits
+        const weapon = traits.rawTraits.find(t => t.trait_type === "Weapon")?.value || "Katana";
+        const stance = traits.rawTraits.find(t => t.trait_type === "Stance")?.value || "Attack";
+        const element = traits.rawTraits.find(t => t.trait_type === "Element")?.value || "Fire";
+        const rank = traits.rawTraits.find(t => t.trait_type === "Rank")?.value || "Novice";
+
+        // Get all keywords from traits for a richer prompt
+        const keywordString = traits.keywords.join(", ");
+
+        // Determine which provider we're using - USE THE LOCKED PROVIDER
+        const providerKey = LOCKED_PROVIDER || IMAGE_PROVIDER;
+        const provider = PROVIDERS[providerKey];
+
+        // STEP 1: ENHANCED BACKGROUND SELECTION WITH BREED AFFINITIES
+        let backgroundTrait = null;
+        let backgroundDescription = "";
+
+        // Only proceed if we have backgrounds defined for this provider
+        if (provider?.pixelSettings?.backgrounds?.length > 0) {
+            // Create a deterministic but "random" selection based on tokenId
+            const seed = parseInt(tokenId);
+            const backgroundHash = createHash('sha256')
+                .update(`${seed}-${normalizedBreed}-background`)
+                .digest('hex');
+            const hashValue = parseInt(backgroundHash.substring(0, 8), 16);
+
+            // Get all backgrounds
+            const backgrounds = provider.pixelSettings.backgrounds;
+
+            // Check if there are any backgrounds with affinity for this breed
+            const affinityBackgrounds = backgrounds.filter(bg =>
+                bg.affinityBreeds && bg.affinityBreeds.includes(normalizedBreed)
+            );
+
+            // 60% chance to select from affinity backgrounds if available
+            const useAffinityBackground = affinityBackgrounds.length > 0 &&
+                (hashValue % 100 < 60);
+
+            let selectedBackgrounds = useAffinityBackground ? affinityBackgrounds : backgrounds;
+
+            // Weighted selection based on rarity
+            // FIX: Use proper direct weighting based on rarityScore
+            const totalWeight = selectedBackgrounds.reduce((sum, bg) => sum + Math.pow(bg.rarityScore || 30, 2), 0);
+            let target = (hashValue / (2 ** 32)) * totalWeight;
+            let cumulativeWeight = 0;
+
+            // Find the background that corresponds to the target value
+            for (const bg of selectedBackgrounds) {
+                cumulativeWeight += Math.pow(bg.rarityScore || 30, 2);
+                if (target <= cumulativeWeight) {
+                    backgroundTrait = bg;
+                    break;
+                }
+            }
+
+            // Fallback if no background selected (shouldn't happen)
+            if (!backgroundTrait) {
+                backgroundTrait = selectedBackgrounds[hashValue % selectedBackgrounds.length];
+            }
+
+            // Extract background description for the prompt
+            if (backgroundTrait) {
+                backgroundDescription = ` ${backgroundTrait.description}`;
+
+                // Enhanced logging
+                console.log(`🏞️ BACKGROUND: Selected "${backgroundTrait.name}" (${backgroundTrait.rarity || 'Common'}) for token #${tokenId}`);
+                console.log(`🏞️ BACKGROUND DESCRIPTION: "${backgroundDescription}"`);
+
+                if (useAffinityBackground) {
+                    console.log(`✨ AFFINITY MATCH: ${normalizedBreed} has affinity with ${backgroundTrait.name} background`);
+                }
+
+                // Add the background to traits list with rarity information
+                traits.attributes.push({
+                    trait_type: "Background",
+                    value: backgroundTrait.name
+                });
+
+                // Add to raw traits for later reference
+                traits.rawTraits.push({
+                    trait_type: "Background",
+                    value: backgroundTrait.name,
+                    rarity: backgroundTrait.rarity || "Common",
+                    keywords: backgroundTrait.keywords || backgroundTrait.name.split(' ')
+                });
+
+                // Apply background stat bonuses if available
+                if (backgroundTrait.statBonus) {
+                    Object.entries(backgroundTrait.statBonus).forEach(([stat, bonus]) => {
+                        const statIndex = traits.attributes.findIndex(
+                            attr => attr.trait_type.toLowerCase() === stat.toLowerCase()
+                        );
+
+                        if (statIndex !== -1) {
+                            traits.attributes[statIndex].value += bonus;
+                            console.log(`📊 BACKGROUND BONUS: +${bonus} to ${stat} from ${backgroundTrait.name} background`);
+                        }
+                    });
+                }
+            }
+        } else {
+            console.log(`⚠️ No backgrounds defined for provider ${providerKey}!`);
+        }
+
+        // STEP 2: BUILD FINAL PROMPT WITH ENHANCED BACKGROUND AND EXTRAS
+        // Extract background keywords for better prompt enhancement
+        const backgroundKeywords = backgroundTrait?.keywords?.join(", ") || "";
+
+        // Create the base prompt
+        const basePrompt = `A pixel art ninja cat of ${normalizedBreed} breed in ${stance} stance wielding ${weapon} with ${element} powers, ${rank} rank`;
+
+        // Create a more descriptive background integration
+        const enhancedBackgroundDesc = backgroundTrait ?
+            `, set in ${backgroundTrait.description}, ${backgroundKeywords}` :
+            "";
+
+        // Always include keywords and background in prompt, even with custom extras
+        const prompt = promptExtras
+            ? `${basePrompt}, ${keywordString}${enhancedBackgroundDesc}, ${promptExtras}`
+            : `${basePrompt}, ${keywordString}${enhancedBackgroundDesc}`;
+
+        console.log(`📝 ENHANCED PROMPT: "${prompt}"`);
+
+        // Update task status for prompt generation
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 30,
+                message: `Preparing to generate image with ${LOCKED_PROVIDER || IMAGE_PROVIDER}`,
+                prompt,
+                traits: traits.attributes.map(a => `${a.trait_type}: ${a.value}`).join(', '),
+                rarity: traits.rarity.tier,
+                background: backgroundTrait?.name
+            });
+        }
+
+        // Generate the image with detailed logging
+        console.log(`🎨 Generating image...`);
+        console.log(`🚨 STRICT PROVIDER: "${LOCKED_PROVIDER || IMAGE_PROVIDER}" (no fallbacks)`);
+
+        // Log provider options if available
+        if (Object.keys(providerOptions).length > 0) {
+            console.log(`📋 PROVIDER OPTIONS:`, JSON.stringify(providerOptions, null, 2));
+        }
+
+        // Update task status for image generation
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 40,
+                message: `Generating image with ${LOCKED_PROVIDER || IMAGE_PROVIDER}...`,
+                providerOptions: JSON.stringify(providerOptions)
+            });
+        }
+
+        let imageResult;
+        const imageStartTime = Date.now();
+        try {
+            // CRITICAL FIX: Create immutable options object with locked provider
+            const generationOptions = Object.create(Object.prototype, {
+                imageProvider: {
+                    value: LOCKED_PROVIDER,
+                    writable: false,
+                    configurable: false,
+                    enumerable: true
+                },
+                strictMode: { value: true, writable: true, enumerable: true },
+                negativePrompt: { value: negativePrompt, writable: true, enumerable: true },
+                useCustomPrompt: { value: true, writable: true, enumerable: true }
+            });
+
+            // Safely add provider options without overriding protected properties
+            if (providerOptions) {
+                Object.entries(providerOptions).forEach(([key, value]) => {
+                    if (key !== 'imageProvider') {
+                        generationOptions[key] = value;
+                    }
+                });
+            }
+
+            // Add rest params but ensure they can't override imageProvider
+            if (rest) {
+                Object.entries(rest).forEach(([key, value]) => {
+                    if (key !== 'imageProvider') {
+                        generationOptions[key] = value;
+                    }
+                });
+            }
+
+            console.log(`🔒 PROVIDER CONFIRMED: Using "${LOCKED_PROVIDER}" for generation`);
+
+            // Generate the image with our secured options
+            imageResult = await generateImage(prompt, generationOptions);
+
+            const imageGenTime = ((Date.now() - imageStartTime) / 1000).toFixed(2);
+            console.log(`✅ Image generated in ${imageGenTime}s using ${imageResult.provider}`);
+
+            // Update task with successful generation
+            if (taskManager) {
+                taskManager.updateTask(taskId, {
+                    status: 'processing',
+                    progress: 60,
+                    message: `Image successfully generated in ${imageGenTime}s with ${imageResult.provider}`,
+                    provider: imageResult.provider,
+                    model: imageResult.model,
+                    generationTime: imageGenTime
+                });
+            }
+        } catch (error) {
+            console.error(`❌ Image generation failed: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Image generation failed: ${error.message}`));
+            }
+            throw new Error(`Failed to generate image: ${error.message}`);
+        }
+
+        // Process the image (auto-crop, etc.)
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 65,
+                message: 'Processing and optimizing image'
+            });
+        }
+
+        const processingStartTime = Date.now();
+        const processedImage = await processImage(imageResult);
+        const processTime = ((Date.now() - processingStartTime) / 1000).toFixed(2);
+        console.log(`✅ Image processed in ${processTime}s`);
+
+        // Add pixel art enhancements (optional - only if sharp is available)
+        const enhancedImage = await enhancePixelArt(processedImage);
+
+        // Update task status for IPFS upload
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 70,
+                message: 'Uploading image to IPFS...'
+            });
+        }
+
+        // Upload image to IPFS with retry logic
+        console.log(`📦 Saving and uploading image...`);
+        const uploadStartTime = Date.now();
+        let imageUri;
+        try {
+            imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+            const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+            console.log(`✅ Image uploaded in ${uploadTime}s`);
+
+            if (taskManager) {
+                taskManager.updateTask(taskId, {
+                    progress: 80,
+                    message: 'Image successfully uploaded to IPFS',
+                    imageUri
+                });
+            }
+        } catch (error) {
+            console.error(`❌ Image upload failed: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Failed to upload image: ${error.message}`));
+            }
+            throw new Error(`Failed to upload image to IPFS: ${error.message}`);
+        }
+
+        // Create metadata
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 85,
+                message: 'Creating and uploading metadata',
+                imageUri
+            });
+        }
+
+        // Create enhanced metadata
+        console.log(`📝 Creating metadata...`);
+        const metadata = {
+            name: `${projectName} #${tokenId}`,
+            description: traits.description,
+            image: imageUri,
+            attributes: traits.attributes,
+            generationInfo: {
+                prompt,
+                provider: imageResult.provider,
+                model: imageResult.model,
+                providerOptions,
+                timestamp: Date.now(),
+                rarity: traits.rarity,
+                background: backgroundTrait?.name,
+                generation: {
+                    version: "2.0",
+                    engine: imageResult.provider,
+                    promptEnhanced: !!promptExtras,
+                    negativePrompt: negativePrompt || undefined,
+                    generationTime: imageResult.metadata?.generationTime,
+                },
+                stats: {
+                    processingTime: {
+                        total: ((Date.now() - startTime) / 1000).toFixed(2),
+                        image: ((imageStartTime - startTime) / 1000).toFixed(2),
+                        processing: ((processingStartTime - imageStartTime) / 1000).toFixed(2),
+                        upload: ((uploadStartTime - processingStartTime) / 1000).toFixed(2)
+                    }
+                },
+                ...metadataExtras
+            }
+        };
+
+        // Log the attributes to confirm background is included
+        console.log(`🏷️  NFT ATTRIBUTES (${traits.attributes.length}):`);
+        traits.attributes.forEach(attr => {
+            console.log(`  • ${attr.trait_type}: ${attr.value}`);
+        });
+
+        // Save metadata to file
+        const metaPath = path.join(processedImage.directory, 'meta.json');
+        await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
+
+        // Upload metadata to IPFS
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 90,
+                message: 'Uploading metadata to IPFS'
+            });
+        }
+
+        const metadataStartTime = Date.now();
+        let metadataUri;
+        try {
+            metadataUri = await uploadToIPFS(metaPath, `meta-${normalizedBreed}-${tokenId}`);
+            const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
+            console.log(`✅ Metadata uploaded in ${metadataUploadTime}s`);
+        } catch (error) {
+            console.error(`❌ Metadata upload failed: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Failed to upload metadata: ${error.message}`));
+            }
+            throw new Error(`Failed to upload metadata to IPFS: ${error.message}`);
+        }
+
+        console.log(`🔗 Token URI metadata at: ${metadataUri}`);
+
+        // Clean up temporary directory
+        fs.rm(processedImage.directory, { recursive: true, force: true }).catch(err => {
+            console.warn(`Warning: Failed to clean up temp directory: ${err.message}`);
+        });
+
+        // Log total generation time
+        const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`✅ Finished #${tokenId} → ${metadataUri} using ${imageResult.provider} in ${totalTime}s`);
+
+        // Mark task as complete with explicit status
+        if (taskManager) {
+            console.log(`📋 Marking task #${tokenId} as complete...`);
+            taskManager.completeTask(taskId, {
+                tokenId,
+                tokenURI: metadataUri,
+                imageUri,
+                provider: imageResult.provider,
+                model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
+                totalTime: parseFloat(totalTime),
+                rarity: traits.rarity.tier,
+                status: 'completed',
+                background: backgroundTrait?.name
+            });
+        }
+
+        // Return comprehensive result object
+        return {
+            tokenURI: metadataUri,
+            imageUri,
+            metadata,
+            provider: imageResult.provider,
+            model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
+            background: backgroundTrait?.name,
+            providerOptions,
+            stats: {
+                totalTime: parseFloat(totalTime),
+                timestamp: Date.now()
+            }
+        };
     } catch (error) {
-        errors.push(`Default provider ${IMAGE_PROVIDER}: ${error.message}`);
-    }
+        // Centralized error handling
+        console.error(`❌ NFT generation failed: ${error.message}`);
 
-    // Try any available provider as fallback
-    if (STABILITY_API_KEY) {
-        try {
-            return await generateStabilityImage(prompt, enhancedOptions);
-        } catch (error) {
-            errors.push(`Stability: ${error.message}`);
+        // Mark task as failed if task manager is available
+        if (taskManager && taskId) {
+            taskManager.failTask(taskId, error);
         }
-    }
 
-    if (HUGGING_FACE_TOKEN) {
-        try {
-            return await generateHuggingFaceImage(prompt, enhancedOptions);
-        } catch (error) {
-            errors.push(`HuggingFace: ${error.message}`);
-        }
+        // Re-throw the error for the caller to handle
+        throw error;
     }
-
-    if (OPENAI_API_KEY) {
-        try {
-            return await generateDallEImage(prompt, enhancedOptions);
-        } catch (error) {
-            errors.push(`DALL-E: ${error.message}`);
-        }
-    }
-
-    throw new Error(`All image providers failed: ${errors.join('; ')}`);
 }
 
-/* ─── Image processing & uploading ────────────────────────────── */
 /**
  * Process an image (download, crop palette bar if needed)
  * @param {Object} imageResult - Result from image generator 
@@ -1779,368 +2324,142 @@ async function getFileSize(filePath) {
 }
 
 /**
- * Generate and pin an NFT image + metadata for a ninja cat
+ * Generate an image using the requested provider with NO FALLBACKS
+ * @param {string} prompt - The prompt to generate an image from
  * @param {Object} options - Generation options
- * @param {string} options.breed - Cat breed (defaults to "Tabby")
- * @param {string|number} options.tokenId - NFT token ID
- * @param {string} options.imageProvider - AI provider (stability, dall-e, huggingface)
- * @param {string} options.promptExtras - Additional prompt instructions
- * @param {string} options.negativePrompt - Negative prompt instructions
- * @param {Object} options.providerOptions - Provider-specific options
- * @param {string} options.taskId - Task ID for progress tracking
- * @param {Object} options.metadataExtras - Additional metadata to include
- * @returns {Promise<Object>} Image and metadata URLs
+ * @returns {Promise<Object>} The generated image data
  */
-export async function finalizeMint({
-    breed = "Tabby",
-    tokenId,
-    imageProvider,
-    promptExtras = "",
-    negativePrompt = "",
-    providerOptions = {},
-    metadataExtras = {},
-    taskId = null,
-    ...rest
-}) {
-    // Import task management tools at the start
-    let taskManager = null;
-    if (taskId) {
-        try {
-            taskManager = await import('./taskManager.js');
-            // Set task to processing state
-            taskManager.updateTask(taskId, {
-                status: taskManager.TASK_STATES.PROCESSING,
-                progress: 10,
-                message: 'Starting NFT generation process'
-            });
-        } catch (err) {
-            console.warn(`⚠️ Could not initialize task manager: ${err.message}`);
+async function generateImage(prompt, options = {}) {
+    // Save original provider immediately, before any possible modifications
+    const ORIGINAL_PROVIDER = options.imageProvider?.toLowerCase()?.trim();
+
+    // Log the initial provider for debugging
+    console.log(`🔐 PROVIDER SECURE: Original value "${ORIGINAL_PROVIDER}" safely captured`);
+
+    // Create a completely new options object to avoid reference issues
+    const enhancedOptions = JSON.parse(JSON.stringify(options));
+
+    // Set the provider and protect it from being overwritten
+    Object.defineProperty(enhancedOptions, 'imageProvider', {
+        value: ORIGINAL_PROVIDER,
+        writable: false,
+        configurable: false,
+        enumerable: true
+    });
+
+    console.log(`🔍 PROVIDER CHECK: Protected provider is "${enhancedOptions.imageProvider || 'not specified'}"`);
+
+    // Enhance prompts based on provider for better pixel art results
+    if (!options.useCustomPrompt) {
+        const basePixelArtEnhancer = ", true pixel art, 16-bit style, limited color palette, no anti-aliasing, pixel perfect";
+
+        if (ORIGINAL_PROVIDER === 'dall-e') {
+            prompt = `${prompt}${basePixelArtEnhancer}, clean edges, blocky style, NES/SNES era game sprite`;
+            // DALL-E specific parameters for better pixel results
+            enhancedOptions.quality = enhancedOptions.quality || "hd";
+        }
+        else if (ORIGINAL_PROVIDER === 'stability') {
+            prompt = `${prompt}${basePixelArtEnhancer}, crisp pixels, 8-16 colors maximum`;
+            // Stability specific parameters for better pixel results
+            enhancedOptions.cfgScale = enhancedOptions.cfgScale || 9.5; // Stronger prompt adherence
+            enhancedOptions.stylePreset = enhancedOptions.stylePreset || "pixel-art";
+        }
+        else if (ORIGINAL_PROVIDER === 'huggingface') {
+            prompt = `${prompt}${basePixelArtEnhancer}, 32x32 resolution, gameboy style, pixel perfect`;
+            // HuggingFace specific parameters
+            enhancedOptions.guidance_scale = enhancedOptions.guidance_scale || 9.0;
+            enhancedOptions.num_inference_steps = enhancedOptions.num_inference_steps || 60;
+        }
+
+        // Enhanced negative prompt for better pixel art
+        if (!enhancedOptions.negativePrompt) {
+            const pixelArtNegative = "blurry, anti-aliasing, smooth edges, high detail, realistic, 3D, shading, gradient, " +
+                "photorealistic, text, signature, watermark, blur, noise, grain, high-resolution detail";
+            enhancedOptions.negativePrompt = pixelArtNegative;
         }
     }
 
-    // Start timing the entire process
-    const startTime = Date.now();
+    // IMPORTANT: Verify provider wasn't modified
+    console.log(`🛡️ PROVIDER VERIFY: Still using "${ORIGINAL_PROVIDER}" (unchanged)`);
 
+    // ALWAYS respect the explicitly requested provider - without requiring strictMode flag
+    if (ORIGINAL_PROVIDER) {
+        console.log(`🔒 STRICT MODE: Using ONLY "${ORIGINAL_PROVIDER}" - NO FALLBACKS ALLOWED`);
+
+        // Validate provider and API key availability
+        if (ORIGINAL_PROVIDER === 'stability' && !STABILITY_API_KEY) {
+            throw new Error(`Cannot use requested provider "stability" - Missing STABILITY_API_KEY`);
+        }
+        else if (ORIGINAL_PROVIDER === 'huggingface' && !HUGGING_FACE_TOKEN) {
+            throw new Error(`Cannot use requested provider "huggingface" - Missing HUGGING_FACE_TOKEN`);
+        }
+        else if (ORIGINAL_PROVIDER === 'dall-e' && !OPENAI_API_KEY) {
+            throw new Error(`Cannot use requested provider "dall-e" - Missing OPENAI_API_KEY`);
+        }
+        else if (!['stability', 'huggingface', 'dall-e'].includes(ORIGINAL_PROVIDER)) {
+            throw new Error(`Unknown provider "${ORIGINAL_PROVIDER}" - Valid options: stability, huggingface, dall-e`);
+        }
+
+        // Use ONLY the requested provider - no fallbacks whatsoever
+        if (ORIGINAL_PROVIDER === 'stability') {
+            console.log(`✅ EXECUTING: Using Stability AI (100% confirmed)`);
+            return await generateStabilityImage(prompt, enhancedOptions);
+        }
+        else if (ORIGINAL_PROVIDER === 'huggingface') {
+            console.log(`✅ EXECUTING: Using HuggingFace (100% confirmed)`);
+            return await generateHuggingFaceImage(prompt, enhancedOptions);
+        }
+        else if (ORIGINAL_PROVIDER === 'dall-e') {
+            console.log(`✅ EXECUTING: Using DALL-E (100% confirmed)`);
+            return await generateDallEImage(prompt, enhancedOptions);
+        }
+    }
+
+    // Default behavior (only used when no provider is specified)
+    console.log(`⚠️ NO PROVIDER SPECIFIED: Using default provider with fallbacks: ${IMAGE_PROVIDER}`);
+
+    // Try each available provider in order of preference
+    const errors = [];
+
+    // Try preferred provider first
     try {
-        // Validate required parameters
-        if (!tokenId) {
-            throw new Error("TokenId is required");
+        if (IMAGE_PROVIDER === 'stability' && STABILITY_API_KEY) {
+            return await generateStabilityImage(prompt, enhancedOptions);
         }
-
-        // Normalize the breed name
-        if (typeof breed !== 'string' || breed.trim() === '') {
-            breed = 'Tabby';
+        else if (IMAGE_PROVIDER === 'huggingface' && HUGGING_FACE_TOKEN) {
+            return await generateHuggingFaceImage(prompt, enhancedOptions);
         }
-        const normalizedBreed = breed.charAt(0).toUpperCase() + breed.slice(1).toLowerCase();
-
-        // Generate traits based on breed and tokenId
-        console.log(`💫 Generating traits for #${tokenId}...`);
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 20,
-                message: 'Generating traits and attributes'
-            });
+        else if (IMAGE_PROVIDER === 'dall-e' && OPENAI_API_KEY) {
+            return await generateDallEImage(prompt, enhancedOptions);
         }
-
-        const traits = generateTraits(normalizedBreed, tokenId);
-
-        // Build prompt from traits
-        const weapon = traits.rawTraits.find(t => t.trait_type === "Weapon")?.value || "Katana";
-        const stance = traits.rawTraits.find(t => t.trait_type === "Stance")?.value || "Attack";
-        const element = traits.rawTraits.find(t => t.trait_type === "Element")?.value || "Fire";
-        const rank = traits.rawTraits.find(t => t.trait_type === "Rank")?.value || "Novice";
-
-        // Get all keywords from traits for a richer prompt
-        const keywordString = traits.keywords.join(", ");
-
-        // Determine which provider we're using
-        const providerKey = imageProvider || IMAGE_PROVIDER;
-        const provider = PROVIDERS[providerKey];
-
-        // STEP 1: RANDOMLY SELECT A BACKGROUND BASED ON TOKEN ID
-        let backgroundTrait = null;
-        let backgroundDescription = "";
-
-        // Only proceed if we have backgrounds defined for this provider
-        if (provider?.pixelSettings?.backgrounds?.length > 0) {
-            // Create a deterministic but random selection based on tokenId
-            const seed = parseInt(tokenId);
-            const backgroundIndex = seed % provider.pixelSettings.backgrounds.length;
-            backgroundTrait = provider.pixelSettings.backgrounds[backgroundIndex];
-
-            // Extract background description for the prompt
-            if (backgroundTrait) {
-                backgroundDescription = ` ${backgroundTrait.description}`;
-                console.log(`🏞️ BACKGROUND: Selected "${backgroundTrait.name}" for token #${tokenId}`);
-                console.log(`🏞️ BACKGROUND DESCRIPTION: "${backgroundDescription}"`);
-
-                // Add the background to traits list
-                traits.attributes.push({
-                    trait_type: "Background",
-                    value: backgroundTrait.name
-                });
-
-                // Also add to raw traits for later reference
-                traits.rawTraits.push({
-                    trait_type: "Background",
-                    value: backgroundTrait.name,
-                    rarity: "Common", // We could make some backgrounds rarer
-                    keywords: backgroundTrait.name.split(' ')
-                });
-            }
-        } else {
-            console.log(`⚠️ No backgrounds defined for provider ${providerKey}!`);
-        }
-
-        // Create the base prompt
-        const basePrompt = `A pixel art ninja cat of ${normalizedBreed} breed in ${stance} stance wielding ${weapon} with ${element} powers, ${rank} rank`;
-
-        // STEP 2: BUILD FINAL PROMPT WITH BACKGROUND AND EXTRAS
-        // Always include keywords and background in prompt, even with custom extras
-        const prompt = promptExtras
-            ? `${basePrompt}, ${keywordString}${backgroundDescription}, ${promptExtras}`
-            : `${basePrompt}, ${keywordString}${backgroundDescription}`;
-
-        console.log(`📝 FINAL PROMPT: "${prompt}"`);
-
-        // Update task status for prompt generation
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 30,
-                message: `Preparing to generate image with ${imageProvider || IMAGE_PROVIDER}`,
-                prompt,
-                traits: traits.attributes.map(a => `${a.trait_type}: ${a.value}`).join(', '),
-                rarity: traits.rarity.tier,
-                background: backgroundTrait?.name
-            });
-        }
-
-        // Generate the image with detailed logging
-        console.log(`🎨 Generating image...`);
-        console.log(`🚨 STRICT PROVIDER: ${imageProvider || IMAGE_PROVIDER} (no fallbacks)`);
-
-        // Log provider options if available
-        if (Object.keys(providerOptions).length > 0) {
-            console.log(`📋 PROVIDER OPTIONS:`, JSON.stringify(providerOptions, null, 2));
-        }
-
-        // Update task status for image generation
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 40,
-                message: `Generating image with ${imageProvider || IMAGE_PROVIDER}...`,
-                providerOptions: JSON.stringify(providerOptions)
-            });
-        }
-
-        let imageResult;
-        const imageStartTime = Date.now();
-        try {
-            // Pass all options to generateImage, including provider-specific options
-            imageResult = await generateImage(prompt, {
-                imageProvider,
-                strictMode: true,
-                negativePrompt,
-                useCustomPrompt: true, // Always treat as custom prompt to preserve background
-                ...providerOptions,
-                ...rest
-            });
-            const imageGenTime = ((Date.now() - imageStartTime) / 1000).toFixed(2);
-            console.log(`✅ Image generated in ${imageGenTime}s`);
-
-            // Update task with successful generation
-            if (taskManager) {
-                taskManager.updateTask(taskId, {
-                    status: 'processing', // Explicitly set status to processing
-                    progress: 60,
-                    message: `Image successfully generated in ${imageGenTime}s`,
-                    provider: imageResult.provider,
-                    model: imageResult.model,
-                    generationTime: imageGenTime
-                });
-            }
-        } catch (error) {
-            console.error(`❌ Image generation failed: ${error.message}`);
-            if (taskManager) {
-                taskManager.failTask(taskId, new Error(`Image generation failed: ${error.message}`));
-            }
-            throw new Error(`Failed to generate image: ${error.message}`);
-        }
-
-        // Process the image (auto-crop, etc.)
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 65,
-                message: 'Processing and optimizing image'
-            });
-        }
-
-        const processingStartTime = Date.now();
-        const processedImage = await processImage(imageResult);
-        const processTime = ((Date.now() - processingStartTime) / 1000).toFixed(2);
-        console.log(`✅ Image processed in ${processTime}s`);
-
-        // Add pixel art enhancements (optional - only if sharp is available)
-        const enhancedImage = await enhancePixelArt(processedImage);
-
-        // Update task status for IPFS upload
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 70,
-                message: 'Uploading image to IPFS...'
-            });
-        }
-
-        // Upload image to IPFS with retry logic
-        console.log(`📦 Saving and uploading image...`);
-        const uploadStartTime = Date.now();
-        let imageUri;
-        try {
-            imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
-            const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
-            console.log(`✅ Image uploaded in ${uploadTime}s`);
-
-            if (taskManager) {
-                taskManager.updateTask(taskId, {
-                    progress: 80,
-                    message: 'Image successfully uploaded to IPFS',
-                    imageUri
-                });
-            }
-        } catch (error) {
-            console.error(`❌ Image upload failed: ${error.message}`);
-            if (taskManager) {
-                taskManager.failTask(taskId, new Error(`Failed to upload image: ${error.message}`));
-            }
-            throw new Error(`Failed to upload image to IPFS: ${error.message}`);
-        }
-
-        // Create metadata
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 85,
-                message: 'Creating and uploading metadata',
-                imageUri
-            });
-        }
-
-        // Create enhanced metadata
-        console.log(`📝 Creating metadata...`);
-        const metadata = {
-            name: `${projectName} #${tokenId}`,
-            description: traits.description,
-            image: imageUri,
-            attributes: traits.attributes,
-            generationInfo: {
-                prompt,
-                provider: imageResult.provider,
-                model: imageResult.model,
-                providerOptions,
-                timestamp: Date.now(),
-                rarity: traits.rarity,
-                background: backgroundTrait?.name, // Include selected background in generation info
-                generation: {
-                    version: "2.0",
-                    engine: imageResult.provider,
-                    promptEnhanced: !!promptExtras,
-                    negativePrompt: negativePrompt || undefined,
-                    generationTime: imageResult.metadata?.generationTime,
-                },
-                stats: {
-                    processingTime: {
-                        total: ((Date.now() - startTime) / 1000).toFixed(2),
-                        image: ((imageStartTime - startTime) / 1000).toFixed(2),
-                        processing: ((processingStartTime - imageStartTime) / 1000).toFixed(2),
-                        upload: ((uploadStartTime - processingStartTime) / 1000).toFixed(2)
-                    }
-                },
-                ...metadataExtras
-            }
-        };
-
-        // Log the attributes to confirm background is included
-        console.log(`🏷️  NFT ATTRIBUTES (${traits.attributes.length}):`);
-        traits.attributes.forEach(attr => {
-            console.log(`  • ${attr.trait_type}: ${attr.value}`);
-        });
-
-        // Save metadata to file
-        const metaPath = path.join(processedImage.directory, 'meta.json');
-        await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
-
-        // Upload metadata to IPFS
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 90,
-                message: 'Uploading metadata to IPFS'
-            });
-        }
-
-        const metadataStartTime = Date.now();
-        let metadataUri;
-        try {
-            metadataUri = await uploadToIPFS(metaPath, `meta-${normalizedBreed}-${tokenId}`);
-            const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
-            console.log(`✅ Metadata uploaded in ${metadataUploadTime}s`);
-        } catch (error) {
-            console.error(`❌ Metadata upload failed: ${error.message}`);
-            if (taskManager) {
-                taskManager.failTask(taskId, new Error(`Failed to upload metadata: ${error.message}`));
-            }
-            throw new Error(`Failed to upload metadata to IPFS: ${error.message}`);
-        }
-
-        console.log(`🔗 Token URI metadata at: ${metadataUri}`);
-
-        // Clean up temporary directory
-        fs.rm(processedImage.directory, { recursive: true, force: true }).catch(err => {
-            console.warn(`Warning: Failed to clean up temp directory: ${err.message}`);
-        });
-
-        // Log total generation time
-        const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
-        console.log(`✅ Finished #${tokenId} → ${metadataUri} using ${imageResult.provider} in ${totalTime}s`);
-
-        // Mark task as complete with explicit status
-        if (taskManager) {
-            console.log(`📋 Marking task #${tokenId} as complete...`);
-            taskManager.completeTask(taskId, {
-                tokenId,
-                tokenURI: metadataUri,
-                imageUri,
-                provider: imageResult.provider,
-                model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
-                totalTime: parseFloat(totalTime),
-                rarity: traits.rarity.tier,
-                status: 'completed',
-                background: backgroundTrait?.name // Include background in completion data
-            });
-        }
-
-        // Return comprehensive result object
-        return {
-            tokenURI: metadataUri,
-            imageUri,
-            metadata,
-            provider: imageResult.provider,
-            model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
-            background: backgroundTrait?.name, // Include background in return value
-            providerOptions,
-            stats: {
-                totalTime: parseFloat(totalTime),
-                timestamp: Date.now()
-            }
-        };
     } catch (error) {
-        // Centralized error handling
-        console.error(`❌ NFT generation failed: ${error.message}`);
-
-        // Mark task as failed if task manager is available
-        if (taskManager && taskId) {
-            taskManager.failTask(taskId, error);
-        }
-
-        // Re-throw the error for the caller to handle
-        throw error;
+        errors.push(`Default provider ${IMAGE_PROVIDER}: ${error.message}`);
     }
+
+    // Try any available provider as fallback
+    if (STABILITY_API_KEY) {
+        try {
+            return await generateStabilityImage(prompt, enhancedOptions);
+        } catch (error) {
+            errors.push(`Stability: ${error.message}`);
+        }
+    }
+
+    if (HUGGING_FACE_TOKEN) {
+        try {
+            return await generateHuggingFaceImage(prompt, enhancedOptions);
+        } catch (error) {
+            errors.push(`HuggingFace: ${error.message}`);
+        }
+    }
+
+    if (OPENAI_API_KEY) {
+        try {
+            return await generateDallEImage(prompt, enhancedOptions);
+        } catch (error) {
+            errors.push(`DALL-E: ${error.message}`);
+        }
+    }
+
+    throw new Error(`All image providers failed: ${errors.join('; ')}`);
 }

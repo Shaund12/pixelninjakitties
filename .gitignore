@@ -3,9 +3,6 @@ node_modules
 artifacts
 cache
 .DS_Store
-public/assets/9.png
-public/images/14.png
-public/images/15.png
-public/images/16.png
-public/images/23.png
 /.vs
+/public/images
+public/assets/9.png
