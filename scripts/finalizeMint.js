@@ -90,7 +90,16 @@ const PROVIDERS = {
             guidance_scale: 8.5,
             num_inference_steps: 50,
             prompt_prefix: "32x32 pixel art of a ninja cat, ",
-            prompt_suffix: ", retro game style, limited color palette, charming, detailed pixel art, NES style"
+            prompt_suffix: ", retro game style, limited color palette, charming, detailed pixel art, NES style",
+            backgrounds: [
+                { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
+                { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
+                { name: "night", description: "under a starlit night sky with a full moon" },
+                { name: "temple", description: "at an ancient mountain temple with stone lanterns" },
+                { name: "city", description: "on city rooftops with neon signs in the background" },
+                { name: "pixel-void", description: "against a simple pixel art background with minimal details" }
+            ],
+            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures"
         }
     },
     "dall-e": {
@@ -107,7 +116,15 @@ const PROVIDERS = {
             style: "vivid",
             size: "1024x1024",
             prompt_prefix: "32x32 pixel art of a ninja cat: ",
-            prompt_suffix: ". Retro game style, extremely limited color palette, cute, charming, high-contrast pixel art. No text, watermarks, or signatures."
+            prompt_suffix: ". Retro game style, extremely limited color palette, cute, charming, high-contrast pixel art. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS.",
+            backgrounds: [
+                { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
+                { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
+                { name: "night", description: "under a starlit night sky with a full moon" },
+                { name: "temple", description: "at an ancient mountain temple with stone lanterns" },
+                { name: "city", description: "on city rooftops with neon signs in the background" },
+                { name: "pixel-void", description: "against a simple pixel art background with minimal details" }
+            ]
         }
     },
     stability: {
@@ -115,15 +132,33 @@ const PROVIDERS = {
         key: STABILITY_API_KEY,
         model: STABILITY_MODEL,
         models: {
-            "stable-diffusion-xl-1024-v1-0": "SDXL 1.0"
+            "stable-diffusion-xl-1024-v1-0": "SDXL 1.0",
+            "stable-diffusion-v1-5": "SD 1.5 (Faster)"
         },
         free: false,
         pixelSettings: {
-            cfg_scale: 8,
-            steps: 30,
+            cfg_scale: 9.0,
+            steps: 35,
             prompt_prefix: "32x32 pixel art of a ninja cat: ",
-            prompt_suffix: ", retro game style, limited palette, NES style, clean pixel art"
-        }
+            prompt_suffix: ", retro game style, limited palette, NES style, clean pixel art",
+            backgrounds: [
+                { name: "dojo", description: "in a traditional Japanese dojo with wooden floors and training equipment" },
+                { name: "forest", description: "in a dense bamboo forest with dappled light filtering through" },
+                { name: "night", description: "under a starlit night sky with a full moon" },
+                { name: "temple", description: "at an ancient mountain temple with stone lanterns" },
+                { name: "city", description: "on city rooftops with neon signs in the background" },
+                { name: "pixel-void", description: "against a simple pixel art background with minimal details" }
+            ],
+            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures"
+        },
+        stylePresets: {
+            "pixel-art": "Pixel Art",
+            "anime": "Anime",
+            "3d-model": "3D Model",
+            "photographic": "Photographic",
+            "digital-art": "Digital Art"
+        },
+        defaultStylePreset: "pixel-art"
     }
 };
 
@@ -1072,10 +1107,11 @@ async function generateStabilityImage(prompt, options = {}) {
         console.log(`🚫 Negative prompt: "${options.negativePrompt}"`);
     }
 
-    // Add style preset if specified
-    if (options.stylePreset) {
-        requestBody.style_preset = options.stylePreset;
-        console.log(`🎭 Style preset: ${options.stylePreset}`);
+    // Add style preset - use specified one or fall back to default if available
+    const stylePreset = options.stylePreset || PROVIDERS.stability.defaultStylePreset;
+    if (stylePreset) {
+        requestBody.style_preset = stylePreset;
+        console.log(`🎭 Style preset: ${stylePreset}${options.stylePreset ? '' : ' (default)'}`);
     }
 
     // Use retries for robustness
@@ -1680,8 +1716,9 @@ async function getFileSize(filePath) {
  * @param {string} options.imageProvider - AI provider (stability, dall-e, huggingface)
  * @param {string} options.promptExtras - Additional prompt instructions
  * @param {string} options.negativePrompt - Negative prompt instructions
- * @param {Object} options.providerOptions - Provider-specific options (stylePreset, model, etc.)
+ * @param {Object} options.providerOptions - Provider-specific options
  * @param {string} options.taskId - Task ID for progress tracking
+ * @param {Object} options.metadataExtras - Additional metadata to include
  * @returns {Promise<Object>} Image and metadata URLs
  */
 export async function finalizeMint({
@@ -1690,159 +1727,347 @@ export async function finalizeMint({
     imageProvider,
     promptExtras = "",
     negativePrompt = "",
-    providerOptions = {},  // Explicit parameter for provider-specific options
+    providerOptions = {},
+    metadataExtras = {},
     taskId = null,
-    ...rest  // Capture any other parameters
+    ...rest
 }) {
-    // Normalize the breed name
-    if (typeof breed !== 'string' || breed.trim() === '') {
-        breed = 'Tabby';
-    }
-    const normalizedBreed = breed.charAt(0).toUpperCase() + breed.slice(1).toLowerCase();
-
-    // Generate traits based on breed and tokenId
-    console.log(`💫 Generating traits for #${tokenId}...`);
-    const traits = generateTraits(normalizedBreed, tokenId);
-
-    // Build prompt from traits
-    const weapon = traits.rawTraits.find(t => t.trait_type === "Weapon")?.value || "Katana";
-    const stance = traits.rawTraits.find(t => t.trait_type === "Stance")?.value || "Attack";
-    const element = traits.rawTraits.find(t => t.trait_type === "Element")?.value || "Fire";
-    const rank = traits.rawTraits.find(t => t.trait_type === "Rank")?.value || "Novice";
-
-    // Get all keywords from traits for a richer prompt
-    const keywordString = traits.keywords.join(", ");
-
-    // Create the base prompt
-    const basePrompt = `A pixel art ninja cat of ${normalizedBreed} breed in ${stance} stance wielding ${weapon} with ${element} powers, ${rank} rank, ${keywordString}`;
-
-    // Add any custom prompt extras if provided
-    const prompt = promptExtras ? `${basePrompt}, ${promptExtras}` : basePrompt;
-    console.log(`📝 Generated prompt: "${prompt}"`);
-
-    // Update task status if available
+    // Import task management tools at the start
+    let taskManager = null;
     if (taskId) {
         try {
-            const { updateTask } = await import('./taskManager.js');
-            updateTask(taskId, {
+            taskManager = await import('./taskManager.js');
+            // Set task to processing state
+            taskManager.updateTask(taskId, {
+                status: taskManager.TASK_STATES.PROCESSING,
+                progress: 10,
+                message: 'Starting NFT generation process'
+            });
+        } catch (err) {
+            console.warn(`⚠️ Could not initialize task manager: ${err.message}`);
+        }
+    }
+
+    // Start timing the entire process
+    const startTime = Date.now();
+
+    try {
+        // Validate required parameters
+        if (!tokenId) {
+            throw new Error("TokenId is required");
+        }
+
+        // Normalize the breed name
+        if (typeof breed !== 'string' || breed.trim() === '') {
+            breed = 'Tabby';
+        }
+        const normalizedBreed = breed.charAt(0).toUpperCase() + breed.slice(1).toLowerCase();
+
+        // Generate traits based on breed and tokenId
+        console.log(`💫 Generating traits for #${tokenId}...`);
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 20,
+                message: 'Generating traits and attributes'
+            });
+        }
+
+        const traits = generateTraits(normalizedBreed, tokenId);
+
+        // Build prompt from traits
+        const weapon = traits.rawTraits.find(t => t.trait_type === "Weapon")?.value || "Katana";
+        const stance = traits.rawTraits.find(t => t.trait_type === "Stance")?.value || "Attack";
+        const element = traits.rawTraits.find(t => t.trait_type === "Element")?.value || "Fire";
+        const rank = traits.rawTraits.find(t => t.trait_type === "Rank")?.value || "Novice";
+
+        // Get all keywords from traits for a richer prompt
+        const keywordString = traits.keywords.join(", ");
+
+        // Determine which provider we're using
+        const providerKey = imageProvider || IMAGE_PROVIDER;
+        const provider = PROVIDERS[providerKey];
+
+        // STEP 1: RANDOMLY SELECT A BACKGROUND BASED ON TOKEN ID
+        let backgroundTrait = null;
+        let backgroundDescription = "";
+
+        // Only proceed if we have backgrounds defined for this provider
+        if (provider?.pixelSettings?.backgrounds?.length > 0) {
+            // Create a deterministic but random selection based on tokenId
+            const seed = parseInt(tokenId);
+            const backgroundIndex = seed % provider.pixelSettings.backgrounds.length;
+            backgroundTrait = provider.pixelSettings.backgrounds[backgroundIndex];
+
+            // Extract background description for the prompt
+            if (backgroundTrait) {
+                backgroundDescription = ` ${backgroundTrait.description}`;
+                console.log(`🏞️ BACKGROUND: Selected "${backgroundTrait.name}" for token #${tokenId}`);
+                console.log(`🏞️ BACKGROUND DESCRIPTION: "${backgroundDescription}"`);
+
+                // Add the background to traits list
+                traits.attributes.push({
+                    trait_type: "Background",
+                    value: backgroundTrait.name
+                });
+
+                // Also add to raw traits for later reference
+                traits.rawTraits.push({
+                    trait_type: "Background",
+                    value: backgroundTrait.name,
+                    rarity: "Common", // We could make some backgrounds rarer
+                    keywords: backgroundTrait.name.split(' ')
+                });
+            }
+        } else {
+            console.log(`⚠️ No backgrounds defined for provider ${providerKey}!`);
+        }
+
+        // Create the base prompt
+        const basePrompt = `A pixel art ninja cat of ${normalizedBreed} breed in ${stance} stance wielding ${weapon} with ${element} powers, ${rank} rank`;
+
+        // STEP 2: BUILD FINAL PROMPT WITH BACKGROUND AND EXTRAS
+        // Always include keywords and background in prompt, even with custom extras
+        const prompt = promptExtras
+            ? `${basePrompt}, ${keywordString}${backgroundDescription}, ${promptExtras}`
+            : `${basePrompt}, ${keywordString}${backgroundDescription}`;
+
+        console.log(`📝 FINAL PROMPT: "${prompt}"`);
+
+        // Update task status for prompt generation
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 30,
+                message: `Preparing to generate image with ${imageProvider || IMAGE_PROVIDER}`,
+                prompt,
+                traits: traits.attributes.map(a => `${a.trait_type}: ${a.value}`).join(', '),
+                rarity: traits.rarity.tier,
+                background: backgroundTrait?.name
+            });
+        }
+
+        // Generate the image with detailed logging
+        console.log(`🎨 Generating image...`);
+        console.log(`🚨 STRICT PROVIDER: ${imageProvider || IMAGE_PROVIDER} (no fallbacks)`);
+
+        // Log provider options if available
+        if (Object.keys(providerOptions).length > 0) {
+            console.log(`📋 PROVIDER OPTIONS:`, JSON.stringify(providerOptions, null, 2));
+        }
+
+        // Update task status for image generation
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
                 progress: 40,
                 message: `Generating image with ${imageProvider || IMAGE_PROVIDER}...`,
-                prompt
+                providerOptions: JSON.stringify(providerOptions)
             });
-        } catch (err) {
-            // Non-fatal if task manager isn't available
-            console.warn(`⚠️ Could not update task status: ${err.message}`);
         }
-    }
 
-    // Generate the image - CRITICAL FIX: Clear logging and enforce strict provider selection
-    console.log(`🎨 Generating image...`);
-    console.log(`🚨 STRICT PROVIDER: ${imageProvider || IMAGE_PROVIDER} (no fallbacks)`);
-
-    // Log provider options if available
-    if (Object.keys(providerOptions).length > 0) {
-        console.log(`📋 PROVIDER OPTIONS:`, providerOptions);
-    }
-
-    // Pass all options to generateImage, including provider-specific options
-    const imageResult = await generateImage(prompt, {
-        imageProvider,
-        strictMode: true,
-        negativePrompt,
-        useCustomPrompt: !!promptExtras,
-        ...providerOptions,  // Explicitly include provider-specific options (style, model, etc.)
-        ...rest              // Include any other options
-    });
-
-    // Update task status
-    if (taskId) {
+        let imageResult;
+        const imageStartTime = Date.now();
         try {
-            const { updateTask } = await import('./taskManager.js');
-            updateTask(taskId, {
-                progress: 60,
-                message: 'Processing image...',
-                provider: imageResult.provider,
-                model: imageResult.model
+            // Pass all options to generateImage, including provider-specific options
+            imageResult = await generateImage(prompt, {
+                imageProvider,
+                strictMode: true,
+                negativePrompt,
+                useCustomPrompt: true, // Always treat as custom prompt to preserve background
+                ...providerOptions,
+                ...rest
             });
-        } catch (err) {
-            // Non-fatal
+            const imageGenTime = ((Date.now() - imageStartTime) / 1000).toFixed(2);
+            console.log(`✅ Image generated in ${imageGenTime}s`);
+
+            // Update task with successful generation
+            if (taskManager) {
+                taskManager.updateTask(taskId, {
+                    status: 'processing', // Explicitly set status to processing
+                    progress: 60,
+                    message: `Image successfully generated in ${imageGenTime}s`,
+                    provider: imageResult.provider,
+                    model: imageResult.model,
+                    generationTime: imageGenTime
+                });
+            }
+        } catch (error) {
+            console.error(`❌ Image generation failed: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Image generation failed: ${error.message}`));
+            }
+            throw new Error(`Failed to generate image: ${error.message}`);
         }
-    }
 
-    // Process the image (auto-crop, etc.)
-    const processedImage = await processImage(imageResult);
+        // Process the image (auto-crop, etc.)
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 65,
+                message: 'Processing and optimizing image'
+            });
+        }
 
-    // Update task status
-    if (taskId) {
-        try {
-            const { updateTask } = await import('./taskManager.js');
-            updateTask(taskId, {
+        const processingStartTime = Date.now();
+        const processedImage = await processImage(imageResult);
+        const processTime = ((Date.now() - processingStartTime) / 1000).toFixed(2);
+        console.log(`✅ Image processed in ${processTime}s`);
+
+        // Update task status for IPFS upload
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
                 progress: 70,
-                message: 'Uploading to IPFS...'
+                message: 'Uploading image to IPFS...'
             });
-        } catch (err) {
-            // Non-fatal
         }
-    }
 
-    // Upload image to IPFS
-    console.log(`📦 Saving and uploading image...`);
-    const imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
-
-    // Update task status if available
-    if (taskId) {
+        // Upload image to IPFS with retry logic
+        console.log(`📦 Saving and uploading image...`);
+        const uploadStartTime = Date.now();
+        let imageUri;
         try {
-            const { updateTask } = await import('./taskManager.js');
-            updateTask(taskId, {
+            imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+            const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+            console.log(`✅ Image uploaded in ${uploadTime}s`);
+
+            if (taskManager) {
+                taskManager.updateTask(taskId, {
+                    progress: 80,
+                    message: 'Image successfully uploaded to IPFS',
+                    imageUri
+                });
+            }
+        } catch (error) {
+            console.error(`❌ Image upload failed: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Failed to upload image: ${error.message}`));
+            }
+            throw new Error(`Failed to upload image to IPFS: ${error.message}`);
+        }
+
+        // Create metadata
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
                 progress: 85,
-                message: 'Creating metadata...',
+                message: 'Creating and uploading metadata',
                 imageUri
             });
-        } catch (err) {
-            // Non-fatal
         }
-    }
 
-    // Create metadata - include provider options in generation info
-    console.log(`📝 Creating metadata...`);
-    const metadata = {
-        name: `${projectName} #${tokenId}`,
-        description: traits.description,
-        image: imageUri,
-        attributes: traits.attributes,
-        generationInfo: {
-            prompt,
+        // Create enhanced metadata
+        console.log(`📝 Creating metadata...`);
+        const metadata = {
+            name: `${projectName} #${tokenId}`,
+            description: traits.description,
+            image: imageUri,
+            attributes: traits.attributes,
+            generationInfo: {
+                prompt,
+                provider: imageResult.provider,
+                model: imageResult.model,
+                providerOptions,
+                timestamp: Date.now(),
+                rarity: traits.rarity,
+                background: backgroundTrait?.name, // Include selected background in generation info
+                generation: {
+                    version: "2.0",
+                    engine: imageResult.provider,
+                    promptEnhanced: !!promptExtras,
+                    negativePrompt: negativePrompt || undefined,
+                    generationTime: imageResult.metadata?.generationTime,
+                },
+                stats: {
+                    processingTime: {
+                        total: ((Date.now() - startTime) / 1000).toFixed(2),
+                        image: ((imageStartTime - startTime) / 1000).toFixed(2),
+                        processing: ((processingStartTime - imageStartTime) / 1000).toFixed(2),
+                        upload: ((uploadStartTime - processingStartTime) / 1000).toFixed(2)
+                    }
+                },
+                ...metadataExtras
+            }
+        };
+
+        // Log the attributes to confirm background is included
+        console.log(`🏷️  NFT ATTRIBUTES (${traits.attributes.length}):`);
+        traits.attributes.forEach(attr => {
+            console.log(`  • ${attr.trait_type}: ${attr.value}`);
+        });
+
+        // Save metadata to file
+        const metaPath = path.join(processedImage.directory, 'meta.json');
+        await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
+
+        // Upload metadata to IPFS
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 90,
+                message: 'Uploading metadata to IPFS'
+            });
+        }
+
+        const metadataStartTime = Date.now();
+        let metadataUri;
+        try {
+            metadataUri = await uploadToIPFS(metaPath, `meta-${normalizedBreed}-${tokenId}`);
+            const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
+            console.log(`✅ Metadata uploaded in ${metadataUploadTime}s`);
+        } catch (error) {
+            console.error(`❌ Metadata upload failed: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Failed to upload metadata: ${error.message}`));
+            }
+            throw new Error(`Failed to upload metadata to IPFS: ${error.message}`);
+        }
+
+        console.log(`🔗 Token URI metadata at: ${metadataUri}`);
+
+        // Clean up temporary directory
+        fs.rm(processedImage.directory, { recursive: true, force: true }).catch(err => {
+            console.warn(`Warning: Failed to clean up temp directory: ${err.message}`);
+        });
+
+        // Log total generation time
+        const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`✅ Finished #${tokenId} → ${metadataUri} using ${imageResult.provider} in ${totalTime}s`);
+
+        // Mark task as complete with explicit status
+        if (taskManager) {
+            console.log(`📋 Marking task #${tokenId} as complete...`);
+            taskManager.completeTask(taskId, {
+                tokenId,
+                tokenURI: metadataUri,
+                imageUri,
+                provider: imageResult.provider,
+                model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
+                totalTime: parseFloat(totalTime),
+                rarity: traits.rarity.tier,
+                status: 'completed',
+                background: backgroundTrait?.name // Include background in completion data
+            });
+        }
+
+        // Return comprehensive result object
+        return {
+            tokenURI: metadataUri,
+            imageUri,
+            metadata,
             provider: imageResult.provider,
-            model: imageResult.model,
-            providerOptions,  // Include provider options in metadata
-            timestamp: Date.now(),
-            rarity: traits.rarity
+            model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
+            background: backgroundTrait?.name, // Include background in return value
+            providerOptions,
+            stats: {
+                totalTime: parseFloat(totalTime),
+                timestamp: Date.now()
+            }
+        };
+    } catch (error) {
+        // Centralized error handling
+        console.error(`❌ NFT generation failed: ${error.message}`);
+
+        // Mark task as failed if task manager is available
+        if (taskManager && taskId) {
+            taskManager.failTask(taskId, error);
         }
-    };
 
-    // Save metadata to file
-    const metaPath = path.join(processedImage.directory, 'meta.json');
-    await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
-
-    // Upload metadata to IPFS
-    const metadataUri = await uploadToIPFS(metaPath, `meta-${normalizedBreed}-${tokenId}`);
-    console.log(`🔗 Token URI metadata at: ${metadataUri}`);
-
-    // Clean up temporary directory
-    fs.rm(processedImage.directory, { recursive: true, force: true }).catch(err => {
-        console.warn(`Warning: Failed to clean up temp directory: ${err.message}`);
-    });
-
-    // Track generation time
-    const generationTime = ((Date.now() - Date.now()) / 1000).toFixed(2);
-    console.log(`✅ Finished #${tokenId} → ${metadataUri} using ${imageResult.provider} (${generationTime}s)`);
-
-    return {
-        tokenURI: metadataUri,
-        imageUri,
-        metadata,
-        provider: imageResult.provider,
-        model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
-        providerOptions  // Include provider options in the return value
-    };
+        // Re-throw the error for the caller to handle
+        throw error;
+    }
 }
