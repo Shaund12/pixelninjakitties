@@ -36,7 +36,7 @@ async function setupNFTCarousel() {
     // Get contract config from window global set by module script
     const config = NFT_CONFIG;
     if (!config) {
-        console.error("Contract configuration not loaded");
+        console.error('Contract configuration not loaded');
         carouselTrack.innerHTML = '<div class="carousel-item"><p>Error loading ninja cats</p></div>';
         return;
     }
@@ -90,7 +90,7 @@ async function setupNFTCarousel() {
         carouselTrack.innerHTML = '';
 
         // Create a fallback image
-        const fallbackImage = "assets/detailed_ninja_cat_64.png";
+        const fallbackImage = 'assets/detailed_ninja_cat_64.png';
 
         // Create carousel items
         for (let i = 0; i < selectedTokens.length; i++) {
@@ -137,9 +137,9 @@ async function setupNFTCarousel() {
                         : metadata.image;
 
                     // Get breed for display
-                    let breed = "Ninja Cat";
+                    let breed = 'Ninja Cat';
                     if (metadata.attributes) {
-                        const breedAttr = metadata.attributes.find(a => a.trait_type === "Breed");
+                        const breedAttr = metadata.attributes.find(a => a.trait_type === 'Breed');
                         if (breedAttr) breed = breedAttr.value;
                     }
 
@@ -161,7 +161,7 @@ async function setupNFTCarousel() {
                     });
                 }
             } catch (err) {
-                console.error("Error loading token:", err);
+                console.error('Error loading token:', err);
                 item.innerHTML = `
                     <img src="${fallbackImage}" alt="Ninja Cat" class="carousel-image">
                     <div class="carousel-caption">Mysterious Ninja Cat</div>
@@ -246,7 +246,7 @@ async function setupNFTCarousel() {
         });
 
     } catch (error) {
-        console.error("Error setting up NFT carousel:", error);
+        console.error('Error setting up NFT carousel:', error);
         carouselTrack.innerHTML = `
             <div class="carousel-item">
                 <img src="assets/detailed_ninja_cat_64.png" alt="Placeholder" style="width: 150px; margin-bottom: 1rem;">
@@ -266,48 +266,48 @@ function setupOracleConsultation() {
 
         // Intros for variety
         const introArray = [
-            "The oracle purrs deeply and reveals: ",
-            "Ancient whiskers twitch with digital wisdom: ",
+            'The oracle purrs deeply and reveals: ',
+            'Ancient whiskers twitch with digital wisdom: ',
             "The feline oracle's eyes glow and it speaks: ",
-            "From the depths of blockchain wisdom comes this truth: ",
-            "The Oracle of Nine Lives speaks: ",
-            "The mystical cat considers your question and answers: ",
-            "",  // Sometimes no intro
-            "",
-            "",
+            'From the depths of blockchain wisdom comes this truth: ',
+            'The Oracle of Nine Lives speaks: ',
+            'The mystical cat considers your question and answers: ',
+            '',  // Sometimes no intro
+            '',
+            '',
         ];
 
         // More natural and diverse wisdom array
         const wisdomArray = [
-            "When the blockchain forks in two directions, the wise ninja cat follows both paths quietly, waiting to see which leads to truth. Only fools commit too early.",
+            'When the blockchain forks in two directions, the wise ninja cat follows both paths quietly, waiting to see which leads to truth. Only fools commit too early.',
 
-            "Patience is the strongest hash function known to cat-kind. It cannot be broken by quantum computing, social engineering, or the temptation of quick profits.",
+            'Patience is the strongest hash function known to cat-kind. It cannot be broken by quantum computing, social engineering, or the temptation of quick profits.',
 
             "True decentralization requires at least nine independent nodes - one for each of a cat's lives. Anything less is merely a distributed database, vulnerable to central failure.",
 
-            "Listen carefully: the loudest meows often signal the emptiest transactions. Watch instead the silent cats who build methodically in the shadows - they are creating something of lasting value.",
+            'Listen carefully: the loudest meows often signal the emptiest transactions. Watch instead the silent cats who build methodically in the shadows - they are creating something of lasting value.',
 
-            "A private key lost is a digital soul departed. Guard your keys as carefully as a cat guards its territory, with vigilance and multiple secure backups.",
+            'A private key lost is a digital soul departed. Guard your keys as carefully as a cat guards its territory, with vigilance and multiple secure backups.',
 
             "The most elegant smart contracts behave exactly like a cat's movement - they are efficient, predictable in outcome, yet impossible for outsiders to manipulate.",
 
-            "Your code must land on its feet like a cat falling from any height. Build recovery mechanisms into everything you create, for exceptions are inevitable.",
+            'Your code must land on its feet like a cat falling from any height. Build recovery mechanisms into everything you create, for exceptions are inevitable.',
 
-            "Trust not the dog coins that promise infinite gains through memes alone. Their excited barking is often a disguise for their lack of utility and innovation.",
+            'Trust not the dog coins that promise infinite gains through memes alone. Their excited barking is often a disguise for their lack of utility and innovation.',
 
             "The immutable blockchain sees and records all transactions, just as a cat's eyes pierce the darkest night. Nothing is ever truly hidden from either.",
 
-            "Short-term traders seeking quick pumps will inevitably be defeated by those with the patience to stake for the long hunt. The blockchain rewards those who think in years, not minutes.",
+            'Short-term traders seeking quick pumps will inevitably be defeated by those with the patience to stake for the long hunt. The blockchain rewards those who think in years, not minutes.',
 
-            "Code well-tested is like a cat well-groomed - it may take time, but prevents many painful problems later.",
+            'Code well-tested is like a cat well-groomed - it may take time, but prevents many painful problems later.',
 
-            "Even the most curious cat avoids over-leveraged positions. They know that in markets, sudden movements can cause unexpected falls.",
+            'Even the most curious cat avoids over-leveraged positions. They know that in markets, sudden movements can cause unexpected falls.',
 
-            "A multi-signature wallet is like a pride of lions protecting their territory - no single point of weakness can compromise the whole.",
+            'A multi-signature wallet is like a pride of lions protecting their territory - no single point of weakness can compromise the whole.',
 
-            "The best time to plant catnip is twenty blocks ago. The second best time is now.",
+            'The best time to plant catnip is twenty blocks ago. The second best time is now.',
 
-            "When the market panic reaches its peak, remember that a cat shows neither fear nor greed. True wealth comes to those with emotional discipline."
+            'When the market panic reaches its peak, remember that a cat shows neither fear nor greed. True wealth comes to those with emotional discipline.'
         ];
 
         // Set eyes to 'thinking' state
@@ -318,7 +318,7 @@ function setupOracleConsultation() {
 
         // Display loading state
         const wisdomElement = document.getElementById('oracle-wisdom');
-        wisdomElement.textContent = "The oracle is contemplating...";
+        wisdomElement.textContent = 'The oracle is contemplating...';
         wisdomElement.classList.add('oracle-thinking');
         wisdomElement.classList.remove('revealed-wisdom', 'hidden-wisdom');
 
@@ -358,19 +358,19 @@ function setupOracleConsultation() {
 function setupAnimatedBackgrounds() {
     // Setup particles.js
     if (window.particlesJS) {
-        particlesJS("particles-js", {
+        particlesJS('particles-js', {
             particles: {
                 number: { value: 80, density: { enable: true, value_area: 800 } },
-                color: { value: "#8a65ff" },
-                shape: { type: "circle" },
+                color: { value: '#8a65ff' },
+                shape: { type: 'circle' },
                 opacity: { value: 0.2, random: true },
                 size: { value: 3, random: true },
-                line_linked: { enable: true, distance: 150, color: "#8a65ff", opacity: 0.1, width: 1 },
-                move: { enable: true, speed: 1, direction: "none", random: true, out_mode: "out" }
+                line_linked: { enable: true, distance: 150, color: '#8a65ff', opacity: 0.1, width: 1 },
+                move: { enable: true, speed: 1, direction: 'none', random: true, out_mode: 'out' }
             },
             interactivity: {
-                detect_on: "canvas",
-                events: { onhover: { enable: true, mode: "grab" }, onclick: { enable: true, mode: "push" } }
+                detect_on: 'canvas',
+                events: { onhover: { enable: true, mode: 'grab' }, onclick: { enable: true, mode: 'push' } }
             }
         });
     }
@@ -462,20 +462,20 @@ function setupRarityCalculator() {
     if (!selects.length) return;
 
     const synergyPairs = [
-        { breed: "shadow", element: "shadow", bonus: 15, description: "Shadow Affinity" },
-        { breed: "bengal", element: "fire", bonus: 10, description: "Burning Stripes" },
-        { weapon: "ghostdagger", stance: "shadow", bonus: 16, description: "Ethereal Assassination" },
-        { weapon: "katana", stance: "attack", bonus: 8, description: "Blade Mastery" },
-        { breed: "nyan", element: "cosmic", bonus: 15, description: "Celestial Rainbow" }
+        { breed: 'shadow', element: 'shadow', bonus: 15, description: 'Shadow Affinity' },
+        { breed: 'bengal', element: 'fire', bonus: 10, description: 'Burning Stripes' },
+        { weapon: 'ghostdagger', stance: 'shadow', bonus: 16, description: 'Ethereal Assassination' },
+        { weapon: 'katana', stance: 'attack', bonus: 8, description: 'Blade Mastery' },
+        { breed: 'nyan', element: 'cosmic', bonus: 15, description: 'Celestial Rainbow' }
     ];
 
     const rarityTiers = [
-        { min: 120, name: "Mythic", color: "#ef4444" },
-        { min: 100, name: "Legendary", color: "#f59e0b" },
-        { min: 85, name: "Epic", color: "#8b5cf6" },
-        { min: 70, name: "Rare", color: "#3b82f6" },
-        { min: 60, name: "Uncommon", color: "#10b981" },
-        { min: 0, name: "Common", color: "#6b7280" }
+        { min: 120, name: 'Mythic', color: '#ef4444' },
+        { min: 100, name: 'Legendary', color: '#f59e0b' },
+        { min: 85, name: 'Epic', color: '#8b5cf6' },
+        { min: 70, name: 'Rare', color: '#3b82f6' },
+        { min: 60, name: 'Uncommon', color: '#10b981' },
+        { min: 0, name: 'Common', color: '#6b7280' }
     ];
 
     selects.forEach(select => {
@@ -492,7 +492,7 @@ function setupRarityCalculator() {
         const stance = document.getElementById('stance-select').value;
 
         let baseScore = 50; // Default score
-        let activeSynergies = [];
+        const activeSynergies = [];
 
         // Check for synergies
         synergyPairs.forEach(synergy => {
@@ -507,7 +507,7 @@ function setupRarityCalculator() {
         });
 
         // Find the appropriate rarity tier
-        let rarityTier = rarityTiers.find(tier => baseScore >= tier.min);
+        const rarityTier = rarityTiers.find(tier => baseScore >= tier.min);
 
         // Update UI
         const scoreValueElement = document.querySelector('.score-value');

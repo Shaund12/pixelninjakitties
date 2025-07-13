@@ -4,34 +4,34 @@ import { getAddress, connectWallet, disconnectWallet, short, EVENTS as WALLET_EV
 document.addEventListener('DOMContentLoaded', function () {
     // Avoid variable redeclaration by using a namespace
     window.SwapConfig = window.SwapConfig || {
-        LP_POOL_ADDRESS: "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba",
-        VTRU_ADDRESS: "0x3ccc3F22462cAe34766820894D04a40381201ef9",
-        USDC_ADDRESS: "0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF",
+        LP_POOL_ADDRESS: '0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba',
+        VTRU_ADDRESS: '0x3ccc3F22462cAe34766820894D04a40381201ef9',
+        USDC_ADDRESS: '0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF',
         LP_POOL_ABI: [
             {
-                "inputs": [],
-                "name": "getReserves",
-                "outputs": [
-                    { "internalType": "uint112", "name": "reserve0", "type": "uint112" },
-                    { "internalType": "uint112", "name": "reserve1", "type": "uint112" },
-                    { "internalType": "uint32", "name": "blockTimestampLast", "type": "uint32" }
+                'inputs': [],
+                'name': 'getReserves',
+                'outputs': [
+                    { 'internalType': 'uint112', 'name': 'reserve0', 'type': 'uint112' },
+                    { 'internalType': 'uint112', 'name': 'reserve1', 'type': 'uint112' },
+                    { 'internalType': 'uint32', 'name': 'blockTimestampLast', 'type': 'uint32' }
                 ],
-                "stateMutability": "view",
-                "type": "function"
+                'stateMutability': 'view',
+                'type': 'function'
             },
             {
-                "inputs": [],
-                "name": "token0",
-                "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-                "stateMutability": "view",
-                "type": "function"
+                'inputs': [],
+                'name': 'token0',
+                'outputs': [{ 'internalType': 'address', 'name': '', 'type': 'address' }],
+                'stateMutability': 'view',
+                'type': 'function'
             },
             {
-                "inputs": [],
-                "name": "token1",
-                "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-                "stateMutability": "view",
-                "type": "function"
+                'inputs': [],
+                'name': 'token1',
+                'outputs': [{ 'internalType': 'address', 'name': '', 'type': 'address' }],
+                'stateMutability': 'view',
+                'type': 'function'
             }
         ]
     };
@@ -200,7 +200,7 @@ function setupWalletIntegration() {
                 // Otherwise connect wallet
                 await connectWallet(connectBtn);
             } catch (error) {
-                console.error("Error connecting wallet:", error);
+                console.error('Error connecting wallet:', error);
                 showNotification('Failed to connect wallet', 'error');
             }
         });
@@ -215,7 +215,7 @@ function setupWalletIntegration() {
                 hideWalletDropdown();
                 showNotification('Wallet disconnected', 'success');
             } catch (error) {
-                console.error("Error disconnecting wallet:", error);
+                console.error('Error disconnecting wallet:', error);
             }
         });
     }
@@ -252,7 +252,7 @@ async function checkWalletConnection() {
             resetWalletUI();
         }
     } catch (error) {
-        console.error("Error checking wallet connection:", error);
+        console.error('Error checking wallet connection:', error);
         resetWalletUI();
     }
 }
@@ -466,7 +466,7 @@ async function getExchangeRateInternal() {
 
         // Connect to blockchain - handle both v5 and v6 ethers
         let provider;
-        const rpcUrl = window.NFT_CONFIG?.RPC_URL || "https://rpc.vitruveo.xyz";
+        const rpcUrl = window.NFT_CONFIG?.RPC_URL || 'https://rpc.vitruveo.xyz';
 
         // Check which version of ethers is available
         if (ethers.providers && ethers.providers.JsonRpcProvider) {
@@ -476,14 +476,14 @@ async function getExchangeRateInternal() {
             // Ethers v6
             provider = new ethers.JsonRpcProvider(rpcUrl);
         } else {
-            console.error("Unsupported ethers.js version");
+            console.error('Unsupported ethers.js version');
             return null;
         }
 
         // Ensure we have the right Contract constructor
         const Contract = ethers.Contract || (ethers.ethers && ethers.ethers.Contract);
         if (!Contract) {
-            console.error("Could not find ethers.Contract");
+            console.error('Could not find ethers.Contract');
             return null;
         }
 
@@ -522,7 +522,7 @@ async function getExchangeRateInternal() {
 
         return exchangeRate;
     } catch (error) {
-        console.error("Failed to fetch exchange rate:", error);
+        console.error('Failed to fetch exchange rate:', error);
         return null;
     }
 }

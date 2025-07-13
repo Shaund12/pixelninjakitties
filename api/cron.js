@@ -1,5 +1,5 @@
-﻿import { ethers } from "ethers";
-import { finalizeMint } from "../scripts/finalizeMint.js";
+﻿import { ethers } from 'ethers';
+import { finalizeMint } from '../scripts/finalizeMint.js';
 
 // Define serverless function handler for cron job
 export default async function handler(req, res) {
@@ -19,18 +19,18 @@ export default async function handler(req, res) {
         const signer = new ethers.Wallet(PRIVATE_KEY, provider);
 
         const abi = [
-            "event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)",
-            "function tokenURI(uint256) view returns (string)",
-            "function setTokenURI(uint256,string)"
+            'event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)',
+            'function tokenURI(uint256) view returns (string)',
+            'function setTokenURI(uint256,string)'
         ];
         const nft = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-        const eventSig = nft.interface.getEvent("MintRequested").topicHash;
+        const eventSig = nft.interface.getEvent('MintRequested').topicHash;
 
         // Get current block
         const latest = await provider.getBlockNumber();
 
         // Get stored last block from env or KV store
-        let lastBlock = Number(process.env.LAST_PROCESSED_BLOCK || latest - 100);
+        const lastBlock = Number(process.env.LAST_PROCESSED_BLOCK || latest - 100);
 
         const logs = await provider.getLogs({
             address: CONTRACT_ADDRESS,
@@ -50,8 +50,8 @@ export default async function handler(req, res) {
 
             /* 1️⃣ Placeholder */
             try {
-                const current = await nft.tokenURI(id).catch(() => "");
-                if (!current || current === "") {
+                const current = await nft.tokenURI(id).catch(() => '');
+                if (!current || current === '') {
                     const txPH = await nft.setTokenURI(id, PLACEHOLDER_URI);
                     await txPH.wait();
                     results.push(`• Placeholder set for #${id}`);

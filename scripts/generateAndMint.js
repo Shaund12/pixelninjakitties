@@ -1,19 +1,19 @@
 // scripts/generateAndMint.js
-import "dotenv/config";
-import OpenAI from "openai";
-import { create } from "@web3-storage/w3up-client";
-import { ethers } from "ethers";
-import { filesFromPaths } from "files-from-path";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
-import fetch from "node-fetch";
-import { finalizeMint } from "./finalizeMint.js";
+import 'dotenv/config';
+import OpenAI from 'openai';
+import { create } from '@web3-storage/w3up-client';
+import { ethers } from 'ethers';
+import { filesFromPaths } from 'files-from-path';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+import fetch from 'node-fetch';
+import { finalizeMint } from './finalizeMint.js';
 
 /**
  * Generates an AI pixel-art ninja cat image, uploads to IPFS, and mints as NFT
  * with proper provider selection and error handling
- * 
+ *
  * @param {Object} options - Configuration options
  * @param {string} options.breed - Cat breed for the NFT
  * @param {string} options.toAddress - Address to mint the NFT to
@@ -28,9 +28,9 @@ import { finalizeMint } from "./finalizeMint.js";
 export async function generateAndMint({
     breed,
     toAddress,
-    promptExtras = "",
-    imageProvider = process.env.IMAGE_PROVIDER || "dall-e",
-    negativePrompt = "",
+    promptExtras = '',
+    imageProvider = process.env.IMAGE_PROVIDER || 'dall-e',
+    negativePrompt = '',
     providerOptions = {},
     txData = null,
     progressCallback
@@ -52,7 +52,7 @@ export async function generateAndMint({
         console.log(`${percent}%: ${message}`);
     };
 
-    reportProgress(5, "Starting NFT generation process");
+    reportProgress(5, 'Starting NFT generation process');
 
     try {
         // Extract parameters from transaction data if available
@@ -71,7 +71,7 @@ export async function generateAndMint({
 
                 console.log(`Using image provider from transaction data: ${imageProvider}`);
             } catch (e) {
-                console.warn("Could not parse transaction data:", e.message);
+                console.warn('Could not parse transaction data:', e.message);
             }
         }
 
@@ -83,7 +83,7 @@ export async function generateAndMint({
 
         try {
             console.log(`Attempting enhanced image generation for ${breed} with ${imageProvider}...`);
-            reportProgress(20, "Generating AI artwork");
+            reportProgress(20, 'Generating AI artwork');
 
             // Use finalizeMint with the explicit provider choice
             const finalizeResult = await finalizeMint({
@@ -107,33 +107,33 @@ export async function generateAndMint({
             reportProgress(40, `Image successfully generated with ${finalizeResult.provider}`);
         } catch (err) {
             console.log(`Enhanced generation unavailable: ${err.message}, using standard approach`);
-            reportProgress(30, "Using fallback generation method");
+            reportProgress(30, 'Using fallback generation method');
 
             /* ---------- Standard prompt generation ---------- */
             const prompt = `
-            Pixel-art ninja ${breed} cat, retro 32×32 style, vibrant palette,
+            Pixel-art ninja ${breed} cat, retro 32ï¿½32 style, vibrant palette,
             action pose with katana, ${promptExtras}
             --no text, watermark, border
-            `.replace(/\s+/g, " ").trim();
+            `.replace(/\s+/g, ' ').trim();
 
             const openai = new OpenAI();
             const imgResp = await openai.images.generate({
-                model: "dall-e-3",
+                model: 'dall-e-3',
                 prompt,
                 n: 1,
-                size: "1024x1024"
+                size: '1024x1024'
             });
             imageURL = imgResp.data[0].url;
-            stats.usedProvider = "dall-e";
-            stats.model = "dall-e-3";
+            stats.usedProvider = 'dall-e';
+            stats.model = 'dall-e-3';
 
-            reportProgress(40, "Standard image generation successful");
+            reportProgress(40, 'Standard image generation successful');
         }
 
         /* ---------- 2. Download & pin via w3up ---------- */
-        reportProgress(50, "Downloading and preparing image");
-        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "ainft-"));
-        const imgPath = path.join(tmp, "image.png");
+        reportProgress(50, 'Downloading and preparing image');
+        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ainft-'));
+        const imgPath = path.join(tmp, 'image.png');
 
         // Handle either a URL or a local file path
         if (imageURL.startsWith('http')) {
@@ -149,7 +149,7 @@ export async function generateAndMint({
             throw new Error(`Invalid image source: ${imageURL}`);
         }
 
-        reportProgress(60, "Uploading to IPFS");
+        reportProgress(60, 'Uploading to IPFS');
         const client = await create();
         const imageCid = await client.uploadFile((await filesFromPaths([imgPath]))[0]);
 
@@ -157,7 +157,7 @@ export async function generateAndMint({
         metadata = metadata || {
             name: `Ninja ${breed} #${timestamp}`,
             description: `A unique on-chain pixel-art ninja ${breed} cat.`,
-            attributes: [{ trait_type: "Breed", value: breed }],
+            attributes: [{ trait_type: 'Breed', value: breed }],
             image: `ipfs://${imageCid}`
         };
 
@@ -173,28 +173,28 @@ export async function generateAndMint({
         // Ensure image points to our IPFS CID
         metadata.image = `ipfs://${imageCid}`;
 
-        const metaPath = path.join(tmp, "meta.json");
+        const metaPath = path.join(tmp, 'meta.json');
         await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
 
         const metaCid = await client.uploadFile((await filesFromPaths([metaPath]))[0]);
         const tokenURI = `ipfs://${metaCid}`;
 
-        reportProgress(70, "IPFS upload complete, preparing to mint");
+        reportProgress(70, 'IPFS upload complete, preparing to mint');
 
         /* ---------- 3. Call the contract ---------- */
-        reportProgress(75, "Connecting to blockchain");
+        reportProgress(75, 'Connecting to blockchain');
         const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
         const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
         const nft = new ethers.Contract(
             process.env.CONTRACT_ADDRESS,
-            ["function safeMint(address,string) external returns(uint256)"],
+            ['function safeMint(address,string) external returns(uint256)'],
             signer
         );
 
-        reportProgress(80, "Submitting transaction");
+        reportProgress(80, 'Submitting transaction');
         const tx = await nft.safeMint(toAddress, tokenURI);
         console.log(`Transaction sent: ${tx.hash}`);
-        reportProgress(85, "Waiting for confirmation");
+        reportProgress(85, 'Waiting for confirmation');
 
         const receipt = await tx.wait();
         console.log(`Transaction confirmed in block ${receipt.blockNumber}`);
@@ -218,10 +218,10 @@ export async function generateAndMint({
                 console.log(`Minted token ID: ${mintedTokenId}`);
             }
         } catch (eventErr) {
-            console.warn("Could not determine token ID:", eventErr);
+            console.warn('Could not determine token ID:', eventErr);
         }
 
-        reportProgress(100, "NFT minted successfully");
+        reportProgress(100, 'NFT minted successfully');
 
         // Clean up temp directory
         fs.rm(tmp, { recursive: true, force: true }).catch(() => { });
@@ -244,7 +244,7 @@ export async function generateAndMint({
         };
     } catch (error) {
         // Comprehensive error handling
-        console.error("Error in generateAndMint:", error);
+        console.error('Error in generateAndMint:', error);
 
         // Update stats with error information
         stats.success = false;
@@ -259,10 +259,10 @@ export async function generateAndMint({
         let userMessage = `Failed to generate and mint NFT: ${error.message}`;
 
         // Handle common error cases
-        if (error.message.includes("insufficient funds")) {
-            userMessage = "Transaction failed: Insufficient funds for gas";
-        } else if (error.message.includes("execution reverted")) {
-            userMessage = "Smart contract rejected the transaction";
+        if (error.message.includes('insufficient funds')) {
+            userMessage = 'Transaction failed: Insufficient funds for gas';
+        } else if (error.message.includes('execution reverted')) {
+            userMessage = 'Smart contract rejected the transaction';
         }
 
         const enhancedError = new Error(userMessage);

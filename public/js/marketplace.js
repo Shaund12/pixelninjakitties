@@ -1,17 +1,17 @@
 ﻿import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
 
 // Constants
-const MARKETPLACE_ADDRESS = "0x5031fc07293d574Ccbd4d12b0E7106A95502a299";
+const MARKETPLACE_ADDRESS = '0x5031fc07293d574Ccbd4d12b0E7106A95502a299';
 const MARKETPLACE_ABI = [
-    "function createListing(uint256 tokenId, uint256 price, address currency) external",
-    "function cancelListing(uint256 tokenId) external",
-    "function buyItem(uint256 tokenId) external payable",
-    "function buyItemWithERC20(uint256 tokenId) external",
-    "function getListings() view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active)[])",
-    "function getListing(uint256 tokenId) view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active))",
-    "event ListingCreated(uint256 indexed tokenId, address indexed seller, uint256 price, address currency)",
-    "event ListingCancelled(uint256 indexed tokenId)",
-    "event ItemSold(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, address currency)"
+    'function createListing(uint256 tokenId, uint256 price, address currency) external',
+    'function cancelListing(uint256 tokenId) external',
+    'function buyItem(uint256 tokenId) external payable',
+    'function buyItemWithERC20(uint256 tokenId) external',
+    'function getListings() view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active)[])',
+    'function getListing(uint256 tokenId) view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active))',
+    'event ListingCreated(uint256 indexed tokenId, address indexed seller, uint256 price, address currency)',
+    'event ListingCancelled(uint256 indexed tokenId)',
+    'event ItemSold(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, address currency)'
 ];
 
 // Platform fee percentage (for display purposes)
@@ -299,15 +299,15 @@ async function estimateGasFee(currencyName) {
         // If currency is USDC, we still pay gas in native token
         return gasCostInEth.toFixed(6);
     } catch (error) {
-        console.error("Error estimating gas fee:", error);
-        return "0.001"; // Fallback estimate
+        console.error('Error estimating gas fee:', error);
+        return '0.001'; // Fallback estimate
     }
 }
 
 // Initialize contracts with signer
 async function initContractsWithSigner(signer) {
     if (!signer) {
-        console.error("No signer provided");
+        console.error('No signer provided');
         return;
     }
     marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, signer);
@@ -334,9 +334,9 @@ async function fetchTokenMetadata(tokenId) {
         const metadata = await response.json();
 
         // Find breed
-        let breed = "Ninja Cat";
+        let breed = 'Ninja Cat';
         if (metadata.attributes && metadata.attributes.length) {
-            const breedAttr = metadata.attributes.find(attr => attr.trait_type === "Breed");
+            const breedAttr = metadata.attributes.find(attr => attr.trait_type === 'Breed');
             if (breedAttr) {
                 breed = breedAttr.value;
             }
@@ -389,7 +389,7 @@ async function loadListings() {
 
         // Calculate and update marketplace stats
         calculateMarketplaceStats().catch(err => {
-            console.error("Error updating marketplace stats:", err);
+            console.error('Error updating marketplace stats:', err);
         });
 
         if (allListings.length === 0) {
@@ -403,7 +403,7 @@ async function loadListings() {
 
         listingsLoading.style.display = 'none';
     } catch (error) {
-        console.error("Error loading marketplace listings:", error);
+        console.error('Error loading marketplace listings:', error);
         listingsLoading.innerHTML = `
             <div style="text-align: center;">
                 <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -722,7 +722,7 @@ async function loadUserCats() {
         }
 
     } catch (error) {
-        console.error("Error loading user cats:", error);
+        console.error('Error loading user cats:', error);
         userCatsLoading.style.display = 'none';
         userCatsCount.textContent = `Error loading your cats: ${error.message}`;
         showToast(`Error loading your cats: ${error.message}`, 'error');
@@ -824,7 +824,7 @@ async function loadUserListings() {
             userListingsGrid.appendChild(card);
         }
     } catch (error) {
-        console.error("Error loading user listings:", error);
+        console.error('Error loading user listings:', error);
         showToast(`Error loading your listings: ${error.message}`, 'error');
     }
 }
@@ -848,17 +848,17 @@ function setupListingFormModal() {
             const currencySelect = listingFormModal.querySelector('#listingCurrency');
 
             if (!priceInput || !currencySelect) {
-                showToast("Error finding form fields", 'error');
+                showToast('Error finding form fields', 'error');
                 return;
             }
 
             const price = parseFloat(priceInput.value);
             const currency = currencySelect.value;
 
-            console.log("Submitting with price:", price, "currency:", currency);
+            console.log('Submitting with price:', price, 'currency:', currency);
 
             if (isNaN(price) || price <= 0) {
-                showToast("Please enter a valid price greater than 0", 'error');
+                showToast('Please enter a valid price greater than 0', 'error');
                 return;
             }
 
@@ -940,11 +940,11 @@ async function createListing(tokenId, price, currency) {
             // Check and request USDC approval if needed
             const allowance = await usdc.allowance(currentAccount, MARKETPLACE_ADDRESS);
             if (allowance < priceInSmallestUnits) {
-                showToast("Requesting USDC approval...", 'info');
+                showToast('Requesting USDC approval...', 'info');
                 const approveTx = await usdc.approve(MARKETPLACE_ADDRESS, ethers.MaxUint256);
-                showToast("Waiting for approval confirmation...", 'info');
+                showToast('Waiting for approval confirmation...', 'info');
                 await approveTx.wait();
-                showToast("USDC approval granted to marketplace", 'success');
+                showToast('USDC approval granted to marketplace', 'success');
             }
         } else {
             priceInSmallestUnits = ethers.parseEther(price.toString());
@@ -954,17 +954,17 @@ async function createListing(tokenId, price, currency) {
         // Check and request NFT approval if needed
         const approved = await nft.getApproved(tokenId);
         if (approved.toLowerCase() !== MARKETPLACE_ADDRESS.toLowerCase()) {
-            showToast("Requesting NFT approval...", 'info');
+            showToast('Requesting NFT approval...', 'info');
             const approveTx = await nft.approve(MARKETPLACE_ADDRESS, tokenId);
-            showToast("Waiting for NFT approval confirmation...", 'info');
+            showToast('Waiting for NFT approval confirmation...', 'info');
             await approveTx.wait();
-            showToast("NFT approval granted to marketplace", 'success');
+            showToast('NFT approval granted to marketplace', 'success');
         }
 
         // Create the listing
-        showToast("Creating marketplace listing...", 'info');
+        showToast('Creating marketplace listing...', 'info');
         const tx = await marketplace.createListing(tokenId, priceInSmallestUnits, currency);
-        showToast("Waiting for transaction confirmation...", 'info');
+        showToast('Waiting for transaction confirmation...', 'info');
         await tx.wait();
 
         showToast(`Listing created successfully for ${selectedCatForListing.name}!`, 'success');
@@ -976,24 +976,24 @@ async function createListing(tokenId, price, currency) {
         await loadListings(); // Also refresh all listings
 
     } catch (error) {
-        console.error("Error creating listing:", error);
+        console.error('Error creating listing:', error);
         showToast(`Error creating listing: ${error.message}`, 'error');
     }
 }
 
 // Cancel a listing
 async function cancelListing(tokenId) {
-    if (!confirm(`Are you sure you want to cancel this listing?`)) {
+    if (!confirm('Are you sure you want to cancel this listing?')) {
         return;
     }
 
     try {
-        showToast("Cancelling listing...", 'info');
+        showToast('Cancelling listing...', 'info');
         const tx = await marketplace.cancelListing(tokenId);
-        showToast("Waiting for transaction confirmation...", 'info');
+        showToast('Waiting for transaction confirmation...', 'info');
         await tx.wait();
 
-        showToast(`Listing cancelled successfully!`, 'success');
+        showToast('Listing cancelled successfully!', 'success');
 
         // Reload listings
         await loadUserCats();
@@ -1001,7 +1001,7 @@ async function cancelListing(tokenId) {
         await loadListings();
 
     } catch (error) {
-        console.error("Error cancelling listing:", error);
+        console.error('Error cancelling listing:', error);
         showToast(`Error cancelling listing: ${error.message}`, 'error');
     }
 }
@@ -1009,14 +1009,14 @@ async function cancelListing(tokenId) {
 // Buy a listed NFT - This is called from the purchase confirmation modal
 async function buyListing(tokenId, price, currency) {
     if (!currentAccount) {
-        showToast("Please connect your wallet to make a purchase", 'error');
-        throw new Error("Wallet not connected");
+        showToast('Please connect your wallet to make a purchase', 'error');
+        throw new Error('Wallet not connected');
     }
 
     try {
         // Get signer from browser provider for transactions
         if (!browserProvider) {
-            throw new Error("Browser provider not available");
+            throw new Error('Browser provider not available');
         }
 
         const signer = await browserProvider.getSigner();
@@ -1030,7 +1030,7 @@ async function buyListing(tokenId, price, currency) {
 
         if (currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
             // ERC-20 (USDC) purchase
-            showToast("Checking USDC allowance...", 'info');
+            showToast('Checking USDC allowance...', 'info');
 
             try {
                 // Check USDC balance first
@@ -1043,22 +1043,22 @@ async function buyListing(tokenId, price, currency) {
                     throw new Error(errorMsg);
                 }
             } catch (balanceError) {
-                console.warn("Could not check balance:", balanceError);
+                console.warn('Could not check balance:', balanceError);
                 // Continue with the purchase attempt
             }
 
             // Check allowance and approve if needed
             const allowance = await connectedUsdc.allowance(currentAccount, MARKETPLACE_ADDRESS);
             if (allowance < price) {
-                showToast("Requesting USDC approval...", 'info');
+                showToast('Requesting USDC approval...', 'info');
                 const approveTx = await connectedUsdc.approve(MARKETPLACE_ADDRESS, ethers.MaxUint256);
-                showToast("Waiting for USDC approval confirmation...", 'info');
+                showToast('Waiting for USDC approval confirmation...', 'info');
                 await approveTx.wait();
-                showToast("USDC approval granted", 'success');
+                showToast('USDC approval granted', 'success');
             }
 
             // Buy with USDC
-            showToast("Processing your purchase with USDC...", 'info');
+            showToast('Processing your purchase with USDC...', 'info');
 
             try {
                 // First try to estimate gas to check if transaction will succeed
@@ -1081,7 +1081,7 @@ async function buyListing(tokenId, price, currency) {
             }
         } else {
             // Native currency purchase
-            showToast("Processing your purchase...", 'info');
+            showToast('Processing your purchase...', 'info');
             try {
                 // First try to estimate gas to check if transaction will succeed
                 try {
@@ -1102,10 +1102,10 @@ async function buyListing(tokenId, price, currency) {
             }
         }
 
-        showToast("Waiting for transaction confirmation...", 'info');
+        showToast('Waiting for transaction confirmation...', 'info');
         await tx.wait();
 
-        showToast("Purchase successful! The NFT has been transferred to your wallet.", 'success');
+        showToast('Purchase successful! The NFT has been transferred to your wallet.', 'success');
 
         // Update the buy button on the card
         const buyBtn = document.querySelector(`.buy-btn[data-token-id="${tokenId}"]`);
@@ -1144,7 +1144,7 @@ async function buyListing(tokenId, price, currency) {
         return true; // Return success
 
     } catch (error) {
-        console.error("Error buying token:", error);
+        console.error('Error buying token:', error);
         showToast(`Error purchasing NFT: ${error.message}`, 'error');
         throw error; // Re-throw the error so the modal can handle it
     }
@@ -1152,39 +1152,39 @@ async function buyListing(tokenId, price, currency) {
 
 // Helper function to handle transaction errors with better messages
 function handleTransactionError(error, tokenId) {
-    console.error("Transaction error details:", error);
+    console.error('Transaction error details:', error);
 
     // Check for common errors with missing revert data
     if (error.message) {
         const errorMessage = error.message.toLowerCase();
 
-        if (errorMessage.includes("missing revert data")) {
+        if (errorMessage.includes('missing revert data')) {
             // Check transaction details for clues
             if (error.transaction) {
                 return checkCommonErrors(error, tokenId);
             }
-            return "Transaction would fail: The listing might not be active anymore or another issue occurred.";
+            return 'Transaction would fail: The listing might not be active anymore or another issue occurred.';
         }
 
-        if (errorMessage.includes("insufficient funds")) {
+        if (errorMessage.includes('insufficient funds')) {
             return "You don't have enough funds to complete this purchase.";
         }
 
-        if (errorMessage.includes("user rejected")) {
-            return "Transaction was cancelled by the user.";
+        if (errorMessage.includes('user rejected')) {
+            return 'Transaction was cancelled by the user.';
         }
 
-        if (errorMessage.includes("erc20 balance too low")) {
-            return "Your token balance is too low to complete this purchase.";
+        if (errorMessage.includes('erc20 balance too low')) {
+            return 'Your token balance is too low to complete this purchase.';
         }
 
         // Contract-specific error messages
-        if (errorMessage.includes("listing not active")) {
-            return "This listing is no longer active. It may have been sold or cancelled.";
+        if (errorMessage.includes('listing not active')) {
+            return 'This listing is no longer active. It may have been sold or cancelled.';
         }
 
-        if (errorMessage.includes("already owner")) {
-            return "You already own this NFT.";
+        if (errorMessage.includes('already owner')) {
+            return 'You already own this NFT.';
         }
     }
 
@@ -1202,13 +1202,13 @@ function checkCommonErrors(error, tokenId) {
     try {
         // For the specific case we're seeing with tokenId 8
         if (tokenId == 8) {
-            return "This item appears to be no longer available. It may have been purchased by someone else or delisted.";
+            return 'This item appears to be no longer available. It may have been purchased by someone else or delisted.';
         }
 
         // Generic message for other cases
-        return "The transaction would fail. The listing may have changed or been removed.";
+        return 'The transaction would fail. The listing may have changed or been removed.';
     } catch (e) {
-        return "Unable to complete transaction. Please try again later.";
+        return 'Unable to complete transaction. Please try again later.';
     }
 }
 
@@ -1228,7 +1228,7 @@ window.executePurchase = async function (listing) {
         await buyListing(listing.id, ethers.parseUnits(listing.rawPrice), listing.currencyAddress);
         return true;
     } catch (error) {
-        console.error("Error in executePurchase:", error);
+        console.error('Error in executePurchase:', error);
 
         // Show error in modal
         const errorDisplay = document.createElement('div');
@@ -1239,7 +1239,7 @@ window.executePurchase = async function (listing) {
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <span>${error.message || "Transaction failed"}</span>
+            <span>${error.message || 'Transaction failed'}</span>
         `;
 
         // Find a place to insert the error in the modal
@@ -1326,7 +1326,7 @@ async function init() {
             const currency = document.getElementById('listingCurrency').value;
 
             if (price <= 0) {
-                showToast("Please enter a valid price greater than 0", 'error');
+                showToast('Please enter a valid price greater than 0', 'error');
                 return;
             }
 
@@ -1353,7 +1353,7 @@ async function init() {
                         loadUserCats();
                         loadUserListings();
                     } catch (err) {
-                        console.error("Error getting signer:", err);
+                        console.error('Error getting signer:', err);
                     }
                 }
             }
@@ -1376,7 +1376,7 @@ async function init() {
                         loadUserCats();
                         loadUserListings();
                     } catch (err) {
-                        console.error("Error getting signer:", err);
+                        console.error('Error getting signer:', err);
                     }
                 }
             } else {
@@ -1474,8 +1474,8 @@ async function init() {
         }
 
     } catch (error) {
-        console.error("Initialization error:", error);
-        showToast("Error initializing marketplace. Please refresh the page.", 'error');
+        console.error('Initialization error:', error);
+        showToast('Error initializing marketplace. Please refresh the page.', 'error');
     }
 }
 
@@ -1588,12 +1588,12 @@ function setupScrollToTop() {
 async function getVtruUsdcPrice() {
     try {
         // Contract addresses
-        const SWAP_ROUTER_ADDRESS = "0x3295fd27D6e44529c51Ef05a5d16Ca17Fb9e10A8";
-        const LP_ADDRESS = "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba";
+        const SWAP_ROUTER_ADDRESS = '0x3295fd27D6e44529c51Ef05a5d16Ca17Fb9e10A8';
+        const LP_ADDRESS = '0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba';
 
         // Simplified LP ABI just for querying reserves
         const LP_ABI = [
-            "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)"
+            'function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)'
         ];
 
         // Create contract instance
@@ -1613,7 +1613,7 @@ async function getVtruUsdcPrice() {
         console.log(`VTRU/USDC Price: 1 VTRU = ${vtruPriceInUsdc.toFixed(6)} USDC`);
         return vtruPriceInUsdc;
     } catch (error) {
-        console.error("Error fetching VTRU/USDC price:", error);
+        console.error('Error fetching VTRU/USDC price:', error);
         // Fallback price if we can't get the actual price
         return 0.1; // Assume 1 VTRU = 0.1 USDC as fallback
     }
@@ -1621,7 +1621,7 @@ async function getVtruUsdcPrice() {
 
 // Complete replacement for exchange rate functionality
 window.showExchangeRateDetails = async function () {
-    console.log("Opening exchange rate modal");
+    console.log('Opening exchange rate modal');
     const modal = document.getElementById('exchangeRateModal');
     const loadingElement = document.getElementById('exchangeRateLoading');
     const contentElement = document.getElementById('exchangeRateContent');
@@ -1633,7 +1633,7 @@ window.showExchangeRateDetails = async function () {
 
     try {
         // Fetch LP data
-        console.log("Fetching initial LP data");
+        console.log('Fetching initial LP data');
         const data = await getLpDetails();
 
         if (data && data.rate > 0) {
@@ -1653,10 +1653,10 @@ window.showExchangeRateDetails = async function () {
             loadingElement.style.display = 'none';
             contentElement.style.display = 'block';
         } else {
-            throw new Error("Invalid data received");
+            throw new Error('Invalid data received');
         }
     } catch (error) {
-        console.error("Error showing exchange rate details:", error);
+        console.error('Error showing exchange rate details:', error);
         if (loadingElement) {
             loadingElement.innerHTML = `
                 <div style="text-align: center; padding: 1rem;">
@@ -1680,13 +1680,13 @@ window.showExchangeRateDetails = async function () {
 
 // Enhanced Exchange Rate Modal with better styling and accurate token stats
 window.refreshExchangeRateDetails = async function () {
-    console.log("Enhanced modal refresh: Starting...");
+    console.log('Enhanced modal refresh: Starting...');
 
     try {
         // 1. Find the modal body
         const modalBody = document.querySelector('#exchangeRateModal .modal-body');
         if (!modalBody) {
-            alert("Error: Modal body not found");
+            alert('Error: Modal body not found');
             return;
         }
 
@@ -1699,9 +1699,9 @@ window.refreshExchangeRateDetails = async function () {
         `;
 
         // 3. Fetch fresh LP data
-        console.log("Fetching LP data...");
+        console.log('Fetching LP data...');
         const lpData = await getLpDetails();
-        console.log("LP data retrieved:", lpData);
+        console.log('LP data retrieved:', lpData);
 
         // 4. Calculate additional stats with actual supply numbers
         const previousRate = parseFloat(localStorage.getItem('previous_vtru_rate') || lpData.rate);
@@ -1828,9 +1828,9 @@ window.refreshExchangeRateDetails = async function () {
             document.head.appendChild(style);
         }
 
-        console.log("Enhanced exchange rate modal updated successfully");
+        console.log('Enhanced exchange rate modal updated successfully');
     } catch (error) {
-        console.error("Error updating exchange rate modal:", error);
+        console.error('Error updating exchange rate modal:', error);
 
         // Show error message
         const modalBody = document.querySelector('#exchangeRateModal .modal-body');
@@ -1853,7 +1853,7 @@ window.refreshExchangeRateDetails = async function () {
                 </div>
             `;
         } else {
-            alert("Error: " + error.message);
+            alert('Error: ' + error.message);
         }
     }
 };
@@ -1867,64 +1867,64 @@ window.updateExchangeRateTicker = async function () {
             document.getElementById('tickerLastUpdated').textContent = new Date().toLocaleTimeString();
         }
     } catch (error) {
-        console.error("Error updating ticker:", error);
+        console.error('Error updating ticker:', error);
     }
 };
 
 // Add this function near your other LP-related functions
 async function getLpDetails() {
-    console.log("Fetching LP details - starting");
+    console.log('Fetching LP details - starting');
     try {
         // Contract addresses
-        const LP_ADDRESS = "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba";
+        const LP_ADDRESS = '0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba';
 
         // Create contract instance with more complete ABI
         const lpContract = new ethers.Contract(LP_ADDRESS, [
-            "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
-            "function token0() view returns (address)",
-            "function token1() view returns (address)"
+            'function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)',
+            'function token0() view returns (address)',
+            'function token1() view returns (address)'
         ], provider);
 
-        console.log("LP Contract created, getting token addresses");
+        console.log('LP Contract created, getting token addresses');
 
         // Get token addresses with timeout
         const token0Promise = lpContract.token0();
         const token1Promise = lpContract.token1();
 
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Request timed out after 5 seconds")), 5000)
+            setTimeout(() => reject(new Error('Request timed out after 5 seconds')), 5000)
         );
 
         // Race the contract calls with timeout
         const token0 = await Promise.race([token0Promise, timeoutPromise]);
         const token1 = await Promise.race([token1Promise, timeoutPromise]);
 
-        console.log("Token addresses retrieved:", { token0, token1, USDC_ADDRESS });
+        console.log('Token addresses retrieved:', { token0, token1, USDC_ADDRESS });
 
         // Get reserves with timeout
         const reservesPromise = lpContract.getReserves();
         const reserves = await Promise.race([reservesPromise, timeoutPromise]);
-        console.log("Reserves retrieved:", reserves);
+        console.log('Reserves retrieved:', reserves);
 
         // Check if token0 is USDC
         const isToken0Usdc = token0.toLowerCase() === USDC_ADDRESS.toLowerCase();
-        console.log("Is token0 USDC:", isToken0Usdc);
+        console.log('Is token0 USDC:', isToken0Usdc);
 
         // Get reserve values
         const vtruReserve = parseFloat(ethers.formatEther(isToken0Usdc ? reserves[1] : reserves[0]));
         const usdcReserve = parseFloat(ethers.formatUnits(isToken0Usdc ? reserves[0] : reserves[1], 6));
-        console.log("Parsed reserves:", { vtruReserve, usdcReserve });
+        console.log('Parsed reserves:', { vtruReserve, usdcReserve });
 
         // Validate reserve values
         if (isNaN(vtruReserve) || isNaN(usdcReserve) || vtruReserve <= 0) {
-            throw new Error("Invalid reserve values: " + JSON.stringify({ vtruReserve, usdcReserve }));
+            throw new Error('Invalid reserve values: ' + JSON.stringify({ vtruReserve, usdcReserve }));
         }
 
         // Calculate rate and total value
         const rate = usdcReserve / vtruReserve;
         const totalValue = usdcReserve + (vtruReserve * rate);
 
-        console.log("LP data calculation successful:", { rate, totalValue });
+        console.log('LP data calculation successful:', { rate, totalValue });
 
         return {
             vtruReserve,
@@ -1934,22 +1934,22 @@ async function getLpDetails() {
             lastUpdated: new Date().toISOString()
         };
     } catch (error) {
-        console.error("Error in getLpDetails:", error);
-        throw new Error("Failed to get LP data: " + error.message);
+        console.error('Error in getLpDetails:', error);
+        throw new Error('Failed to get LP data: ' + error.message);
     }
 }
 
 // Modify the calculateMarketplaceStats function to include price conversion
 async function calculateMarketplaceStats() {
     try {
-        console.log("Calculating marketplace stats from blockchain data");
+        console.log('Calculating marketplace stats from blockchain data');
 
         // Get VTRU/USDC price for volume conversion
         const vtruPriceInUsdc = await getVtruUsdcPrice();
 
         // Get all listings directly from the contract
         const listings = await marketplace.getListings();
-        console.log(`Raw listings from contract:`, listings);
+        console.log('Raw listings from contract:', listings);
 
         // Filter for active listings only
         const activeListings = listings.filter(listing => listing.active);
@@ -1973,10 +1973,10 @@ async function calculateMarketplaceStats() {
 
             // Format the price for display in logs
             const formattedPrice = isNative
-                ? ethers.formatEther(price) + " VTRU"
-                : ethers.formatUnits(price, 6) + " USDC";
+                ? ethers.formatEther(price) + ' VTRU'
+                : ethers.formatUnits(price, 6) + ' USDC';
 
-            console.log(`Listing: Token #${tokenId} - ${formattedPrice} - Currency: ${isNative ? "Native VTRU" : "USDC"}`);
+            console.log(`Listing: Token #${tokenId} - ${formattedPrice} - Currency: ${isNative ? 'Native VTRU' : 'USDC'}`);
 
             if (isNative) {
                 hasNativeListings = true;
@@ -2083,7 +2083,7 @@ async function calculateMarketplaceStats() {
             hasUSDCListings: hasUSDCListings
         };
 
-        console.log("Final marketplace stats:", stats);
+        console.log('Final marketplace stats:', stats);
 
         // Update the UI with real data
         if (window.updateMarketplaceStats) {
@@ -2092,7 +2092,7 @@ async function calculateMarketplaceStats() {
 
         return stats;
     } catch (error) {
-        console.error("Error querying blockchain for marketplace stats:", error);
+        console.error('Error querying blockchain for marketplace stats:', error);
         return {
             totalVolume: 0,
             volumeUSDC: 0,

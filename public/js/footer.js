@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         isTestMode = testModeCall !== '0x' && testModeCall !== '0x0000000000000000000000000000000000000000000000000000000000000000';
                     }
                 } catch (testModeError) {
-                    console.warn("Could not check test mode status:", testModeError.message);
+                    console.warn('Could not check test mode status:', testModeError.message);
                     isTestMode = false;
                 }
 
@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
             } catch (error) {
-                console.error("Error fetching blockchain stats:", error);
+                console.error('Error fetching blockchain stats:', error);
 
                 // Add fallback UI updates when the data can't be loaded
                 const statusIndicator = document.getElementById('contract-status-indicator');
@@ -480,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateStatElement('royalty-percent', '---');
             }
         } catch (error) {
-            console.error("Error in fetchBlockchainStats:", error);
+            console.error('Error in fetchBlockchainStats:', error);
 
             // Fallback UI
             const statusIndicator = document.getElementById('contract-status-indicator');

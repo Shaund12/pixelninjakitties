@@ -1,55 +1,55 @@
 // Standard ethers import that works consistently across pages
-import { BrowserProvider } from "https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.min.js";
+import { BrowserProvider } from 'https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.min.js';
 
 // Connection state management
 const CONNECTION_KEY = 'ninja_cats_wallet';
 
 // Format address for display
 function formatAddress(address) {
-    return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : 'Connect Wallet';
+    return address ? `${address.slice(0, 6)}ï¿½${address.slice(-4)}` : 'Connect Wallet';
 }
 
 // Connect to wallet
 async function connectWallet() {
     try {
         if (!window.ethereum) {
-            throw new Error("No ethereum provider found. Please install MetaMask.");
+            throw new Error('No ethereum provider found. Please install MetaMask.');
         }
 
         // Request accounts (this will prompt the user if not already connected)
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
         if (!accounts || accounts.length === 0) {
-            throw new Error("No accounts found. Please unlock MetaMask and try again.");
+            throw new Error('No accounts found. Please unlock MetaMask and try again.');
         }
 
         const address = accounts[0];
 
         // Save to localStorage immediately
         localStorage.setItem(CONNECTION_KEY, address);
-        console.log("Connected and saved address:", address);
+        console.log('Connected and saved address:', address);
 
         // Update all connect buttons in the document
         updateAllButtons(address);
 
         return { address };
     } catch (error) {
-        console.error("Connection error:", error);
+        console.error('Connection error:', error);
         localStorage.removeItem(CONNECTION_KEY);
 
         // Reset all buttons
         document.querySelectorAll('[id^="connectBtn"]').forEach(button => {
-            button.textContent = "Connect Wallet";
+            button.textContent = 'Connect Wallet';
             button.classList.remove('connected');
         });
 
         // Show user-friendly error
         if (error.message.includes('rejected')) {
-            alert("Connection rejected. Please try again.");
+            alert('Connection rejected. Please try again.');
         } else if (error.message.includes('MetaMask')) {
-            alert("Please install MetaMask to connect your wallet.");
+            alert('Please install MetaMask to connect your wallet.');
         } else {
-            alert("Failed to connect wallet: " + error.message);
+            alert('Failed to connect wallet: ' + error.message);
         }
 
         throw error;
@@ -73,12 +73,12 @@ async function handleButtonClick() {
 
     if (savedAddress) {
         // Already connected - show disconnection option
-        if (confirm("Do you want to disconnect your wallet?")) {
+        if (confirm('Do you want to disconnect your wallet?')) {
             localStorage.removeItem(CONNECTION_KEY);
 
             // Reset all buttons
             document.querySelectorAll('[id^="connectBtn"]').forEach(button => {
-                button.textContent = "Connect Wallet";
+                button.textContent = 'Connect Wallet';
                 button.classList.remove('connected');
             });
         }
@@ -93,7 +93,7 @@ function checkExistingConnection() {
     const savedAddress = localStorage.getItem(CONNECTION_KEY);
 
     if (savedAddress) {
-        console.log("Found saved connection:", savedAddress);
+        console.log('Found saved connection:', savedAddress);
         updateAllButtons(savedAddress);
 
         // Verify connection is still valid (do this after updating UI)
@@ -101,18 +101,18 @@ function checkExistingConnection() {
             window.ethereum.request({ method: 'eth_accounts' })
                 .then(accounts => {
                     if (accounts.length === 0) {
-                        console.log("No accounts connected, clearing saved connection");
+                        console.log('No accounts connected, clearing saved connection');
                         localStorage.removeItem(CONNECTION_KEY);
 
                         // Reset all buttons
                         document.querySelectorAll('[id^="connectBtn"]').forEach(button => {
-                            button.textContent = "Connect Wallet";
+                            button.textContent = 'Connect Wallet';
                             button.classList.remove('connected');
                         });
                     }
                 })
                 .catch(err => {
-                    console.error("Error verifying account:", err);
+                    console.error('Error verifying account:', err);
                 });
         }
     }
@@ -122,14 +122,14 @@ function checkExistingConnection() {
 function setupEventListeners() {
     if (window.ethereum) {
         window.ethereum.on('accountsChanged', (accounts) => {
-            console.log("Accounts changed:", accounts);
+            console.log('Accounts changed:', accounts);
             if (accounts.length === 0) {
                 // User disconnected
                 localStorage.removeItem(CONNECTION_KEY);
 
                 // Reset all buttons
                 document.querySelectorAll('[id^="connectBtn"]').forEach(button => {
-                    button.textContent = "Connect Wallet";
+                    button.textContent = 'Connect Wallet';
                     button.classList.remove('connected');
                 });
             } else {
@@ -148,13 +148,13 @@ function setupEventListeners() {
 
 // Initialize wallet connection
 function initWalletConnection() {
-    console.log("Initializing wallet connection...");
+    console.log('Initializing wallet connection...');
 
     // Find all connect buttons
     const connectButtons = document.querySelectorAll('[id^="connectBtn"]');
 
     if (connectButtons.length === 0) {
-        console.warn("No connect buttons found on page");
+        console.warn('No connect buttons found on page');
         return;
     }
 
@@ -187,12 +187,12 @@ export async function getConnection() {
 
     try {
         if (!window.ethereum) {
-            throw new Error("No ethereum provider found");
+            throw new Error('No ethereum provider found');
         }
 
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length === 0) {
-            throw new Error("No connected accounts found");
+            throw new Error('No connected accounts found');
         }
 
         const provider = new BrowserProvider(window.ethereum);
@@ -200,7 +200,7 @@ export async function getConnection() {
 
         return { provider, signer, address: accounts[0] };
     } catch (error) {
-        console.error("Failed to restore connection:", error);
+        console.error('Failed to restore connection:', error);
         return null;
     }
 }

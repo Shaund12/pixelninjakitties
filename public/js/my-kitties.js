@@ -21,14 +21,14 @@ const collectionStats = document.getElementById('collectionStats');
 const galleryView = document.getElementById('galleryView');
 
 // Connect to Vitruveo network
-console.log("Connecting to Vitruveo RPC:", RPC_URL);
+console.log('Connecting to Vitruveo RPC:', RPC_URL);
 const rpc = new ethers.JsonRpcProvider(RPC_URL);
 const nft = new ethers.Contract(CONTRACT_ADDRESS, NFT_ABI, rpc);
 
 // Global state
 let allNftData = [];
 let filteredNftData = [];
-let currentFilters = {
+const currentFilters = {
     breed: '',
     element: '',
     weapon: '',
@@ -38,7 +38,7 @@ let currentFilters = {
 };
 let currentSortOption = 'newest';
 let currentView = 'grid';
-let stats = {
+const stats = {
     breedCount: {},
     elementCount: {},
     rarityCount: {},
@@ -383,7 +383,7 @@ async function silentBoot() {
     try {
         const address = await getAddress();
         if (address) {
-            console.log("Using existing wallet connection:", address);
+            console.log('Using existing wallet connection:', address);
             render(address);
 
             // Update UI for connected state
@@ -394,7 +394,7 @@ async function silentBoot() {
             }
         }
     } catch (error) {
-        console.error("Silent wallet connection failed:", error);
+        console.error('Silent wallet connection failed:', error);
     }
 }
 
@@ -404,8 +404,8 @@ document.getElementById('connectBtn')?.addEventListener('click', async () => {
         await connectWallet(document.getElementById('connectBtn'));
         // The wallet connected event will trigger render
     } catch (error) {
-        console.error("Error connecting wallet:", error);
-        showToast("Failed to connect wallet: " + error.message, "error");
+        console.error('Error connecting wallet:', error);
+        showToast('Failed to connect wallet: ' + error.message, 'error');
     }
 });
 
@@ -964,12 +964,12 @@ function shareBatchOfNfts(selectedIds) {
 
     // Generate QR code if library is available
     if (window.QRCode) {
-        new QRCode(document.getElementById("shareQrCode"), {
+        new QRCode(document.getElementById('shareQrCode'), {
             text: shareUrl,
             width: 128,
             height: 128,
-            colorDark: "#8a65ff",
-            colorLight: "#ffffff",
+            colorDark: '#8a65ff',
+            colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.H
         });
     }
@@ -1807,7 +1807,7 @@ function renderDetailedCard(nft) {
             if (navigator.share) {
                 navigator.share({
                     title: nft.name,
-                    text: `Check out my NFT on Vitruveo!`,
+                    text: 'Check out my NFT on Vitruveo!',
                     url: window.location.origin + `/kitty.html?id=${nft.id}&contract=${CONTRACT_ADDRESS}`
                 });
             } else {
@@ -1973,7 +1973,7 @@ function updateDashboard(nfts) {
         gsap.from('#totalCount', {
             textContent: 0,
             duration: 1.5,
-            ease: "power2.out",
+            ease: 'power2.out',
             snap: { textContent: 1 },
             onUpdate: function () {
                 this.targets()[0].textContent = Math.round(this.targets()[0].textContent);
@@ -2200,7 +2200,7 @@ async function handleRegenerateConfirm() {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
-        if (!address) throw new Error("Failed to connect wallet");
+        if (!address) throw new Error('Failed to connect wallet');
 
         statusTextEl.textContent = 'Checking USDC balance...';
 
@@ -2208,9 +2208,9 @@ async function handleRegenerateConfirm() {
         const usdcContract = new ethers.Contract(
             USDC_ADDRESS,
             [
-                "function transfer(address,uint256) returns (bool)",
-                "function balanceOf(address) view returns (uint256)",
-                "function decimals() view returns (uint8)"
+                'function transfer(address,uint256) returns (bool)',
+                'function balanceOf(address) view returns (uint256)',
+                'function decimals() view returns (uint8)'
             ],
             signer
         );
@@ -2288,7 +2288,7 @@ async function pollRegenerationStatus(taskId, tokenId) {
         attempts++;
 
         if (attempts > maxAttempts) {
-            statusTextEl.textContent = "Timed out. Please check back later.";
+            statusTextEl.textContent = 'Timed out. Please check back later.';
             return;
         }
 
@@ -2504,7 +2504,7 @@ async function fetchMetadataWithFallbacks(uri, id) {
 function createFallbackMetadata(id) {
     return {
         name: `Ninja Cat #${id}`,
-        description: "Metadata unavailable",
+        description: 'Metadata unavailable',
         image: 'assets/detailed_ninja_cat_64.png',
         attributes: []
     };
@@ -2560,7 +2560,7 @@ async function render(owner) {
                 const meta = await fetchMetadataWithFallbacks(uri, id);
 
                 // Extract breed from attributes if available
-                let breed = "Unknown";
+                let breed = 'Unknown';
                 let traits = [];
                 let rarityTier = null;
                 let rarityScore = null;
@@ -2571,8 +2571,8 @@ async function render(owner) {
 
                     // Find breed attribute
                     const breedAttr = traits.find(attr =>
-                        attr.trait_type === "Breed" ||
-                        attr.trait_type === "breed"
+                        attr.trait_type === 'Breed' ||
+                        attr.trait_type === 'breed'
                     );
                     if (breedAttr) breed = breedAttr.value;
                 }
@@ -2584,8 +2584,8 @@ async function render(owner) {
                 } else {
                     // Try to find a rarity trait
                     const rarityAttr = traits.find(attr =>
-                        attr.trait_type === "Rarity" ||
-                        attr.trait_type === "Rank"
+                        attr.trait_type === 'Rarity' ||
+                        attr.trait_type === 'Rank'
                     );
                     if (rarityAttr) rarityTier = rarityAttr.value;
                 }
@@ -2635,7 +2635,7 @@ async function render(owner) {
         applyFiltersAndSort();
 
     } catch (error) {
-        console.error("Error rendering NFTs from Vitruveo:", error);
+        console.error('Error rendering NFTs from Vitruveo:', error);
         if (count) {
             count.textContent = `Error loading your NFTs: ${error.message}`;
         }

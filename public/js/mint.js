@@ -176,12 +176,12 @@ function initializePreviewSystem() {
                         opacity: 0,
                         scale: 0.8,
                         duration: 0.8,
-                        ease: "elastic.out(1, 0.5)"
+                        ease: 'elastic.out(1, 0.5)'
                     });
                 }
 
             } catch (error) {
-                console.error("Preview generation failed:", error);
+                console.error('Preview generation failed:', error);
                 previewContainer.innerHTML = `
                     <div class="preview-error">
                         <svg viewBox="0 0 24 24" width="36" height="36">
@@ -220,7 +220,7 @@ async function initializePricing() {
         initializeAdvancedVisuals();
 
     } catch (err) {
-        console.error("Failed to get price:", err);
+        console.error('Failed to get price:', err);
         priceEl.textContent = `Error loading price: ${err.message}`;
     }
 }
@@ -405,7 +405,7 @@ function updateProgress(percent, detail = {}) {
         gsap.to(progressBar, {
             width: `${percent}%`,
             duration: 0.5,
-            ease: "power2.inOut"
+            ease: 'power2.inOut'
         });
     } else {
         // Fallback without animation
@@ -424,7 +424,7 @@ function showStatus(msg, showSpinner = true) {
     // Prepare the status message
     let statusHTML = '';
     if (showSpinner) {
-        statusHTML = `<div class="spinner"></div> `;
+        statusHTML = '<div class="spinner"></div> ';
     }
     statusHTML += msg;
 
@@ -463,14 +463,14 @@ mintBtn.onclick = async () => {
         const signer = result.signer;
         const addr = result.address;  // Fixed - function returns 'address', not 'addr'
 
-        console.log("Wallet connected:", {
+        console.log('Wallet connected:', {
             address: addr,
             signer: !!signer,
             validAddress: ethers.isAddress(addr || '')
         });
 
         // CRITICAL FIX: Always query the DOM directly to get the current values
-        const imageProvider = document.getElementById('imageProvider')?.value || "dall-e";
+        const imageProvider = document.getElementById('imageProvider')?.value || 'dall-e';
         const breed = breedSel.value;
 
         // Get any additional prompt details
@@ -494,17 +494,17 @@ mintBtn.onclick = async () => {
             const dalleStyle = document.getElementById('dalle-style')?.value;
             if (dalleStyle) providerOptions.style = dalleStyle;
 
-            console.log("DALL-E options:", providerOptions);
+            console.log('DALL-E options:', providerOptions);
         }
         else if (imageProvider === 'stability') {
             const stylePreset = document.getElementById('stability-preset')?.value;
             if (stylePreset) providerOptions.stylePreset = stylePreset;
-            console.log("Stability options:", providerOptions);
+            console.log('Stability options:', providerOptions);
         }
         else if (imageProvider === 'huggingface') {
             const hfModel = document.getElementById('hf-model')?.value;
             if (hfModel) providerOptions.model = hfModel;
-            console.log("HuggingFace options:", providerOptions);
+            console.log('HuggingFace options:', providerOptions);
         }
 
         /* get live contracts w/ signer */
@@ -573,7 +573,7 @@ mintBtn.onclick = async () => {
         }
 
         /* mint with selected breed and options */
-        console.log("DEBUG - Provider selection:", {
+        console.log('DEBUG - Provider selection:', {
             selected: imageProvider,
             providerObj: providers[imageProvider],
             options: providerOptions
@@ -585,9 +585,9 @@ mintBtn.onclick = async () => {
         updateProgress(35);
 
         // Debug parameters before sending
-        console.log("Contract address:", CONTRACT_ADDRESS);
-        console.log("Breed parameter:", breed);
-        console.log("Connected address:", addr);
+        console.log('Contract address:', CONTRACT_ADDRESS);
+        console.log('Breed parameter:', breed);
+        console.log('Connected address:', addr);
 
         // Add the mint options to the transaction
         let tx;
@@ -603,20 +603,20 @@ mintBtn.onclick = async () => {
             };
 
             // Log what we're sending to ensure it contains the correct data
-            console.log("Sending transaction with complete metadata:", txMetadata);
+            console.log('Sending transaction with complete metadata:', txMetadata);
 
             // Convert the metadata to bytes format
             const metadata = ethers.toUtf8Bytes(JSON.stringify(txMetadata));
 
             // Make sure breed is a proper string value
-            const breedString = String(breed || "").trim();
+            const breedString = String(breed || '').trim();
             console.log(`Attempting mint with breed: "${breedString}" and full metadata`);
 
             // Send the transaction with the breed and metadata
             tx = await nft.buy(breedString, ethers.hexlify(metadata));
 
         } catch (err) {
-            console.warn("First mint attempt with metadata failed:", err);
+            console.warn('First mint attempt with metadata failed:', err);
 
             try {
                 // Try again with explicit transaction options
@@ -625,12 +625,12 @@ mintBtn.onclick = async () => {
                     value: 0           // Explicit zero value (no ETH)
                 };
 
-                console.log("Retrying with overrides:", overrides);
+                console.log('Retrying with overrides:', overrides);
                 tx = await nft.buy(breed, overrides);
             } catch (err2) {
                 // Last resort - try with just the breed
-                console.warn("Second mint attempt failed:", err2);
-                console.log("Attempting final mint with just breed parameter");
+                console.warn('Second mint attempt failed:', err2);
+                console.log('Attempting final mint with just breed parameter');
 
                 tx = await nft.buy(breed);
             }
@@ -782,7 +782,7 @@ mintBtn.onclick = async () => {
                             return response.json();
                         })
                         .then(data => {
-                            console.log("Server processing image:", data);
+                            console.log('Server processing image:', data);
                             updateProgress(85);
 
                             // Update generation stage
@@ -800,13 +800,13 @@ mintBtn.onclick = async () => {
                             }
                         })
                         .catch(error => {
-                            console.warn("Server notification issue:", error);
+                            console.warn('Server notification issue:', error);
                             // Still show success even if server notification fails
                             updateProgress(100);
                             showMintSuccess(tokenId, tx.hash, imageProvider);
                         });
                 } catch (apiError) {
-                    console.warn("Could not notify server about provider choice:", apiError);
+                    console.warn('Could not notify server about provider choice:', apiError);
                     // Still show success
                     updateProgress(100);
                     showMintSuccess(tokenId, tx.hash, imageProvider);
@@ -817,7 +817,7 @@ mintBtn.onclick = async () => {
                 showMintSuccess(null, tx.hash, imageProvider);
             }
         } catch (eventErr) {
-            console.warn("Could not determine token ID:", eventErr);
+            console.warn('Could not determine token ID:', eventErr);
             // Still show success
             updateProgress(100);
             showMintSuccess(null, tx.hash, imageProvider);
@@ -834,10 +834,10 @@ mintBtn.onclick = async () => {
         }
 
         // Handle common errors more gracefully
-        if (errorMessage.includes("insufficient funds")) {
-            errorMessage = "Insufficient funds to complete the transaction.";
-        } else if (errorMessage.includes("user rejected")) {
-            errorMessage = "Transaction was rejected in your wallet.";
+        if (errorMessage.includes('insufficient funds')) {
+            errorMessage = 'Insufficient funds to complete the transaction.';
+        } else if (errorMessage.includes('user rejected')) {
+            errorMessage = 'Transaction was rejected in your wallet.';
         }
 
         // Create an animated error display
@@ -876,7 +876,7 @@ mintBtn.onclick = async () => {
                 scale: 0.5,
                 opacity: 0,
                 duration: 0.5,
-                ease: "back.out(1.7)"
+                ease: 'back.out(1.7)'
             });
 
             gsap.from('.error-content', {
@@ -958,7 +958,7 @@ async function fetchNFTDetails(tokenId) {
         metadata = await response.json();
 
         // Get the image URL
-        let imageUrl = metadata.image;
+        const imageUrl = metadata.image;
 
         return {
             tokenId: tokenId,
@@ -966,7 +966,7 @@ async function fetchNFTDetails(tokenId) {
             image: imageUrl
         };
     } catch (error) {
-        console.error("Error fetching NFT details:", error);
+        console.error('Error fetching NFT details:', error);
         return null;
     }
 }
@@ -1156,7 +1156,7 @@ function showMintSuccess(tokenId, txHash, provider) {
                 });
             }
         }).catch(error => {
-            console.warn("Could not fetch NFT details for download:", error);
+            console.warn('Could not fetch NFT details for download:', error);
         });
     }
 }
@@ -1233,16 +1233,16 @@ function showToast(message, type = 'info', duration = 3000) {
     let iconSvg = '';
     switch (type) {
         case 'success':
-            iconSvg = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path></svg>`;
+            iconSvg = '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path></svg>';
             break;
         case 'error':
-            iconSvg = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>`;
+            iconSvg = '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>';
             break;
         case 'warning':
-            iconSvg = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-10v6h2V7h-2z"></path></svg>`;
+            iconSvg = '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-10v6h2V7h-2z"></path></svg>';
             break;
         default:
-            iconSvg = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`;
+            iconSvg = '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>';
     }
 
     toast.innerHTML = `
@@ -1277,7 +1277,7 @@ function pollImageStatus(taskId, tokenId) {
         if (pollAttempts >= maxPolls) {
             // Stop polling after max attempts
             updateProgress(100);
-            showMintSuccess(tokenId, null, "AI service");
+            showMintSuccess(tokenId, null, 'AI service');
             return;
         }
 
@@ -1290,16 +1290,16 @@ function pollImageStatus(taskId, tokenId) {
             }
 
             const data = await response.json();
-            console.log("Image generation status:", data);
+            console.log('Image generation status:', data);
 
             // Update progress based on status
-            if (data.status === "completed") {
+            if (data.status === 'completed') {
                 // Final stage - all complete
                 updateGenerationStage('metadata');
 
                 // Show completion animation
                 if (window.gsap) {
-                    const tl = gsap.timeline({ defaults: { ease: "power2.inOut" } });
+                    const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
                     tl.to('.generation-circle', {
                         stroke: '#4ade80',
                         duration: 0.5
@@ -1313,16 +1313,16 @@ function pollImageStatus(taskId, tokenId) {
 
                 updateProgress(100);
                 setTimeout(() => {
-                    showMintSuccess(tokenId, null, data.provider || "AI service");
+                    showMintSuccess(tokenId, null, data.provider || 'AI service');
                 }, 1000);
                 return;
-            } else if (data.status === "failed") {
+            } else if (data.status === 'failed') {
                 // Image failed but NFT is still minted
                 updateProgress(100);
-                showToast("Your NFT was minted, but the image generation encountered an issue. A default image will be used.", "warning", 5000);
-                showMintSuccess(tokenId, null, data.provider || "AI service");
+                showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
+                showMintSuccess(tokenId, null, data.provider || 'AI service');
                 return;
-            } else if (data.status === "processing") {
+            } else if (data.status === 'processing') {
                 // Still processing - update the stage based on progress
                 const progressPercent = data.progress || Math.min(80 + (pollAttempts * 1), 95);
                 updateProgress(progressPercent);
@@ -1348,7 +1348,7 @@ function pollImageStatus(taskId, tokenId) {
                 setTimeout(checkStatus, pollInterval);
             }
         } catch (error) {
-            console.warn("Error polling for image status:", error);
+            console.warn('Error polling for image status:', error);
             // Continue polling despite error
             updateProgress(Math.min(80 + (pollAttempts * 1), 95));
             setTimeout(checkStatus, pollInterval * 1.5);  // Slightly longer wait on error

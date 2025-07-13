@@ -60,7 +60,7 @@ function getRarity(id, metadata) {
     if (metadata && metadata.attributes) {
         // Check for explicit rarity attribute
         const rarityAttr = metadata.attributes.find(attr =>
-            attr.trait_type === "Rarity" || attr.trait_type === "Rank");
+            attr.trait_type === 'Rarity' || attr.trait_type === 'Rank');
 
         if (rarityAttr) {
             return rarityAttr.value.toLowerCase();
@@ -253,7 +253,7 @@ async function fetchAllTokens() {
         isInitialLoad = false;
         showLoading(false);
     } catch (error) {
-        console.error("Error fetching tokens:", error);
+        console.error('Error fetching tokens:', error);
         showError(error.message);
     }
 }

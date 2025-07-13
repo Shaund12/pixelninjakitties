@@ -1,59 +1,59 @@
 ﻿// Constants for contracts
-const NFT_ADDRESS = "0x2D732b0Bb33566A13E586aE83fB21d2feE34e906";      // Pixel Ninja Cats
-const STAKING_ADDRESS = "0x5f3F46411c3418E94dF14A64C4706CF562455064";  // NinjaCatStakingPro
-const PCAT_ADDRESS = "0xF5af0a176D87A29f30be2464E780a9a020097DF5";     // ERC-20 reward
-const METADATA_GATEWAY = "https://ipfs.io/ipfs/";                      // or own gateway
+const NFT_ADDRESS = '0x2D732b0Bb33566A13E586aE83fB21d2feE34e906';      // Pixel Ninja Cats
+const STAKING_ADDRESS = '0x5f3F46411c3418E94dF14A64C4706CF562455064';  // NinjaCatStakingPro
+const PCAT_ADDRESS = '0xF5af0a176D87A29f30be2464E780a9a020097DF5';     // ERC-20 reward
+const METADATA_GATEWAY = 'https://ipfs.io/ipfs/';                      // or own gateway
 
 // Complete staking ABI for NinjaCatStakingPro
 const stakingAbi = [
     // Basic functions
-    "function stakes(uint256) view returns(address owner, uint48 stakedAt, uint8 rarityTier, uint8 boostFactor, bool hasClaimedToday)",
-    "function stake(uint256[] calldata)",
-    "function claim(uint256[] calldata)",
-    "function unstake(uint256[] calldata)",
-    "function emergencyUnstake(uint256[] calldata)",
-    "function applyBoost(uint256[] calldata, uint8)",
+    'function stakes(uint256) view returns(address owner, uint48 stakedAt, uint8 rarityTier, uint8 boostFactor, bool hasClaimedToday)',
+    'function stake(uint256[] calldata)',
+    'function claim(uint256[] calldata)',
+    'function unstake(uint256[] calldata)',
+    'function emergencyUnstake(uint256[] calldata)',
+    'function applyBoost(uint256[] calldata, uint8)',
 
     // Read functions
-    "function owner() view returns(address)",
-    "function ninjaCats() view returns(address)",
-    "function pcat() view returns(address)",
-    "function getPendingRewards(uint256) view returns(uint256)",
-    "function getPendingRewardsDetailed(uint256) view returns(uint256 baseReward, uint256 timeMultiplier, uint256 boostMultiplier, uint256 finalReward, uint256 stakingDays)",
-    "function getAllPendingRewards(address) view returns(uint256)",
-    "function userStats(address) view returns(uint256 totalStaked, uint256 totalRewardsClaimed, uint256 stakingSince)",
-    "function getTopStakers(uint256) view returns(address[] addresses, uint256[] totals, uint256[] rewards)",
-    "function getStakedTokensByUser(address) view returns(uint256[])",
-    "function contractPaused() view returns(bool)",
-    "function emergencyUnstakeFee() view returns(uint256)",
+    'function owner() view returns(address)',
+    'function ninjaCats() view returns(address)',
+    'function pcat() view returns(address)',
+    'function getPendingRewards(uint256) view returns(uint256)',
+    'function getPendingRewardsDetailed(uint256) view returns(uint256 baseReward, uint256 timeMultiplier, uint256 boostMultiplier, uint256 finalReward, uint256 stakingDays)',
+    'function getAllPendingRewards(address) view returns(uint256)',
+    'function userStats(address) view returns(uint256 totalStaked, uint256 totalRewardsClaimed, uint256 stakingSince)',
+    'function getTopStakers(uint256) view returns(address[] addresses, uint256[] totals, uint256[] rewards)',
+    'function getStakedTokensByUser(address) view returns(uint256[])',
+    'function contractPaused() view returns(bool)',
+    'function emergencyUnstakeFee() view returns(uint256)',
 
     // Events
-    "event Staked(address indexed user, uint256 indexed tokenId, uint8 rarityTier, uint48 stakedAt, uint256 totalUserStaked)",
-    "event Unstaked(address indexed user, uint256 indexed tokenId, uint48 stakedAt, uint256 stakingDuration, uint256 remainingUserStaked)",
-    "event Rewarded(address indexed user, uint256 amount, uint256 indexed tokenId, uint8 rarityTier, uint256 stakingDays, uint256 timeMultiplier, uint256 boostMultiplier)",
-    "event EmergencyUnstake(address indexed user, uint256 indexed tokenId, uint256 penaltyAmount, uint256 stakingDuration)"
+    'event Staked(address indexed user, uint256 indexed tokenId, uint8 rarityTier, uint48 stakedAt, uint256 totalUserStaked)',
+    'event Unstaked(address indexed user, uint256 indexed tokenId, uint48 stakedAt, uint256 stakingDuration, uint256 remainingUserStaked)',
+    'event Rewarded(address indexed user, uint256 amount, uint256 indexed tokenId, uint8 rarityTier, uint256 stakingDays, uint256 timeMultiplier, uint256 boostMultiplier)',
+    'event EmergencyUnstake(address indexed user, uint256 indexed tokenId, uint256 penaltyAmount, uint256 stakingDuration)'
 ];
 
 const nftAbi = [
-    "function balanceOf(address) view returns(uint256)",
-    "function tokenOfOwnerByIndex(address,uint256) view returns(uint256)",
-    "function tokenURI(uint256) view returns(string)",
-    "function isApprovedForAll(address,address) view returns(bool)",
-    "function setApprovalForAll(address,bool)",
-    "function ownerOf(uint256) view returns(address)"
+    'function balanceOf(address) view returns(uint256)',
+    'function tokenOfOwnerByIndex(address,uint256) view returns(uint256)',
+    'function tokenURI(uint256) view returns(string)',
+    'function isApprovedForAll(address,address) view returns(bool)',
+    'function setApprovalForAll(address,bool)',
+    'function ownerOf(uint256) view returns(address)'
 ];
 
 const pcatAbi = [
-    "function balanceOf(address) view returns(uint256)",
-    "function decimals() view returns(uint8)",
-    "function approve(address, uint256) returns(bool)"
+    'function balanceOf(address) view returns(uint256)',
+    'function decimals() view returns(uint8)',
+    'function approve(address, uint256) returns(bool)'
 ];
 
 // State variables
 let nftContract, stakingContract, pcatContract;
 let userAddress = null;
-let selectedUnstaked = new Set();
-let selectedStaked = new Set();
+const selectedUnstaked = new Set();
+const selectedStaked = new Set();
 let initialized = false;
 let walletCheckInterval = null;
 let contractPaused = false;
@@ -67,30 +67,30 @@ function getElement(id) {
 }
 
 // Get UI elements safely
-const connectBtn = getElement("connectBtn");
-const ownedList = getElement("ownedList");
-const stakedList = getElement("stakedList");
-const ownedCount = getElement("ownedCount");
-const stakedCount = getElement("stakedCount");
-const pixBalance = getElement("pixBalance");
-const pendingRewards = getElement("pendingRewards");
-const stakeBtn = getElement("stakeBtn");
-const unstakeBtn = getElement("unstakeBtn");
-const claimBtn = getElement("claimBtn");
-const emergencyUnstakeBtn = getElement("emergencyUnstakeBtn");
-const boostBtn = getElement("boostBtn");
-const boostCost = getElement("boostCost");
-const boostSlider = getElement("boostSlider");
-const boostValue = getElement("boostValue");
-const totalStaked = getElement("totalStaked");
-const stakingAPR = getElement("stakingAPR");
-const totalRewards = getElement("totalRewards");
-const leaderboardBody = getElement("leaderboardBody");
-const log = getElement("log");
+const connectBtn = getElement('connectBtn');
+const ownedList = getElement('ownedList');
+const stakedList = getElement('stakedList');
+const ownedCount = getElement('ownedCount');
+const stakedCount = getElement('stakedCount');
+const pixBalance = getElement('pixBalance');
+const pendingRewards = getElement('pendingRewards');
+const stakeBtn = getElement('stakeBtn');
+const unstakeBtn = getElement('unstakeBtn');
+const claimBtn = getElement('claimBtn');
+const emergencyUnstakeBtn = getElement('emergencyUnstakeBtn');
+const boostBtn = getElement('boostBtn');
+const boostCost = getElement('boostCost');
+const boostSlider = getElement('boostSlider');
+const boostValue = getElement('boostValue');
+const totalStaked = getElement('totalStaked');
+const stakingAPR = getElement('stakingAPR');
+const totalRewards = getElement('totalRewards');
+const leaderboardBody = getElement('leaderboardBody');
+const log = getElement('log');
 
 // ===== Wallet Integration =================================================
-document.addEventListener("DOMContentLoaded", async () => {
-    console.log("DOM Content loaded for stake.js");
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM Content loaded for stake.js');
     // Wait for wallet.js to be fully loaded before initializing
     await waitForWalletJs();
 
@@ -176,8 +176,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Setup leaderboard refresh
-    if (getElement("refreshLeaderboard")) {
-        getElement("refreshLeaderboard").onclick = loadLeaderboard;
+    if (getElement('refreshLeaderboard')) {
+        getElement('refreshLeaderboard').onclick = loadLeaderboard;
     }
 });
 
@@ -185,26 +185,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 function refreshDOMElements() {
     // Re-check all DOM elements that might have been loaded after our initial check
     const elements = {
-        connectBtn: "connectBtn",
-        ownedList: "ownedList",
-        stakedList: "stakedList",
-        ownedCount: "ownedCount",
-        stakedCount: "stakedCount",
-        pixBalance: "pixBalance",
-        pendingRewards: "pendingRewards",
-        stakeBtn: "stakeBtn",
-        unstakeBtn: "unstakeBtn",
-        claimBtn: "claimBtn",
-        emergencyUnstakeBtn: "emergencyUnstakeBtn",
-        boostBtn: "boostBtn",
-        boostCost: "boostCost",
-        boostSlider: "boostSlider",
-        boostValue: "boostValue",
-        totalStaked: "totalStaked",
-        stakingAPR: "stakingAPR",
-        totalRewards: "totalRewards",
-        leaderboardBody: "leaderboardBody",
-        log: "log"
+        connectBtn: 'connectBtn',
+        ownedList: 'ownedList',
+        stakedList: 'stakedList',
+        ownedCount: 'ownedCount',
+        stakedCount: 'stakedCount',
+        pixBalance: 'pixBalance',
+        pendingRewards: 'pendingRewards',
+        stakeBtn: 'stakeBtn',
+        unstakeBtn: 'unstakeBtn',
+        claimBtn: 'claimBtn',
+        emergencyUnstakeBtn: 'emergencyUnstakeBtn',
+        boostBtn: 'boostBtn',
+        boostCost: 'boostCost',
+        boostSlider: 'boostSlider',
+        boostValue: 'boostValue',
+        totalStaked: 'totalStaked',
+        stakingAPR: 'stakingAPR',
+        totalRewards: 'totalRewards',
+        leaderboardBody: 'leaderboardBody',
+        log: 'log'
     };
 
     // Update global variables for any elements that now exist
@@ -254,11 +254,11 @@ async function safeGetConnection() {
 // Direct connection fallback if wallet.js is not available
 async function connectWalletDirect() {
     if (window.ethereum == null) {
-        throw new Error("No wallet detected! Please install MetaMask.");
+        throw new Error('No wallet detected! Please install MetaMask.');
     }
 
     const provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
+    await provider.send('eth_requestAccounts', []);
     const signer = await provider.getSigner();
     userAddress = await signer.getAddress();
 
@@ -306,14 +306,14 @@ async function initializeContracts(signer) {
         try {
             contractPaused = await stakingContract.contractPaused();
             if (contractPaused) {
-                logMessage("⚠️ Staking contract is currently paused", "warning");
+                logMessage('⚠️ Staking contract is currently paused', 'warning');
             }
 
             // Get emergency unstake fee
             emergencyFeePercentage = await stakingContract.emergencyUnstakeFee();
-            logMessage(`Emergency unstake fee: ${emergencyFeePercentage}%`, "info");
+            logMessage(`Emergency unstake fee: ${emergencyFeePercentage}%`, 'info');
         } catch (e) {
-            console.warn("Could not check contract status:", e);
+            console.warn('Could not check contract status:', e);
         }
 
         // Load initial data
@@ -322,19 +322,19 @@ async function initializeContracts(signer) {
         // Set auto-refresh interval
         startAutoRefresh();
     } catch (error) {
-        console.error("Failed to initialize contracts:", error);
-        logMessage(`Initialization error: ${error.message}`, "error");
+        console.error('Failed to initialize contracts:', error);
+        logMessage(`Initialization error: ${error.message}`, 'error');
         throw error;
     }
 }
 
 // Log a message to the UI
-function logMessage(message, type = "info") {
+function logMessage(message, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${message}`);
 
     if (!log) return;
 
-    const logEntry = document.createElement("div");
+    const logEntry = document.createElement('div');
     logEntry.className = `log-entry ${type}`;
 
     const now = new Date();
@@ -357,10 +357,10 @@ function resetUI() {
     selectedStaked.clear();
 
     // Reset UI elements - with null checks
-    if (ownedCount) ownedCount.textContent = "–";
-    if (stakedCount) stakedCount.textContent = "–";
-    if (pixBalance) pixBalance.textContent = "–";
-    if (pendingRewards) pendingRewards.textContent = "–";
+    if (ownedCount) ownedCount.textContent = '–';
+    if (stakedCount) stakedCount.textContent = '–';
+    if (pixBalance) pixBalance.textContent = '–';
+    if (pendingRewards) pendingRewards.textContent = '–';
 
     if (ownedList) ownedList.innerHTML = '<p class="empty-message">Connect wallet to view your cats</p>';
     if (stakedList) stakedList.innerHTML = '<p class="empty-message">Connect wallet to view staked cats</p>';
@@ -381,7 +381,7 @@ function resetUI() {
         connectBtn.disabled = false;
     }
 
-    logMessage("Wallet disconnected");
+    logMessage('Wallet disconnected');
 }
 
 // ===== Data Loading =======================================================
@@ -414,21 +414,21 @@ async function refreshData() {
         updateBoostCost();
 
     } catch (error) {
-        console.error("Error refreshing data:", error);
-        logMessage(`Error loading data: ${error.message}`, "error");
+        console.error('Error refreshing data:', error);
+        logMessage(`Error loading data: ${error.message}`, 'error');
     }
 }
 
 // Update global statistics about staking
 async function updateGlobalStats() {
     try {
-        if (totalStaked) totalStaked.textContent = "Loading...";
-        if (stakingAPR) stakingAPR.textContent = "Loading...";
-        if (totalRewards) totalRewards.textContent = "Loading...";
+        if (totalStaked) totalStaked.textContent = 'Loading...';
+        if (stakingAPR) stakingAPR.textContent = 'Loading...';
+        if (totalRewards) totalRewards.textContent = 'Loading...';
 
         // Create a read-only contract instance using the provider
         const provider = window.walletModule?.rpcProvider ||
-            new ethers.JsonRpcProvider("https://rpc.vitruveo.xyz");
+            new ethers.JsonRpcProvider('https://rpc.vitruveo.xyz');
 
         const readOnlyStakingContract = new ethers.Contract(
             STAKING_ADDRESS,
@@ -440,31 +440,31 @@ async function updateGlobalStats() {
             // Count staked NFTs
             const stakedCount = await countTotalStakedNFTs(provider);
             if (totalStaked) totalStaked.textContent = stakedCount !== null ?
-                stakedCount.toString() : "—";
+                stakedCount.toString() : '—';
 
             // Set APR based on FAQ (25%)
-            if (stakingAPR) stakingAPR.textContent = "25%";
+            if (stakingAPR) stakingAPR.textContent = '25%';
 
             // Get total rewards from events
             const totalRewardsIssued = await getTotalRewardsIssued(provider);
             if (totalRewards) totalRewards.textContent = totalRewardsIssued !== null ?
-                Math.floor(totalRewardsIssued).toLocaleString() : "—";
+                Math.floor(totalRewardsIssued).toLocaleString() : '—';
 
-            logMessage("Statistics updated from blockchain", "info");
+            logMessage('Statistics updated from blockchain', 'info');
         } catch (error) {
-            console.error("Error getting blockchain stats:", error);
+            console.error('Error getting blockchain stats:', error);
             // Set fallback values
-            if (totalStaked) totalStaked.textContent = "—";
-            if (stakingAPR) stakingAPR.textContent = "25%";
-            if (totalRewards) totalRewards.textContent = "—";
+            if (totalStaked) totalStaked.textContent = '—';
+            if (stakingAPR) stakingAPR.textContent = '25%';
+            if (totalRewards) totalRewards.textContent = '—';
         }
     } catch (error) {
-        console.error("Error loading global statistics:", error);
+        console.error('Error loading global statistics:', error);
 
         // Set fallback values
-        if (totalStaked) totalStaked.textContent = "—";
-        if (stakingAPR) stakingAPR.textContent = "25%";
-        if (totalRewards) totalRewards.textContent = "—";
+        if (totalStaked) totalStaked.textContent = '—';
+        if (stakingAPR) stakingAPR.textContent = '25%';
+        if (totalRewards) totalRewards.textContent = '—';
     }
 }
 
@@ -504,7 +504,7 @@ async function countTotalStakedNFTs(provider) {
 
         return stakedTokens.size;
     } catch (error) {
-        console.error("Error counting staked NFTs:", error);
+        console.error('Error counting staked NFTs:', error);
         return null;
     }
 }
@@ -539,7 +539,7 @@ async function getTotalRewardsIssued(provider) {
         // Convert to readable number with 18 decimals
         return Number(ethers.formatUnits(totalRewards, 18));
     } catch (error) {
-        console.error("Error getting total rewards:", error);
+        console.error('Error getting total rewards:', error);
         return null;
     }
 }
@@ -598,7 +598,7 @@ async function loadLeaderboard() {
         });
 
     } catch (error) {
-        console.error("Error loading leaderboard:", error);
+        console.error('Error loading leaderboard:', error);
         leaderboardBody.innerHTML = '<tr><td colspan="4">Failed to load leaderboard data</td></tr>';
     }
 }
@@ -607,7 +607,7 @@ async function loadLeaderboard() {
 async function estimatePendingRewards() {
     if (!pendingRewards || !stakingContract || !userAddress) return;
 
-    pendingRewards.textContent = "Calculating...";
+    pendingRewards.textContent = 'Calculating...';
 
     try {
         // Use the contract's built-in function to get total pending rewards
@@ -616,7 +616,7 @@ async function estimatePendingRewards() {
         // Format the rewards
         pendingRewards.textContent = ethers.formatUnits(totalRewards, 18);
     } catch (error) {
-        console.error("Error estimating rewards:", error);
+        console.error('Error estimating rewards:', error);
 
         // Fallback to manual calculation
         try {
@@ -624,7 +624,7 @@ async function estimatePendingRewards() {
             const stakedIds = await getStakedIds();
 
             if (stakedIds.length === 0) {
-                pendingRewards.textContent = "0.00";
+                pendingRewards.textContent = '0.00';
                 return;
             }
 
@@ -642,8 +642,8 @@ async function estimatePendingRewards() {
 
             pendingRewards.textContent = totalEstimatedRewards.toFixed(2);
         } catch (fallbackError) {
-            console.error("Error in fallback reward estimation:", fallbackError);
-            pendingRewards.textContent = "Error";
+            console.error('Error in fallback reward estimation:', fallbackError);
+            pendingRewards.textContent = 'Error';
         }
     }
 }
@@ -661,7 +661,7 @@ async function stakeSelected() {
         // Show confirmation modal if available
         if (window.showConfirmationModal) {
             window.showConfirmationModal(
-                "Confirm Staking",
+                'Confirm Staking',
                 `Are you sure you want to stake ${selectedUnstaked.size} Ninja Cats?`,
                 performStaking
             );
@@ -670,8 +670,8 @@ async function stakeSelected() {
             await performStaking();
         }
     } catch (error) {
-        console.error("Error in stake button handler:", error);
-        logMessage(`Error: ${error.message}`, "error");
+        console.error('Error in stake button handler:', error);
+        logMessage(`Error: ${error.message}`, 'error');
         if (stakeBtn) stakeBtn.disabled = selectedUnstaked.size === 0;
     }
 }
@@ -682,11 +682,11 @@ async function performStaking() {
         // Ensure approval
         const isApproved = await nftContract.isApprovedForAll(userAddress, STAKING_ADDRESS);
         if (!isApproved) {
-            logMessage("Requesting approval for staking contract...");
+            logMessage('Requesting approval for staking contract...');
             const tx = await nftContract.setApprovalForAll(STAKING_ADDRESS, true);
-            logMessage("Approval transaction sent. Waiting for confirmation...");
+            logMessage('Approval transaction sent. Waiting for confirmation...');
             await tx.wait();
-            logMessage("✅ Approval granted");
+            logMessage('✅ Approval granted');
         }
 
         // Stake tokens
@@ -694,18 +694,18 @@ async function performStaking() {
         logMessage(`Staking ${tokenIds.join(', ')}...`);
 
         const tx = await stakingContract.stake(tokenIds);
-        logMessage("Staking transaction sent. Waiting for confirmation...");
+        logMessage('Staking transaction sent. Waiting for confirmation...');
         await tx.wait();
 
-        logMessage("✅ Successfully staked your cats!", "success");
+        logMessage('✅ Successfully staked your cats!', 'success');
 
         // Clear selection and refresh
         selectedUnstaked.clear();
         await refreshData();
 
     } catch (error) {
-        console.error("Staking error:", error);
-        logMessage(`Error staking: ${error.message}`, "error");
+        console.error('Staking error:', error);
+        logMessage(`Error staking: ${error.message}`, 'error');
     } finally {
         updateButtonStates();
     }
@@ -723,7 +723,7 @@ async function unstakeSelected() {
         // Show confirmation modal if available
         if (window.showConfirmationModal) {
             window.showConfirmationModal(
-                "Confirm Unstaking",
+                'Confirm Unstaking',
                 `Are you sure you want to unstake ${selectedStaked.size} Ninja Cats?`,
                 performUnstaking
             );
@@ -732,8 +732,8 @@ async function unstakeSelected() {
             await performUnstaking();
         }
     } catch (error) {
-        console.error("Error in unstake button handler:", error);
-        logMessage(`Error: ${error.message}`, "error");
+        console.error('Error in unstake button handler:', error);
+        logMessage(`Error: ${error.message}`, 'error');
         if (unstakeBtn) unstakeBtn.disabled = selectedStaked.size === 0;
     }
 }
@@ -746,18 +746,18 @@ async function performUnstaking() {
         logMessage(`Unstaking ${tokenIds.join(', ')}...`);
 
         const tx = await stakingContract.unstake(tokenIds);
-        logMessage("Unstaking transaction sent. Waiting for confirmation...");
+        logMessage('Unstaking transaction sent. Waiting for confirmation...');
         await tx.wait();
 
-        logMessage("✅ Successfully unstaked your cats!", "success");
+        logMessage('✅ Successfully unstaked your cats!', 'success');
 
         // Clear selection and refresh
         selectedStaked.clear();
         await refreshData();
 
     } catch (error) {
-        console.error("Unstaking error:", error);
-        logMessage(`Error unstaking: ${error.message}`, "error");
+        console.error('Unstaking error:', error);
+        logMessage(`Error unstaking: ${error.message}`, 'error');
     } finally {
         updateButtonStates();
     }
@@ -775,7 +775,7 @@ async function claimRewards() {
     }
 
     if (tokenIds.length === 0) {
-        logMessage("No staked cats to claim rewards for", "warning");
+        logMessage('No staked cats to claim rewards for', 'warning');
         return;
     }
 
@@ -787,7 +787,7 @@ async function claimRewards() {
         // Show confirmation modal if available
         if (window.showConfirmationModal) {
             window.showConfirmationModal(
-                "Confirm Claim",
+                'Confirm Claim',
                 `Are you sure you want to claim rewards for ${tokenIds.length} Ninja Cats?`,
                 () => performClaiming(tokenIds)
             );
@@ -796,8 +796,8 @@ async function claimRewards() {
             await performClaiming(tokenIds);
         }
     } catch (error) {
-        console.error("Error in claim button handler:", error);
-        logMessage(`Error: ${error.message}`, "error");
+        console.error('Error in claim button handler:', error);
+        logMessage(`Error: ${error.message}`, 'error');
         if (claimBtn) claimBtn.disabled = false;
     }
 }
@@ -806,7 +806,7 @@ async function claimRewards() {
 async function performClaiming(tokenIds) {
     try {
         // First check eligibility for claiming
-        logMessage(`Checking eligibility for claiming rewards...`);
+        logMessage('Checking eligibility for claiming rewards...');
 
         // Get staking info for these tokens to display more details
         const stakingInfoPromises = tokenIds.map(id => getTokenStakingInfo(id));
@@ -814,13 +814,13 @@ async function performClaiming(tokenIds) {
         const validInfos = stakingInfos.filter(info => info !== null);
 
         if (validInfos.length === 0) {
-            logMessage("No valid staked tokens found", "warning");
+            logMessage('No valid staked tokens found', 'warning');
             return;
         }
 
         // Display staking details to help diagnose issues
         for (const info of validInfos) {
-            logMessage(`Token #${info.tokenId}: Staked ${info.daysStaked} days ago`, "info");
+            logMessage(`Token #${info.tokenId}: Staked ${info.daysStaked} days ago`, 'info');
         }
 
         // Claim rewards
@@ -832,28 +832,28 @@ async function performClaiming(tokenIds) {
 
             // If we get here, gas estimation succeeded
             const tx = await stakingContract.claim(tokenIds);
-            logMessage("Claim transaction sent. Waiting for confirmation...");
+            logMessage('Claim transaction sent. Waiting for confirmation...');
             await tx.wait();
-            logMessage("✅ Successfully claimed rewards!", "success");
+            logMessage('✅ Successfully claimed rewards!', 'success');
         } catch (error) {
             // Extract revert reason if possible
-            console.error("Claim transaction failed:", error);
+            console.error('Claim transaction failed:', error);
 
             if (error.data) {
-                logMessage(`Contract error code: ${error.data}`, "error");
+                logMessage(`Contract error code: ${error.data}`, 'error');
             }
 
             // Check for common issues
             const errorStr = error.toString().toLowerCase();
-            if (errorStr.includes("not enough time")) {
-                logMessage("⚠️ Cannot claim yet: Minimum staking period not met", "warning");
-            } else if (errorStr.includes("no rewards") || errorStr.includes("zero amount")) {
-                logMessage("⚠️ No rewards available to claim yet", "warning");
+            if (errorStr.includes('not enough time')) {
+                logMessage('⚠️ Cannot claim yet: Minimum staking period not met', 'warning');
+            } else if (errorStr.includes('no rewards') || errorStr.includes('zero amount')) {
+                logMessage('⚠️ No rewards available to claim yet', 'warning');
             } else {
-                logMessage(`Error claiming: ${error.message}`, "error");
+                logMessage(`Error claiming: ${error.message}`, 'error');
 
                 // Add additional helpful message
-                logMessage("This could be because the minimum staking period hasn't passed, or there are no rewards yet", "info");
+                logMessage("This could be because the minimum staking period hasn't passed, or there are no rewards yet", 'info');
             }
         }
 
@@ -864,8 +864,8 @@ async function performClaiming(tokenIds) {
         ]);
 
     } catch (error) {
-        console.error("Claim process error:", error);
-        logMessage(`Error in claim process: ${error.message}`, "error");
+        console.error('Claim process error:', error);
+        logMessage(`Error in claim process: ${error.message}`, 'error');
     } finally {
         if (claimBtn) claimBtn.disabled = false;
     }
@@ -881,7 +881,7 @@ async function loadOwnedNFTs() {
         if (ownedCount) ownedCount.textContent = balance.toString();
 
         // Clear list and selections
-        ownedList.innerHTML = "";
+        ownedList.innerHTML = '';
         selectedUnstaked.clear();
 
         if (Number(balance) > 0) {
@@ -907,7 +907,7 @@ async function loadOwnedNFTs() {
             ownedList.innerHTML = '<p class="empty-message">You don\'t own any cats</p>';
         }
     } catch (error) {
-        console.error("Error loading owned NFTs:", error);
+        console.error('Error loading owned NFTs:', error);
         ownedList.innerHTML = '<p class="error">Failed to load your cats</p>';
     }
 }
@@ -922,7 +922,7 @@ async function getStakedIds() {
                 return stakedTokens.map(id => Number(id));
             }
         } catch (e) {
-            console.warn("Could not use getStakedTokensByUser, falling back to scanning:", e);
+            console.warn('Could not use getStakedTokensByUser, falling back to scanning:', e);
         }
 
         // Fallback: scan for tokens
@@ -982,13 +982,13 @@ async function getStakedIds() {
         if (stakedIds.length > 0) {
             logMessage(`Found ${stakedIds.length} staked token(s): ${stakedIds.join(', ')}`);
         } else {
-            logMessage("No staked tokens found in the searched range");
+            logMessage('No staked tokens found in the searched range');
         }
 
         return stakedIds;
     } catch (error) {
-        console.error("Error getting staked tokens:", error);
-        logMessage(`Error searching for staked tokens: ${error.message}`, "error");
+        console.error('Error getting staked tokens:', error);
+        logMessage(`Error searching for staked tokens: ${error.message}`, 'error');
         return [];
     }
 }
@@ -1027,7 +1027,7 @@ async function checkIfTokenStaked(id) {
 // Add a new utility function to check a specific token ID
 window.checkSpecificToken = async function (tokenId) {
     if (!initialized || !stakingContract) {
-        logMessage("Please connect your wallet first", "warning");
+        logMessage('Please connect your wallet first', 'warning');
         return;
     }
 
@@ -1042,28 +1042,28 @@ window.checkSpecificToken = async function (tokenId) {
                 info.owner.toLowerCase() : info.owner;
 
             if (infoOwner === userAddress.toLowerCase()) {
-                logMessage(`✅ Token #${tokenId} is staked by you!`, "success");
-                logMessage(`Rarity Tier: ${info.rarityTier}, Boost: ${info.boostFactor}%`, "info");
+                logMessage(`✅ Token #${tokenId} is staked by you!`, 'success');
+                logMessage(`Rarity Tier: ${info.rarityTier}, Boost: ${info.boostFactor}%`, 'info');
 
                 // Get detailed reward info
                 const [baseReward, timeMultiplier, boostMultiplier, finalReward, stakingDays] =
                     await stakingContract.getPendingRewardsDetailed(tokenId);
 
-                logMessage(`Staking Days: ${stakingDays}, Base Reward: ${ethers.formatUnits(baseReward, 18)} PIX`, "info");
-                logMessage(`Time Multiplier: ${timeMultiplier}%, Boost: ${boostMultiplier}%`, "info");
-                logMessage(`Pending Rewards: ${ethers.formatUnits(finalReward, 18)} PIX`, "info");
+                logMessage(`Staking Days: ${stakingDays}, Base Reward: ${ethers.formatUnits(baseReward, 18)} PIX`, 'info');
+                logMessage(`Time Multiplier: ${timeMultiplier}%, Boost: ${boostMultiplier}%`, 'info');
+                logMessage(`Pending Rewards: ${ethers.formatUnits(finalReward, 18)} PIX`, 'info');
 
-            } else if (infoOwner && infoOwner !== "0x0000000000000000000000000000000000000000") {
-                logMessage(`Token #${tokenId} is staked by another user: ${infoOwner}`, "warning");
+            } else if (infoOwner && infoOwner !== '0x0000000000000000000000000000000000000000') {
+                logMessage(`Token #${tokenId} is staked by another user: ${infoOwner}`, 'warning');
             } else {
-                logMessage(`Token #${tokenId} is not staked`, "info");
+                logMessage(`Token #${tokenId} is not staked`, 'info');
             }
         } else {
-            logMessage(`Token #${tokenId} is not staked`, "info");
+            logMessage(`Token #${tokenId} is not staked`, 'info');
         }
     } catch (error) {
         console.error(`Error checking token ${tokenId}:`, error);
-        logMessage(`Error checking token: ${error.message}`, "error");
+        logMessage(`Error checking token: ${error.message}`, 'error');
     }
 };
 
@@ -1077,7 +1077,7 @@ async function loadStakedNFTs() {
         if (stakedCount) stakedCount.textContent = stakedIds.length.toString();
 
         // Clear list and selections
-        stakedList.innerHTML = "";
+        stakedList.innerHTML = '';
         selectedStaked.clear();
 
         if (stakedIds.length > 0) {
@@ -1089,7 +1089,7 @@ async function loadStakedNFTs() {
             stakedList.innerHTML = '<p class="empty-message">No staked cats found</p>';
         }
     } catch (error) {
-        console.error("Error loading staked NFTs:", error);
+        console.error('Error loading staked NFTs:', error);
         stakedList.innerHTML = '<p class="error">Failed to load staked cats</p>';
     }
 }
@@ -1117,8 +1117,8 @@ async function loadPixBalance() {
             maximumFractionDigits: 2
         });
     } catch (error) {
-        console.error("Error loading PIX balance:", error);
-        pixBalance.textContent = "Error";
+        console.error('Error loading PIX balance:', error);
+        pixBalance.textContent = 'Error';
     }
 }
 
@@ -1180,8 +1180,8 @@ function createNFTCard(tokenId, container, selectionSet, isStaked) {
     if (!container) return null;
 
     // Create card element
-    const card = document.createElement("div");
-    card.className = "nft-card";
+    const card = document.createElement('div');
+    card.className = 'nft-card';
     card.dataset.tokenId = tokenId.toString();
 
     // Add placeholder content with improved staking info layout
@@ -1198,8 +1198,8 @@ function createNFTCard(tokenId, container, selectionSet, isStaked) {
 
     // Add click handler for selection
     card.onclick = function () {
-        card.classList.toggle("selected");
-        if (card.classList.contains("selected")) {
+        card.classList.toggle('selected');
+        if (card.classList.contains('selected')) {
             selectionSet.add(tokenId.toString());
         } else {
             selectionSet.delete(tokenId.toString());
@@ -1264,7 +1264,7 @@ function createNFTCard(tokenId, container, selectionSet, isStaked) {
                     `;
                 }
             }
-        }).catch(err => console.warn("Failed to load stake info:", err));
+        }).catch(err => console.warn('Failed to load stake info:', err));
     }
 
     return card;
@@ -1273,11 +1273,11 @@ function createNFTCard(tokenId, container, selectionSet, isStaked) {
 // Helper to get rarity name from tier
 function getRarityNameFromTier(tier) {
     switch (tier) {
-        case 1: return "Common";
-        case 2: return "Rare";
-        case 3: return "Epic";
-        case 4: return "Legendary";
-        default: return "Common";
+        case 1: return 'Common';
+        case 2: return 'Rare';
+        case 3: return 'Epic';
+        case 4: return 'Legendary';
+        default: return 'Common';
     }
 }
 
@@ -1301,8 +1301,8 @@ async function loadMetadata(tokenId, card) {
 
         // Handle different URI formats
         let metadataUrl = uri;
-        if (uri.startsWith("ipfs://")) {
-            metadataUrl = uri.replace("ipfs://", METADATA_GATEWAY);
+        if (uri.startsWith('ipfs://')) {
+            metadataUrl = uri.replace('ipfs://', METADATA_GATEWAY);
         }
 
         // Fetch metadata
@@ -1311,22 +1311,22 @@ async function loadMetadata(tokenId, card) {
 
         // Process image URL
         let imageUrl = metadata.image;
-        if (imageUrl.startsWith("ipfs://")) {
-            imageUrl = imageUrl.replace("ipfs://", METADATA_GATEWAY);
+        if (imageUrl.startsWith('ipfs://')) {
+            imageUrl = imageUrl.replace('ipfs://', METADATA_GATEWAY);
         }
 
         // Update card with metadata
-        const imageDiv = card.querySelector(".nft-image");
+        const imageDiv = card.querySelector('.nft-image');
         if (imageDiv) {
             imageDiv.style.backgroundImage = `url('${imageUrl}')`;
-            imageDiv.classList.remove("placeholder");
+            imageDiv.classList.remove('placeholder');
 
             // Add rarity badge if available
             if (metadata.attributes) {
                 const rarityAttr = metadata.attributes.find(attr =>
-                    attr.trait_type?.toLowerCase() === "rarity" ||
-                    attr.trait_type?.toLowerCase() === "class" ||
-                    attr.trait_type?.toLowerCase() === "tier"
+                    attr.trait_type?.toLowerCase() === 'rarity' ||
+                    attr.trait_type?.toLowerCase() === 'class' ||
+                    attr.trait_type?.toLowerCase() === 'tier'
                 );
 
                 if (rarityAttr) {
@@ -1338,7 +1338,7 @@ async function loadMetadata(tokenId, card) {
         }
 
         // Update name
-        const nameEl = card.querySelector("h3");
+        const nameEl = card.querySelector('h3');
         if (nameEl) {
             nameEl.textContent = metadata.name || `Cat #${tokenId}`;
         }
@@ -1346,12 +1346,12 @@ async function loadMetadata(tokenId, card) {
         // Update breed info if available
         if (metadata.attributes) {
             const breedAttr = metadata.attributes.find(attr =>
-                attr.trait_type?.toLowerCase() === "breed" ||
-                attr.trait_type?.toLowerCase() === "type"
+                attr.trait_type?.toLowerCase() === 'breed' ||
+                attr.trait_type?.toLowerCase() === 'type'
             );
 
             if (breedAttr) {
-                const idEl = card.querySelector(".nft-id");
+                const idEl = card.querySelector('.nft-id');
                 if (idEl) {
                     idEl.innerHTML = `ID: ${tokenId} <span class="breed">${breedAttr.value}</span>`;
                 }
@@ -1439,7 +1439,7 @@ function refreshNFTCard(tokenId) {
 function updateButtonStates() {
     if (stakeBtn) stakeBtn.disabled = selectedUnstaked.size === 0 || !initialized || contractPaused;
     if (unstakeBtn) unstakeBtn.disabled = selectedStaked.size === 0 || !initialized || contractPaused;
-    if (claimBtn) claimBtn.disabled = (stakedCount && parseInt(stakedCount.textContent || "0") === 0) || !initialized || contractPaused;
+    if (claimBtn) claimBtn.disabled = (stakedCount && parseInt(stakedCount.textContent || '0') === 0) || !initialized || contractPaused;
     if (emergencyUnstakeBtn) emergencyUnstakeBtn.disabled = selectedStaked.size === 0 || !initialized;
     if (boostBtn) boostBtn.disabled = selectedStaked.size === 0 || !initialized || contractPaused;
 }
@@ -1447,11 +1447,11 @@ function updateButtonStates() {
 // Update boost cost calculation
 function updateBoostCost() {
     if (!boostCost || !boostSlider || selectedStaked.size === 0) {
-        if (boostCost) boostCost.textContent = "0";
+        if (boostCost) boostCost.textContent = '0';
         return;
     }
 
-    const boostPercent = parseInt(boostSlider.value || "10");
+    const boostPercent = parseInt(boostSlider.value || '10');
     const tokenCount = selectedStaked.size;
     const cost = boostPercent * tokenCount * 10; // 10 PIX per percentage per token
 
@@ -1479,7 +1479,7 @@ async function emergencyUnstakeSelected() {
         // Show confirmation modal with warning
         if (window.showConfirmationModal) {
             window.showConfirmationModal(
-                "⚠️ Confirm Emergency Unstake",
+                '⚠️ Confirm Emergency Unstake',
                 `<p>Are you sure you want to emergency unstake ${selectedStaked.size} Ninja Cats?</p>
                 <p class="warning-text">Warning: This will bypass the minimum staking period but may incur a ${emergencyFeePercentage}% fee.</p>`,
                 performEmergencyUnstaking
@@ -1489,8 +1489,8 @@ async function emergencyUnstakeSelected() {
             await performEmergencyUnstaking();
         }
     } catch (error) {
-        console.error("Error in emergency unstake button handler:", error);
-        logMessage(`Error: ${error.message}`, "error");
+        console.error('Error in emergency unstake button handler:', error);
+        logMessage(`Error: ${error.message}`, 'error');
         if (emergencyUnstakeBtn) emergencyUnstakeBtn.disabled = selectedStaked.size === 0;
     }
 }
@@ -1517,27 +1517,27 @@ async function performEmergencyUnstaking() {
             // Ensure PCAT approval
             try {
                 await pcatContract.approve(STAKING_ADDRESS, ethers.parseUnits('1000000', 18)); // Approve a large amount
-                logMessage("Approved PIX token for fee payment");
+                logMessage('Approved PIX token for fee payment');
             } catch (approveError) {
-                console.error("Approval error:", approveError);
-                logMessage("Could not approve PIX token for fee payment", "error");
+                console.error('Approval error:', approveError);
+                logMessage('Could not approve PIX token for fee payment', 'error');
                 // Continue anyway - the contract will revert if payment fails
             }
         }
 
         const tx = await stakingContract.emergencyUnstake(tokenIds);
-        logMessage("Emergency unstake transaction sent. Waiting for confirmation...");
+        logMessage('Emergency unstake transaction sent. Waiting for confirmation...');
         await tx.wait();
 
-        logMessage("✅ Successfully emergency unstaked your cats!", "success");
+        logMessage('✅ Successfully emergency unstaked your cats!', 'success');
 
         // Clear selection and refresh
         selectedStaked.clear();
         await refreshData();
 
     } catch (error) {
-        console.error("Emergency unstaking error:", error);
-        logMessage(`Error emergency unstaking: ${error.message}`, "error");
+        console.error('Emergency unstaking error:', error);
+        logMessage(`Error emergency unstaking: ${error.message}`, 'error');
     } finally {
         updateButtonStates();
         if (emergencyUnstakeBtn) emergencyUnstakeBtn.disabled = false;
@@ -1553,9 +1553,9 @@ async function applyBoost() {
         if (boostBtn) boostBtn.disabled = true;
 
         // Get boost percentage
-        const boostPercent = parseInt(boostSlider.value || "10");
+        const boostPercent = parseInt(boostSlider.value || '10');
         if (boostPercent <= 0 || boostPercent > 100) {
-            logMessage("Invalid boost percentage. Please choose between 1-100%.", "warning");
+            logMessage('Invalid boost percentage. Please choose between 1-100%.', 'warning');
             return;
         }
 
@@ -1568,7 +1568,7 @@ async function applyBoost() {
         // Show confirmation modal
         if (window.showConfirmationModal) {
             window.showConfirmationModal(
-                "Confirm Boost",
+                'Confirm Boost',
                 `<p>Are you sure you want to apply a <strong>${boostPercent}%</strong> boost to ${tokenCount} cats?</p>
                 <p>This will cost <strong>${cost} PIX</strong> tokens.</p>`,
                 () => performBoost(boostPercent)
@@ -1578,8 +1578,8 @@ async function applyBoost() {
             await performBoost(boostPercent);
         }
     } catch (error) {
-        console.error("Error in boost button handler:", error);
-        logMessage(`Error: ${error.message}`, "error");
+        console.error('Error in boost button handler:', error);
+        logMessage(`Error: ${error.message}`, 'error');
         if (boostBtn) boostBtn.disabled = selectedStaked.size === 0 || contractPaused;
     }
 }
@@ -1596,21 +1596,21 @@ async function performBoost(boostPercent) {
         // Check if user has enough PIX
         const balance = await pcatContract.balanceOf(userAddress);
         if (Number(ethers.formatUnits(balance, 18)) < cost) {
-            logMessage(`Insufficient PIX balance. You need ${cost} PIX.`, "error");
+            logMessage(`Insufficient PIX balance. You need ${cost} PIX.`, 'error');
             return;
         }
 
         // Approve the staking contract to take PIX if needed
-        logMessage("Approving PIX token transfer...");
+        logMessage('Approving PIX token transfer...');
         await pcatContract.approve(STAKING_ADDRESS, ethers.parseUnits(cost.toString(), 18));
 
         // Apply boost
         logMessage(`Applying ${boostPercent}% boost to ${tokenIds.join(', ')}...`);
         const tx = await stakingContract.applyBoost(tokenIds, boostPercent);
-        logMessage("Boost transaction sent. Waiting for confirmation...");
+        logMessage('Boost transaction sent. Waiting for confirmation...');
         await tx.wait();
 
-        logMessage(`✅ Successfully applied ${boostPercent}% boost to your cats!`, "success");
+        logMessage(`✅ Successfully applied ${boostPercent}% boost to your cats!`, 'success');
 
         // Show a more prominent success notification
         showBoostSuccessNotification(boostPercent, tokenIds.length);
@@ -1632,8 +1632,8 @@ async function performBoost(boostPercent) {
         }, 3000);
 
     } catch (error) {
-        console.error("Boost error:", error);
-        logMessage(`Error applying boost: ${error.message}`, "error");
+        console.error('Boost error:', error);
+        logMessage(`Error applying boost: ${error.message}`, 'error');
     } finally {
         updateButtonStates();
         if (boostBtn) boostBtn.disabled = false;
