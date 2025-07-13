@@ -229,14 +229,27 @@ app.get('/api/process/:tokenId', async (req, res) => {
 
         console.log(`🎯 SELECTED PROVIDER: "${imageProvider}" (validated value)`);
 
+        // Extract and parse additional parameters
         const promptExtras = req.query.promptExtras || "";
         const negativePrompt = req.query.negativePrompt || "";
-        const providerOptions = req.query.providerOptions ? JSON.parse(req.query.providerOptions) : {};
+
+        // Parse provider options with error handling
+        let providerOptions = {};
+        if (req.query.providerOptions) {
+            try {
+                providerOptions = JSON.parse(req.query.providerOptions);
+                console.log(`📋 PROVIDER OPTIONS: `, providerOptions);
+            } catch (parseErr) {
+                console.error(`❌ Error parsing provider options: ${parseErr.message}`);
+                console.error(`   Raw value: ${req.query.providerOptions}`);
+            }
+        }
 
         // Store the user's provider preference for this token
         await providerPreferences.set(tokenId.toString(), {
             provider: imageProvider,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            options: providerOptions // Store options with preference
         });
 
         let current = "unknown";
@@ -257,6 +270,7 @@ app.get('/api/process/:tokenId', async (req, res) => {
         console.log(`🔄 Manually queueing token #${tokenId} (${breed}) using ${imageProvider}`);
         console.log(`   Current URI: ${current}`);
         console.log(`   Owner: ${owner}`);
+        console.log(`   Provider options:`, providerOptions);
 
         // Create a task for tracking
         const taskId = createTask(tokenId, imageProvider);
@@ -265,10 +279,11 @@ app.get('/api/process/:tokenId', async (req, res) => {
             message: 'Waiting in processing queue',
             breed,
             owner,
-            provider: imageProvider // Explicitly store the provider in the task
+            provider: imageProvider, // Explicitly store the provider in the task
+            providerOptions // Store options in task for reference
         });
 
-        // Add to processing queue with explicit provider
+        // Add to processing queue with explicit provider and all options
         mintQueue.push({
             tokenId,
             buyer: owner !== "unknown" ? owner : "manual-request",
@@ -290,7 +305,8 @@ app.get('/api/process/:tokenId', async (req, res) => {
             breed,
             imageProvider,
             currentURI: current,
-            owner
+            owner,
+            options: providerOptions // Return options in response for confirmation
         });
     } catch (err) {
         console.error(`Error in manual processing:`, err);

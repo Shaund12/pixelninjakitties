@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Fixed: Use ethers v5 with proper script tag -->
+    <!-- Change this script tag -->
+    <!-- Change the script tag in swap.html to use ethers v6 -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js" type="text/javascript"></script>
     <style>
         /* Swap Page Specific Styles */
@@ -1057,10 +1059,9 @@
                 console.error("Ethers.js library not loaded. Retrying in 2 seconds...");
                 // Try reloading the library
                 const script = document.createElement('script');
-                script.src = "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js";
+                script.src = "https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js";
                 script.type = "text/javascript";
                 document.head.appendChild(script);
-
 
                 updateFeeDisclaimer();
 
@@ -1070,7 +1071,7 @@
             }
 
             // Set up event listeners
-            document.getElementById('connect-wallet').addEventListener('click', connectWallet);
+            document.getElementById('connect-wallet').addEventListener('click', handleWalletConnection);
             document.getElementById('swap-button').addEventListener('click', executeSwap);
             document.getElementById('swap-direction').addEventListener('click', switchTokens);
             document.getElementById('settings-icon').addEventListener('click', toggleSettings);
@@ -1097,7 +1098,8 @@
                     USDC_ADDRESS: "0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF"
                 };
 
-                const readOnlyProvider = new ethers.providers.JsonRpcProvider("https://rpc.vitruveo.xyz");
+                // Update to ethers v6 syntax
+                const readOnlyProvider = new ethers.JsonRpcProvider("https://rpc.vitruveo.xyz");
                 lpPair = new ethers.Contract(config.LP_POOL_ADDRESS, PAIR_ABI, readOnlyProvider);
 
                 // Get pool stats
@@ -1124,12 +1126,13 @@
                 const vtruReserve = isVtruToken0 ? reserves[0] : reserves[1];
                 const usdcReserve = isVtruToken0 ? reserves[1] : reserves[0];
 
-                const formattedVtruReserve = parseFloat(ethers.utils.formatUnits(vtruReserve, vtruDecimals)).toFixed(2);
-                const formattedUsdcReserve = parseFloat(ethers.utils.formatUnits(usdcReserve, usdcDecimals)).toFixed(2);
+                // Update to ethers v6 syntax for formatting units
+                const formattedVtruReserve = parseFloat(ethers.formatUnits(vtruReserve, vtruDecimals)).toFixed(2);
+                const formattedUsdcReserve = parseFloat(ethers.formatUnits(usdcReserve, usdcDecimals)).toFixed(2);
 
                 // Calculate liquidity value (in USDC)
-                const exchangeRate = parseFloat(ethers.utils.formatUnits(usdcReserve, usdcDecimals)) /
-                    parseFloat(ethers.utils.formatUnits(vtruReserve, vtruDecimals));
+                const exchangeRate = parseFloat(ethers.formatUnits(usdcReserve, usdcDecimals)) /
+                    parseFloat(ethers.formatUnits(vtruReserve, vtruDecimals));
 
                 const totalLiquidityInUSDC = parseFloat(formattedVtruReserve) * exchangeRate + parseFloat(formattedUsdcReserve);
 
@@ -1148,61 +1151,41 @@
             }
         }
 
-        async function connectWallet() {
+        // Update this function to handle ethers v6 syntax
+        async function handleWalletConnection() {
             try {
-                // Check if ethers is available
-                if (typeof ethers === 'undefined') {
-                    alert("The ethers.js library failed to load. Please refresh the page.");
-                    return;
-                }
-
-                // Check if MetaMask is installed
-                if (!window.ethereum) {
-                    alert("Please install MetaMask to use this feature");
-                    return;
-                }
-
-                // Update button state
                 const connectBtn = document.getElementById('connect-wallet');
                 connectBtn.innerHTML = '<div class="spinner"></div> Connecting...';
                 connectBtn.disabled = true;
 
-                // Request account access
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                account = accounts[0];
+                // Use the centralized wallet connector
+                if (window.connectWallet) {
+                    const result = await window.connectWallet(connectBtn);
 
-                // Set up ethers provider and signer
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                signer = provider.getSigner();
+                    if (result && result.address) {
+                        // Connection successful
+                        account = result.address;
 
-                // Initialize contracts
-                // Use window.SwapConfig to avoid variable conflicts
-                const config = window.SwapConfig || {
-                    LP_POOL_ADDRESS: "0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba",
-                    VTRU_ADDRESS: "0x3ccc3F22462cAe34766820894D04a40381201ef9",
-                    USDC_ADDRESS: "0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF"
-                };
+                        // Use ethers v6 syntax
+                        provider = new ethers.BrowserProvider(window.ethereum);
+                        signer = await provider.getSigner();
 
-                vtruToken = new ethers.Contract(config.VTRU_ADDRESS, ERC20_ABI, signer);
-                usdcToken = new ethers.Contract(config.USDC_ADDRESS, ERC20_ABI, signer);
-                router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
-                lpPair = new ethers.Contract(config.LP_POOL_ADDRESS, PAIR_ABI, provider);
+                        // Initialize contracts (adjust for ethers v6)
+                        vtruToken = new ethers.Contract(VTRU_ADDRESS, ERC20_ABI, signer);
+                        usdcToken = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+                        router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
+                        lpPair = new ethers.Contract(LP_POOL_ADDRESS, PAIR_ABI, provider);
 
-                // Get token decimals
-                vtruDecimals = await vtruToken.decimals();
-                usdcDecimals = await usdcToken.decimals();
+                        // Update UI
+                        document.getElementById('connect-wallet').style.display = 'none';
+                        document.getElementById('swap-button').style.display = 'block';
+                        document.getElementById('portfolio-summary').style.display = 'block';
 
-                // Update UI
-                document.getElementById('connect-wallet').style.display = 'none';
-                document.getElementById('swap-button').style.display = 'block';
-                document.getElementById('portfolio-summary').style.display = 'block';
-
-                // Update balances and exchange rate
-                await updateBalances();
-                await getExchangeRate();
-
-                // Setup account change listener
-                window.ethereum.on('accountsChanged', handleAccountChange);
+                        // Update balances and exchange rate
+                        await updateBalances();
+                        await getExchangeRate();
+                    }
+                }
             } catch (error) {
                 console.error("Connection error:", error);
                 const connectBtn = document.getElementById('connect-wallet');
@@ -1212,7 +1195,7 @@
             }
         }
 
-        // Replace the updateBalances function with this improved version
+        // Update to ethers v6 syntax
         async function updateBalances() {
             if (!signer) return;
 
@@ -1256,8 +1239,9 @@
                 const fromBalance = await fromTokenContract.balanceOf(account);
                 const toBalance = await toTokenContract.balanceOf(account);
 
-                const formattedFromBalance = ethers.utils.formatUnits(fromBalance, fromDecimals);
-                const formattedToBalance = ethers.utils.formatUnits(toBalance, toDecimals);
+                // Update to ethers v6 syntax for formatting units
+                const formattedFromBalance = ethers.formatUnits(fromBalance, fromDecimals);
+                const formattedToBalance = ethers.formatUnits(toBalance, toDecimals);
 
                 // Update balance displays
                 fromBalanceEl.textContent = `Balance: ${parseFloat(formattedFromBalance).toFixed(4)} ${currentFromToken}`;
@@ -1273,8 +1257,8 @@
                     currentToToken === "USDC" ? toBalance :
                         await usdcToken.balanceOf(account);
 
-                const formattedVtruBalance = ethers.utils.formatUnits(vtruBalance, vtruDecimals);
-                const formattedUsdcBalance = ethers.utils.formatUnits(usdcBalance, usdcDecimals);
+                const formattedVtruBalance = ethers.formatUnits(vtruBalance, vtruDecimals);
+                const formattedUsdcBalance = ethers.formatUnits(usdcBalance, usdcDecimals);
 
                 document.getElementById('vtru-balance').textContent = parseFloat(formattedVtruBalance).toFixed(4);
                 document.getElementById('usdc-balance').textContent = parseFloat(formattedUsdcBalance).toFixed(4);
@@ -1296,8 +1280,8 @@
         async function getExchangeRate() {
             try {
                 if (!router) {
-                    // Use a read-only provider
-                    const provider = new ethers.providers.JsonRpcProvider("https://rpc.vitruveo.xyz");
+                    // Use a read-only provider - update to ethers v6 syntax
+                    const provider = new ethers.JsonRpcProvider("https://rpc.vitruveo.xyz");
                     router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider);
                 }
 
@@ -1314,6 +1298,9 @@
                     currentFromToken === "USDC" ? usdcDecimals :
                         knownTokens[fromAddress.toLowerCase()]?.decimals || 18;
 
+                // Update constant for ethers v6
+                const ZERO_ADDRESS = ethers.ZeroAddress;
+
                 // Determine the best path for the swap
                 let path;
 
@@ -1326,7 +1313,7 @@
 
                 const directPair = await factory.getPair(fromAddress, toAddress);
 
-                if (directPair !== ethers.constants.AddressZero) {
+                if (directPair !== ZERO_ADDRESS) {
                     // Direct pair exists
                     path = [fromAddress, toAddress];
                 } else {
@@ -1337,10 +1324,10 @@
                     const pairWithUSDC1 = await factory.getPair(fromAddress, USDC_ADDRESS);
                     const pairWithUSDC2 = await factory.getPair(toAddress, USDC_ADDRESS);
 
-                    if (pairWithVTRU1 !== ethers.constants.AddressZero && pairWithVTRU2 !== ethers.constants.AddressZero) {
+                    if (pairWithVTRU1 !== ZERO_ADDRESS && pairWithVTRU2 !== ZERO_ADDRESS) {
                         // Route through WVTRU
                         path = [fromAddress, VTRU_ADDRESS, toAddress];
-                    } else if (pairWithUSDC1 !== ethers.constants.AddressZero && pairWithUSDC2 !== ethers.constants.AddressZero) {
+                    } else if (pairWithUSDC1 !== ZERO_ADDRESS && pairWithUSDC2 !== ZERO_ADDRESS) {
                         // Route through USDC
                         path = [fromAddress, USDC_ADDRESS, toAddress];
                     } else {
@@ -1349,14 +1336,14 @@
                     }
                 }
 
-                const amountIn = ethers.utils.parseUnits("1", fromDecimals);
+                const amountIn = ethers.parseUnits("1", fromDecimals);
                 const amounts = await router.getAmountsOut(amountIn, path);
 
                 const toDecimals = currentToToken === "WVTRU" ? vtruDecimals :
                     currentToToken === "USDC" ? usdcDecimals :
                         knownTokens[toAddress.toLowerCase()]?.decimals || 18;
 
-                const exchangeRate = ethers.utils.formatUnits(amounts[amounts.length - 1], toDecimals);
+                const exchangeRate = ethers.formatUnits(amounts[amounts.length - 1], toDecimals);
                 currentExchangeRate = parseFloat(exchangeRate);
 
                 // Update UI
@@ -2214,6 +2201,7 @@
         }
 
         // Function to update token balances in the modal
+        // Update the updateTokenBalances function for ethers v6 syntax
         async function updateTokenBalances() {
             const tokenItems = document.querySelectorAll('.token-list-item');
 
@@ -2225,7 +2213,8 @@
                 try {
                     const tokenContract = new ethers.Contract(address, ERC20_ABI, provider);
                     const balance = await tokenContract.balanceOf(account);
-                    const formattedBalance = parseFloat(ethers.utils.formatUnits(balance, decimals)).toFixed(4);
+                    // Change this line to use ethers v6 formatUnits
+                    const formattedBalance = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
 
                     const balanceElement = document.getElementById(`token-balance-${symbol}`) || item.querySelector('.token-list-balance');
                     if (balanceElement) {

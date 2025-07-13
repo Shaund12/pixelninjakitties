@@ -453,20 +453,15 @@ function showStatus(msg, showSpinner = true) {
     }
 }
 
-/* --- mint flow ----------------------------------------- */
 mintBtn.onclick = async () => {
     try {
         mintBtn.disabled = true;
         showStatus('Connecting wallet…', true);
         updateProgress(5);
 
-        // Replace line 473 in mint.js where you call connectWallet:
-        // Old line: const { signer, addr } = await connectWallet(document.getElementById('connectBtn'));
-
-        // With this fixed version:
         const result = await connectWallet(document.getElementById('connectBtn'));
         const signer = result.signer;
-        const addr = result.address;  // The key issue - the function returns 'address', not 'addr'
+        const addr = result.address;  // Fixed - function returns 'address', not 'addr'
 
         console.log("Wallet connected:", {
             address: addr,
@@ -498,14 +493,18 @@ mintBtn.onclick = async () => {
 
             const dalleStyle = document.getElementById('dalle-style')?.value;
             if (dalleStyle) providerOptions.style = dalleStyle;
+
+            console.log("DALL-E options:", providerOptions);
         }
         else if (imageProvider === 'stability') {
             const stylePreset = document.getElementById('stability-preset')?.value;
             if (stylePreset) providerOptions.stylePreset = stylePreset;
+            console.log("Stability options:", providerOptions);
         }
         else if (imageProvider === 'huggingface') {
             const hfModel = document.getElementById('hf-model')?.value;
             if (hfModel) providerOptions.model = hfModel;
+            console.log("HuggingFace options:", providerOptions);
         }
 
         /* get live contracts w/ signer */
@@ -576,7 +575,8 @@ mintBtn.onclick = async () => {
         /* mint with selected breed and options */
         console.log("DEBUG - Provider selection:", {
             selected: imageProvider,
-            providerObj: providers[imageProvider]
+            providerObj: providers[imageProvider],
+            options: providerOptions
         });
 
         // Get provider name for display
@@ -593,14 +593,30 @@ mintBtn.onclick = async () => {
         let tx;
 
         try {
-            // Make sure breed is a proper string value - this is critical!
-            const breedString = String(breed || "").trim();
-            console.log(`Attempting mint with breed: "${breedString}"`);
+            // CRITICAL FIX: Include providerOptions in the transaction metadata
+            // Create a complete transaction metadata object with all parameters
+            const txMetadata = {
+                imageProvider,
+                promptExtras: promptExtrasValue || '',
+                negativePrompt: negativePromptValue || '',
+                providerOptions: providerOptions
+            };
 
-            // First try with just the breed parameter
-            tx = await nft.buy(breedString);
+            // Log what we're sending to ensure it contains the correct data
+            console.log("Sending transaction with complete metadata:", txMetadata);
+
+            // Convert the metadata to bytes format
+            const metadata = ethers.toUtf8Bytes(JSON.stringify(txMetadata));
+
+            // Make sure breed is a proper string value
+            const breedString = String(breed || "").trim();
+            console.log(`Attempting mint with breed: "${breedString}" and full metadata`);
+
+            // Send the transaction with the breed and metadata
+            tx = await nft.buy(breedString, ethers.hexlify(metadata));
+
         } catch (err) {
-            console.warn("First mint attempt failed:", err);
+            console.warn("First mint attempt with metadata failed:", err);
 
             try {
                 // Try again with explicit transaction options
@@ -612,17 +628,11 @@ mintBtn.onclick = async () => {
                 console.log("Retrying with overrides:", overrides);
                 tx = await nft.buy(breed, overrides);
             } catch (err2) {
-                // If all else fails, check if the contract has another signature
+                // Last resort - try with just the breed
                 console.warn("Second mint attempt failed:", err2);
+                console.log("Attempting final mint with just breed parameter");
 
-                // Try one more approach with data parameter
-                const metadata = ethers.toUtf8Bytes(JSON.stringify({
-                    imageProvider,
-                    promptExtras: promptExtrasValue || '',
-                    negativePrompt: negativePromptValue || ''
-                }));
-
-                tx = await nft.buy(breed, ethers.hexlify(metadata));
+                tx = await nft.buy(breed);
             }
         }
 
@@ -745,9 +755,11 @@ mintBtn.onclick = async () => {
                 apiUrl.searchParams.append('breed', breed);
                 apiUrl.searchParams.append('imageProvider', imageProvider);
 
-                // Add provider-specific options if available
+                // Add provider-specific options if available - CRITICAL FOR ADVANCED OPTIONS
                 if (Object.keys(providerOptions).length > 0) {
-                    apiUrl.searchParams.append('providerOptions', JSON.stringify(providerOptions));
+                    const optionsJson = JSON.stringify(providerOptions);
+                    apiUrl.searchParams.append('providerOptions', optionsJson);
+                    console.log(`Sending provider options to API: ${optionsJson}`);
                 }
 
                 // Add prompt extras if specified

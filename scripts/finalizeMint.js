@@ -1672,10 +1672,16 @@ async function getFileSize(filePath) {
     return stats.size;
 }
 
-/* ─── Main function exported ───────────────────────────────────── */
 /**
  * Generate and pin an NFT image + metadata for a ninja cat
  * @param {Object} options - Generation options
+ * @param {string} options.breed - Cat breed (defaults to "Tabby")
+ * @param {string|number} options.tokenId - NFT token ID
+ * @param {string} options.imageProvider - AI provider (stability, dall-e, huggingface)
+ * @param {string} options.promptExtras - Additional prompt instructions
+ * @param {string} options.negativePrompt - Negative prompt instructions
+ * @param {Object} options.providerOptions - Provider-specific options (stylePreset, model, etc.)
+ * @param {string} options.taskId - Task ID for progress tracking
  * @returns {Promise<Object>} Image and metadata URLs
  */
 export async function finalizeMint({
@@ -1684,7 +1690,9 @@ export async function finalizeMint({
     imageProvider,
     promptExtras = "",
     negativePrompt = "",
-    taskId = null
+    providerOptions = {},  // Explicit parameter for provider-specific options
+    taskId = null,
+    ...rest  // Capture any other parameters
 }) {
     // Normalize the breed name
     if (typeof breed !== 'string' || breed.trim() === '') {
@@ -1731,11 +1739,19 @@ export async function finalizeMint({
     console.log(`🎨 Generating image...`);
     console.log(`🚨 STRICT PROVIDER: ${imageProvider || IMAGE_PROVIDER} (no fallbacks)`);
 
+    // Log provider options if available
+    if (Object.keys(providerOptions).length > 0) {
+        console.log(`📋 PROVIDER OPTIONS:`, providerOptions);
+    }
+
+    // Pass all options to generateImage, including provider-specific options
     const imageResult = await generateImage(prompt, {
-        imageProvider: imageProvider,       // Pass explicit provider
-        strictMode: true,                   // Add flag to prevent fallbacks
+        imageProvider,
+        strictMode: true,
         negativePrompt,
-        useCustomPrompt: !!promptExtras
+        useCustomPrompt: !!promptExtras,
+        ...providerOptions,  // Explicitly include provider-specific options (style, model, etc.)
+        ...rest              // Include any other options
     });
 
     // Update task status
@@ -1787,7 +1803,7 @@ export async function finalizeMint({
         }
     }
 
-    // Create metadata
+    // Create metadata - include provider options in generation info
     console.log(`📝 Creating metadata...`);
     const metadata = {
         name: `${projectName} #${tokenId}`,
@@ -1798,6 +1814,7 @@ export async function finalizeMint({
             prompt,
             provider: imageResult.provider,
             model: imageResult.model,
+            providerOptions,  // Include provider options in metadata
             timestamp: Date.now(),
             rarity: traits.rarity
         }
@@ -1825,6 +1842,7 @@ export async function finalizeMint({
         imageUri,
         metadata,
         provider: imageResult.provider,
-        model: imageResult.model || PROVIDERS[imageResult.provider]?.model
+        model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
+        providerOptions  // Include provider options in the return value
     };
 }
