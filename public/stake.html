@@ -3,61 +3,626 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Stake your Pixel Ninja Cats</title>
+    <title>Stake your Pixel Ninja Cats | Earn Rewards</title>
 
-    <!-- styles -->
-    <link rel="stylesheet" href="stake.css" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- ethers v6 UMD -->
+    <!-- Base styles -->
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/stake.css" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <!-- Scripts -->
     <script defer src="https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js"></script>
+    <script defer src="js/wallet.js" type="module"></script>
+    <script defer src="js/navbar.js" type="module"></script>
+    <script defer src="js/stake.js"></script>
 
-    <!-- app -->
-    <script defer src="stake.js"></script>
+    <!-- Optional GSAP for animations -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+
+    <!-- Favicon -->
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
 </head>
 
 <body>
-    <header>
-        <h1>🐱 Pixel Ninja Cats × Staking</h1>
-        <button id="connectBtn">Connect Wallet</button>
-    </header>
+    <!-- Ninja stars background animation -->
+    <div class="stars-container">
+        <div class="ninja-star star1"></div>
+        <div class="ninja-star star2"></div>
+        <div class="ninja-star star3"></div>
+    </div>
 
-    <main class="grid">
+    <!-- Navbar will be inserted by navbar.js -->
+    <div id="navbar-container"></div>
 
-        <!-- balances card -->
-        <section class="card">
-            <h2>Your Balances</h2>
-            <p>Ninja Cats owned : <span id="ownedCount">–</span></p>
-            <p>Ninja Cats staked: <span id="stakedCount">–</span></p>
-            <p>PIX token balance: <span id="pixBalance">–</span></p>
-        </section>
+    <!-- Hero section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Stake Your Ninja Cats</h1>
+            <p>Earn PIX rewards by staking your Pixel Ninja Cats. The longer they train, the more rewards you earn!</p>
+        </div>
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-value" id="totalStaked">--</span>
+                <span class="stat-label">Total Staked</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="stakingAPR">--</span>
+                <span class="stat-label">Staking APR</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="totalRewards">--</span>
+                <span class="stat-label">Total PIX Rewards</span>
+            </div>
+        </div>
+    </section>
 
-        <!-- unstaked -->
-        <section class="card">
-            <h2>Un-staked Cats</h2>
-            <div id="ownedList" class="catList"></div>
-            <button id="stakeBtn" disabled>Stake Selected</button>
-        </section>
-
-        <!-- staked -->
-        <section class="card">
-            <h2>Staked Cats</h2>
-            <div id="stakedList" class="catList"></div>
-            <div class="row">
-                <button id="claimBtn" disabled>Claim Rewards</button>
-                <button id="unstakeBtn" disabled>Un-stake Selected</button>
+    <!-- Main staking interface -->
+    <main class="staking-container">
+        <!-- Dashboard section -->
+        <section class="card dashboard">
+            <h2><i class="bi bi-speedometer2"></i> Your Staking Dashboard</h2>
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-collection"></i></div>
+                    <div class="stat-data">
+                        <span class="stat-value" id="ownedCount">–</span>
+                        <span class="stat-label">Cats Owned</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-lock"></i></div>
+                    <div class="stat-data">
+                        <span class="stat-value" id="stakedCount">–</span>
+                        <span class="stat-label">Cats Staked</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-coin"></i></div>
+                    <div class="stat-data">
+                        <span class="stat-value" id="pixBalance">–</span>
+                        <span class="stat-label">PIX Balance</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="stat-data">
+                        <span class="stat-value" id="pendingRewards">–</span>
+                        <span class="stat-label">Pending Rewards</span>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- activity -->
-        <section class="card" id="logBox">
-            <h2>Activity</h2>
-            <div id="log"></div>
+        <!-- Staking interface grid -->
+        <div class="staking-grid">
+            <!-- Unstaked cats -->
+            <section class="card">
+                <div class="card-header">
+                    <h2><i class="bi bi-box-seam"></i> Unstaked Ninja Cats</h2>
+                    <div class="card-actions">
+                        <div class="search-container">
+                            <input type="text" id="unstaked-search" placeholder="Search by ID...">
+                            <i class="bi bi-search search-icon"></i>
+                        </div>
+                        <button class="action-btn" id="selectAllUnstaked" title="Select All">
+                            <i class="bi bi-check-all"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cat-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="common">Common</button>
+                    <button class="filter-btn" data-filter="rare">Rare</button>
+                    <button class="filter-btn" data-filter="epic">Epic</button>
+                    <button class="filter-btn" data-filter="legendary">Legendary</button>
+                </div>
+
+                <div id="ownedList" class="catList">
+                    <!-- Cards will be populated via JS -->
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>Loading your ninja cats...</p>
+                    </div>
+                </div>
+
+                <button id="stakeBtn" class="primary-btn" disabled>
+                    <i class="bi bi-lock"></i> Stake Selected Cats
+                </button>
+            </section>
+
+            <!-- Staked cats -->
+            <section class="card">
+                <div class="card-header">
+                    <h2><i class="bi bi-shield-lock"></i> Staked Ninja Cats</h2>
+                    <div class="card-actions">
+                        <div class="search-container">
+                            <input type="text" id="staked-search" placeholder="Search by ID...">
+                            <i class="bi bi-search search-icon"></i>
+                        </div>
+                        <button class="action-btn" id="selectAllStaked" title="Select All">
+                            <i class="bi bi-check-all"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="stakedList" class="catList">
+                    <!-- Cards will be populated via JS -->
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>Loading your staked cats...</p>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="claimBtn" class="accent-btn" disabled>
+                        <i class="bi bi-coin"></i> Claim Rewards
+                    </button>
+                    <button id="unstakeBtn" class="secondary-btn" disabled>
+                        <i class="bi bi-unlock"></i> Unstake Selected
+                    </button>
+                    <button id="emergencyUnstakeBtn" class="warning-btn" disabled>
+                        <i class="bi bi-exclamation-triangle"></i> Emergency Unstake
+                    </button>
+                </div>
+
+                <div class="boost-controls">
+                    <h3><i class="bi bi-lightning-charge"></i> Boost Your Rewards</h3>
+                    <div class="boost-input-group">
+                        <label for="boostAmount">Boost Percentage:</label>
+                        <input type="range" id="boostSlider" min="1" max="100" value="10" class="boost-slider">
+                        <span id="boostValue">10%</span>
+                    </div>
+                    <p class="boost-cost">Cost: <span id="boostCost">0</span> PIX</p>
+                    <button id="boostBtn" class="boost-btn" disabled>
+                        <i class="bi bi-lightning-charge"></i> Apply Boost
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Leaderboard -->
+        <section class="card leaderboard-card">
+            <div class="card-header">
+                <h2><i class="bi bi-trophy"></i> Staking Leaderboard</h2>
+                <div class="card-actions">
+                    <button class="action-btn" id="refreshLeaderboard" title="Refresh Leaderboard">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="leaderboard-container">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Address</th>
+                            <th>Cats Staked</th>
+                            <th>Total Rewards</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        <tr>
+                            <td colspan="4" class="loading-text">Loading leaderboard data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
+        <!-- Activity log -->
+        <section class="card activity-card">
+            <div class="card-header">
+                <h2><i class="bi bi-activity"></i> Activity Log</h2>
+                <div class="card-actions">
+                    <button class="action-btn" id="clearLog" title="Clear Log">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="log" class="activity-log">
+                <!-- Log entries will be added by JavaScript -->
+                <div class="log-entry">
+                    <span class="log-time">System</span>
+                    <span class="log-message">Welcome to the Ninja Cat Staking System. Connect your wallet to begin.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reward Rates Card -->
+        <section class="card rates-card">
+            <h2><i class="bi bi-info-circle"></i> Reward Rates & Multipliers</h2>
+            <div class="rates-grid">
+                <div class="rate-item">
+                    <div class="rate-header">
+                        <span class="rate-badge common">Common</span>
+                    </div>
+                    <div class="rate-body">
+                        <span class="rate-value">10 PIX/day</span>
+                    </div>
+                </div>
+                <div class="rate-item">
+                    <div class="rate-header">
+                        <span class="rate-badge rare">Rare</span>
+                    </div>
+                    <div class="rate-body">
+                        <span class="rate-value">20 PIX/day</span>
+                    </div>
+                </div>
+                <div class="rate-item">
+                    <div class="rate-header">
+                        <span class="rate-badge epic">Epic</span>
+                    </div>
+                    <div class="rate-body">
+                        <span class="rate-value">40 PIX/day</span>
+                    </div>
+                </div>
+                <div class="rate-item">
+                    <div class="rate-header">
+                        <span class="rate-badge legendary">Legendary</span>
+                    </div>
+                    <div class="rate-body">
+                        <span class="rate-value">80 PIX/day</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Time-Based Multipliers</h3>
+            <div class="multiplier-grid">
+                <div class="multiplier-item">
+                    <div class="multiplier-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="multiplier-info">
+                        <span class="multiplier-title">1+ Week</span>
+                        <span class="multiplier-value">10% Boost</span>
+                    </div>
+                </div>
+                <div class="multiplier-item">
+                    <div class="multiplier-icon">
+                        <i class="bi bi-calendar-week"></i>
+                    </div>
+                    <div class="multiplier-info">
+                        <span class="multiplier-title">1+ Month</span>
+                        <span class="multiplier-value">25% Boost</span>
+                    </div>
+                </div>
+                <div class="multiplier-item">
+                    <div class="multiplier-icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="multiplier-info">
+                        <span class="multiplier-title">3+ Months</span>
+                        <span class="multiplier-value">50% Boost</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="card faq-card">
+            <h2><i class="bi bi-question-circle"></i> Staking FAQ</h2>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h3>How does staking work?</h3>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <p>Staking your Pixel Ninja Cats allows them to train and earn PIX tokens. Each cat generates rewards based on their rarity and the amount of time they remain staked. Your cats remain safely in the staking contract while earning rewards.</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h3>How are rewards calculated?</h3>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <p>Rewards are calculated based on the cat's rarity level and staking time. Common cats earn 10 PIX/day, Rare cats earn 20 PIX/day, Epic cats earn 40 PIX/day, and Legendary cats earn 80 PIX/day. Additionally, time-based multipliers apply: 10% after 1 week, 25% after 1 month, and 50% after 3 months of continuous staking.</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h3>What are boosts and how do they work?</h3>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <p>Boosts allow you to increase your reward rate by spending PIX tokens. You can apply a boost of 1-100% to your staked cats, which adds directly to their reward multiplier. The cost is 10 PIX per percentage point per cat, so applying a 10% boost to 2 cats would cost 200 PIX (10 × 10 × 2).</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h3>What is emergency unstaking?</h3>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <p>Emergency unstaking allows you to withdraw your NFTs before the minimum staking period has elapsed. This feature comes with a 10% fee based on your cat's base reward rate, which is deducted from your PIX balance. This feature is designed for emergency situations only.</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h3>Can I unstake my cats at any time?</h3>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <p>Yes, you can unstake your cats at any time after the minimum staking period (24 hours) has passed. When you unstake, you'll automatically receive all pending rewards that have accumulated while your cats were staked. For emergency unstaking before the minimum period, see "What is emergency unstaking?"</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h3>What can I do with PIX tokens?</h3>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <p>PIX tokens can be used to purchase special items in our marketplace, participate in exclusive events, upgrade your Ninja Cats, apply boosts to increase staking rewards, and more. They're the utility token of the Pixel Ninja Cats ecosystem.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <footer>
-        <p>Contracts & UI © 2025 Pixel Ninja Cats</p>
-    </footer>
+    <!-- Notification system -->
+    <div id="notification-container"></div>
+
+    <!-- Confirmation modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Confirm Action</h2>
+                <button id="modal-close" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Content will be dynamically inserted -->
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel" class="secondary-btn">Cancel</button>
+                <button id="modal-confirm" class="primary-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer - loaded via footer.js -->
+    <footer id="footer"></footer>
+
+    <!-- Additional scripts -->
+    <script defer src="js/footer.js"></script>
+    <script>
+        // Initialize accordion
+        document.addEventListener('DOMContentLoaded', function () {
+            const accordionItems = document.querySelectorAll('.accordion-item');
+
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                header.addEventListener('click', () => {
+                    item.classList.toggle('active');
+                });
+            });
+
+            // Initialize theme toggle if not handled by navbar
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    document.body.classList.toggle('light-theme');
+                    const icon = themeToggle.querySelector('i');
+                    if (icon) {
+                        if (document.body.classList.contains('light-theme')) {
+                            icon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+                        } else {
+                            icon.classList.replace('bi-sun-fill', 'bi-moon-fill');
+                        }
+                    }
+                });
+            }
+
+            // Clear log button
+            const clearLogBtn = document.getElementById('clearLog');
+            if (clearLogBtn) {
+                clearLogBtn.addEventListener('click', () => {
+                    const log = document.getElementById('log');
+                    if (log) {
+                        // Keep the welcome message
+                        while (log.children.length > 1) {
+                            log.removeChild(log.lastChild);
+                        }
+                    }
+                });
+            }
+
+            // Boost slider
+            const boostSlider = document.getElementById('boostSlider');
+            const boostValue = document.getElementById('boostValue');
+            if (boostSlider && boostValue) {
+                boostSlider.addEventListener('input', function () {
+                    boostValue.textContent = this.value + '%';
+                    if (typeof updateBoostCost === 'function') {
+                        updateBoostCost(this.value);
+                    }
+                });
+            }
+
+            // Refresh leaderboard button
+            const refreshLeaderboardBtn = document.getElementById('refreshLeaderboard');
+            if (refreshLeaderboardBtn) {
+                refreshLeaderboardBtn.addEventListener('click', function () {
+                    if (typeof loadLeaderboard === 'function') {
+                        loadLeaderboard();
+                    }
+                });
+            }
+
+            // Search functionality
+            setupSearchFilters();
+
+            // Select all functionality
+            setupSelectAllButtons();
+
+            // Modal control
+            setupModal();
+        });
+
+        // Setup search filters for NFT lists
+        function setupSearchFilters() {
+            const unstakedSearch = document.getElementById('unstaked-search');
+            const stakedSearch = document.getElementById('staked-search');
+
+            if (unstakedSearch) {
+                unstakedSearch.addEventListener('input', function () {
+                    filterCards('ownedList', this.value);
+                });
+            }
+
+            if (stakedSearch) {
+                stakedSearch.addEventListener('input', function () {
+                    filterCards('stakedList', this.value);
+                });
+            }
+
+            // Filter buttons
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    // Remove active class from all buttons
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    // Apply filter
+                    const filter = this.getAttribute('data-filter');
+                    filterCardsByRarity('ownedList', filter);
+                });
+            });
+        }
+
+        // Filter cards by ID
+        function filterCards(containerId, searchText) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const cards = container.querySelectorAll('.nft-card');
+            const searchLower = searchText.toLowerCase();
+
+            cards.forEach(card => {
+                const id = card.dataset.tokenId;
+                const shouldShow = id.includes(searchLower) || searchText === '';
+                card.style.display = shouldShow ? '' : 'none';
+            });
+        }
+
+        // Filter cards by rarity
+        function filterCardsByRarity(containerId, rarity) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const cards = container.querySelectorAll('.nft-card');
+
+            cards.forEach(card => {
+                if (rarity === 'all') {
+                    card.style.display = '';
+                    return;
+                }
+
+                const cardRarity = card.dataset.rarity || 'common';
+                card.style.display = (cardRarity === rarity) ? '' : 'none';
+            });
+        }
+
+        // Setup select all buttons
+        function setupSelectAllButtons() {
+            const selectAllUnstaked = document.getElementById('selectAllUnstaked');
+            const selectAllStaked = document.getElementById('selectAllStaked');
+
+            if (selectAllUnstaked) {
+                selectAllUnstaked.addEventListener('click', function () {
+                    toggleSelectAll('ownedList');
+                });
+            }
+
+            if (selectAllStaked) {
+                selectAllStaked.addEventListener('click', function () {
+                    toggleSelectAll('stakedList');
+                });
+            }
+        }
+
+        // Toggle select all cards in a container
+        function toggleSelectAll(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const cards = container.querySelectorAll('.nft-card:not([style*="display: none"])');
+            const allSelected = Array.from(cards).every(card => card.classList.contains('selected'));
+
+            cards.forEach(card => {
+                if (allSelected) {
+                    card.classList.remove('selected');
+                    // Trigger a click event to update the internal state in stake.js
+                    card.click();
+                } else if (!card.classList.contains('selected')) {
+                    card.classList.add('selected');
+                    // Trigger a click event to update the internal state in stake.js
+                    card.click();
+                }
+            });
+        }
+
+        // Setup modal functionality
+        function setupModal() {
+            const modal = document.getElementById('modal');
+            const closeBtn = document.getElementById('modal-close');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            if (modal && closeBtn && cancelBtn) {
+                closeBtn.addEventListener('click', () => {
+                    modal.classList.remove('show');
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    modal.classList.remove('show');
+                });
+
+                // Close modal when clicking outside
+                window.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('show');
+                    }
+                });
+            }
+
+            // Make the showModal function available globally
+            window.showConfirmationModal = function (title, message, confirmCallback) {
+                const modal = document.getElementById('modal');
+                const modalTitle = document.getElementById('modal-title');
+                const modalBody = document.getElementById('modal-body');
+                const confirmBtn = document.getElementById('modal-confirm');
+
+                if (modal && modalTitle && modalBody && confirmBtn) {
+                    modalTitle.textContent = title;
+                    modalBody.innerHTML = message;
+
+                    // Remove any existing event listeners
+                    const newConfirmBtn = confirmBtn.cloneNode(true);
+                    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+                    // Add new event listener
+                    newConfirmBtn.addEventListener('click', () => {
+                        if (typeof confirmCallback === 'function') {
+                            confirmCallback();
+                        }
+                        modal.classList.remove('show');
+                    });
+
+                    // Show modal
+                    modal.classList.add('show');
+                }
+            };
+        }
+    </script>
 </body>
 </html>

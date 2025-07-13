@@ -1,9 +1,34 @@
 <div class="footer-container">
+    <!-- Animated background elements -->
+    <div class="footer-bg-elements">
+        <div class="ninja-star star1"></div>
+        <div class="ninja-star star2"></div>
+        <div class="ninja-star star3"></div>
+    </div>
+
     <div class="footer-content">
         <div class="footer-section">
-            <img src="assets/detailed_ninja_cat_64.png" alt="Ninja Cat Logo" class="footer-logo">
+            <img src="assets/detailed_ninja_cat_64.png" alt="Ninja Cat Logo" class="footer-logo pulse-glow">
             <h3>Pixel Ninja Cats</h3>
             <p>Collectible digital ninja cat artworks on the blockchain.</p>
+            <div class="blockchain-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="total-minted">--</span>
+                    <span class="stat-label">Total Minted</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="next-token-id">--</span>
+                    <span class="stat-label">Next Token ID</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="royalty-percent">--</span>
+                    <span class="stat-label">Royalty %</span>
+                </div>
+            </div>
+            <div class="contract-status">
+                <span class="status-indicator" id="contract-status-indicator"></span>
+                <span id="contract-status-text">Loading status...</span>
+            </div>
         </div>
 
         <div class="footer-section">
@@ -15,6 +40,7 @@
                 <li><a href="my-kitties.html">My Kitties</a></li>
                 <li><a href="all-kitties.html">Gallery</a></li>
                 <li><a href="marketplace.html">Marketplace</a></li>
+
             </ul>
         </div>
 
@@ -30,7 +56,6 @@
         <div class="footer-section">
             <h4>Connect</h4>
             <div class="social-links">
-
                 <a href="https://discord.gg/rpakRNAQn8" target="_blank" rel="noopener noreferrer" class="social-icon discord-icon" title="Join our Discord">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 9a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v7a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5V9z"></path>
@@ -38,6 +63,11 @@
                         <path d="M14.09 9.45a1 1 0 0 0 0 1.37 1.53 1.53 0 0 0 1.46.49 1.5 1.5 0 0 0 1.45-.49 1 1 0 0 0 0-1.37 1.5 1.5 0 0 0-1.45-.49 1.53 1.53 0 0 0-1.46.49z"></path>
                         <line x1="7" y1="19" x2="12" y2="19"></line>
                         <line x1="17" y1="19" x2="12" y2="19"></line>
+                    </svg>
+                </a>
+                <a href="https://twitter.com/pixelninjacats" target="_blank" rel="noopener noreferrer" class="social-icon twitter-icon" title="Follow on Twitter">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
                     </svg>
                 </a>
             </div>
@@ -48,7 +78,17 @@
         <p><strong>DISCLAIMER:</strong> Pixel Ninja Cats are purely collectible digital art pieces. They are NOT securities or investments. <a href="disclaimer.html">Read our full legal disclaimer</a>.</p>
     </div>
 
-    <div class="footer-copyright">
-        <p>&copy; <span id="current-year">2023</span> Pixel Ninja Cats. All rights reserved.</p>
+    <div class="footer-bottom">
+        <div class="footer-copyright">
+            <p>&copy; <span id="current-year">2023</span> Pixel Ninja Cats. All rights reserved.</p>
+        </div>
+        <div class="back-to-top">
+            <button id="backToTopBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19V5M5 12l7-7 7 7"></path>
+                </svg>
+                Back to top
+            </button>
+        </div>
     </div>
 </div>

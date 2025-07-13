@@ -145,6 +145,100 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Add this near your other event handlers
+
+// Update the burn button event handler to prevent navigation
+document.addEventListener('click', async function (e) {
+    if (e.target.classList.contains('burn-btn')) {
+        // Prevent default behavior and stop event propagation
+        e.preventDefault();
+        e.stopPropagation();
+
+        const cardElement = e.target.closest('.kitty-card') || e.target.closest('.detailed-card');
+        if (!cardElement) return;
+
+        const tokenId = cardElement.dataset.tokenId;
+        if (!tokenId) {
+            console.error('No token ID found for this NFT');
+            showToast('Error: Unable to identify NFT token ID', 'error');
+            return;
+        }
+
+        // Show confirmation modal
+        if (confirm(`Are you sure you want to burn Ninja Cat #${tokenId}? This action CANNOT be undone!`)) {
+            try {
+                // Show loading state
+                e.target.textContent = 'Burning...';
+                e.target.disabled = true;
+
+                // Check for ethereum provider
+                if (!window.ethereum) {
+                    throw new Error('No Ethereum provider detected. Please install MetaMask or another wallet.');
+                }
+
+                // Get address first to ensure we're connected
+                const address = await getAddress();
+                if (!address) {
+                    throw new Error('Wallet not connected');
+                }
+
+                // Create a WRITE provider (not the read-only RPC provider)
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+
+                // Create a contract instance with write capabilities
+                const burnableNft = new ethers.Contract(CONTRACT_ADDRESS, NFT_ABI, signer);
+
+                // Verify the contract has a burn function
+                if (!burnableNft.burn) {
+                    throw new Error('Contract does not support burn functionality');
+                }
+
+                showToast('Sending burn transaction...', 'info');
+
+                // Call contract burn function
+                const tx = await burnableNft.burn(tokenId);
+
+                // Wait for transaction to be mined
+                e.target.textContent = 'Processing...';
+                showToast('Waiting for transaction confirmation...', 'info');
+
+                await tx.wait();
+
+                // Show success message
+                showToast(`Successfully burned Ninja Cat #${tokenId}`, 'success');
+
+                // Remove the card from UI
+                cardElement.style.animation = 'fadeOut 0.5s forwards';
+                setTimeout(() => {
+                    cardElement.remove();
+
+                    // Update counts
+                    const totalCountEl = document.getElementById('totalCount');
+                    if (totalCountEl) {
+                        const currentCount = parseInt(totalCountEl.textContent);
+                        totalCountEl.textContent = Math.max(0, currentCount - 1);
+                    }
+
+                    // If no more cats, show empty state
+                    const gridEl = document.getElementById('grid');
+                    if (gridEl && (!gridEl.children.length || gridEl.children.length === 0)) {
+                        document.getElementById('emptyState').style.display = 'block';
+                    }
+                }, 500);
+
+            } catch (error) {
+                console.error('Error burning NFT:', error);
+                showToast(`Error burning NFT: ${error.message}`, 'error');
+
+                // Reset button
+                e.target.textContent = 'Burn NFT';
+                e.target.disabled = false;
+            }
+        }
+    }
+});
+
 // Initialize tooltips
 function initializeTooltips() {
     // Add Tippy.js initialization if loaded
@@ -1544,13 +1638,15 @@ function renderNftCard(nft) {
     addCardHoverEffect(cardElement);
 
     // Add click handler
-    cardElement.addEventListener('click', () => {
-        // Only navigate if not in selection mode
-        if (!grid.classList.contains('selection-mode')) {
+    cardElement.addEventListener('click', (e) => {
+        // Don't navigate if clicking on action buttons or in selection mode
+        const isActionButton = e.target.closest('.action-btn') !== null;
+        if (!grid.classList.contains('selection-mode') && !isActionButton) {
             window.location.href = `kitty.html?id=${nft.id}`;
         }
     });
 }
+
 
 // Add hover effect to cards
 function addCardHoverEffect(card) {
