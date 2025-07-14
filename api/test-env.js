@@ -21,41 +21,44 @@ export default async function handler(req, res) {
             tests: {}
         };
 
-        // Test 1: Environment Variables
+        // ✅ Environment variable checks
         console.log('🧪 Test 1: Environment Variables');
-        const requiredEnvVars = ['RPC_URL', 'CONTRACT_ADDRESS', 'PRIVATE_KEY', 'PLACEHOLDER_URI', 'MONGODB_URI'];
-        result.environment = {};
-        
+        const requiredEnvVars = [
+            'RPC_URL',
+            'CONTRACT_ADDRESS',
+            'PRIVATE_KEY',
+            'PLACEHOLDER_URI',
+            'SUPABASE_URL',
+            'SUPABASE_ANON_KEY'
+        ];
+
         for (const envVar of requiredEnvVars) {
             result.environment[envVar] = process.env[envVar] ? '✅ Set' : '❌ Missing';
         }
-        
+
         result.environment.IMAGE_PROVIDER = process.env.IMAGE_PROVIDER || 'dall-e (default)';
         result.environment.OPENAI_API_KEY = process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing';
-        
-        // Test 2: Supabase Connection
+
+        // ✅ Supabase connection
         console.log('🧪 Test 2: Supabase Connection');
         try {
             const supabaseUrl = process.env.SUPABASE_URL;
             const supabaseKey = process.env.SUPABASE_ANON_KEY;
-            
+
             if (!supabaseUrl || !supabaseKey) {
                 throw new Error('Supabase environment variables not configured');
             }
-            
+
             const supabase = createClient(supabaseUrl, supabaseKey);
-            const { data, error } = await supabase.from('tasks').select('id').limit(1);
-            
-            if (error) {
-                throw error;
-            }
-            
+            const { error } = await supabase.from('tasks').select('id').limit(1);
+            if (error) throw error;
+
             result.tests.supabase = '✅ Connected';
         } catch (supabaseError) {
             result.tests.supabase = `❌ Failed: ${supabaseError.message}`;
         }
 
-        // Test 3: Blockchain Connection
+        // ✅ Blockchain connection
         console.log('🧪 Test 3: Blockchain Connection');
         try {
             if (process.env.RPC_URL) {
@@ -69,13 +72,13 @@ export default async function handler(req, res) {
             result.tests.blockchain = `❌ Failed: ${blockchainError.message}`;
         }
 
-        // Test 4: Temporary Directory
+        // ✅ Temporary directory access
         console.log('🧪 Test 4: Temporary Directory');
         try {
             const os = await import('os');
             const fs = await import('fs/promises');
             const path = await import('path');
-            
+
             const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test-'));
             await fs.rmdir(tmpDir);
             result.tests.tempDir = '✅ Accessible';
@@ -83,7 +86,7 @@ export default async function handler(req, res) {
             result.tests.tempDir = `❌ Failed: ${tempError.message}`;
         }
 
-        // Test 5: Basic finalizeMint import
+        // ✅ finalizeMint import check
         console.log('🧪 Test 5: finalizeMint import');
         try {
             const { finalizeMint } = await import('../scripts/finalizeMint.js');
