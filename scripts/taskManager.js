@@ -356,7 +356,12 @@ export async function getTasks(filters = {}) {
                 if (filters.createdBefore) query.createdAt.$lte = new Date(filters.createdBefore);
             }
 
-            const tasks = await db.collection('tasks').find(query).toArray();
+            // Sort by creation date (most recent first)
+            const tasks = await db.collection('tasks')
+                .find(query)
+                .sort({ createdAt: -1 })
+                .toArray();
+            
             return tasks.map(task => ({
                 taskId: task.taskId,
                 ...task

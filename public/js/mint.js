@@ -700,9 +700,43 @@ mintBtn.onclick = async () => {
                 }
             }
 
-            // If we found a token ID, notify the server about the provider choice
+            // If we found a token ID, immediately notify server and start polling
             if (tokenId) {
                 updateProgress(75);
+
+                // CRITICAL: Immediately notify server about provider choice
+                // This ensures the user's provider preference is respected
+                const apiUrl = new URL(`/api/process/${tokenId}`, window.location.origin);
+                apiUrl.searchParams.append('breed', breed);
+                apiUrl.searchParams.append('imageProvider', imageProvider);
+
+                // Add provider-specific options if available
+                if (Object.keys(providerOptions).length > 0) {
+                    const optionsJson = JSON.stringify(providerOptions);
+                    apiUrl.searchParams.append('providerOptions', optionsJson);
+                    console.log(`Sending provider options to API: ${optionsJson}`);
+                }
+
+                // Add prompt extras if specified
+                if (promptExtrasValue) {
+                    apiUrl.searchParams.append('promptExtras', promptExtrasValue);
+                }
+
+                // Add negative prompt if specified
+                if (negativePromptValue) {
+                    apiUrl.searchParams.append('negativePrompt', negativePromptValue);
+                }
+
+                // Send the request to ensure processing starts with correct provider
+                fetch(apiUrl).then(response => {
+                    if (response.ok) {
+                        console.log(`✅ Successfully notified server to use ${imageProvider} for token #${tokenId}`);
+                    } else {
+                        console.warn(`⚠️ Failed to notify server about provider choice: ${response.status}`);
+                    }
+                }).catch(error => {
+                    console.warn(`⚠️ Error notifying server about provider choice:`, error);
+                });
 
                 // Create NFT generation animation
                 const generationUI = document.createElement('div');
@@ -717,7 +751,7 @@ mintBtn.onclick = async () => {
                         </div>
                         <div class="generation-text">
                             <h4>Creating Your Ninja Cat</h4>
-                            <p>Generating AI image with ${providerName}...</p>
+                            <p>Preparing ${providerName} for image generation...</p>
                             <div class="generation-stages">
                                 <div class="generation-stage active" data-stage="mint">✓ NFT Minted</div>
                                 <div class="generation-stage" data-stage="traits">Generating Traits</div>
@@ -750,67 +784,8 @@ mintBtn.onclick = async () => {
                     });
                 }
 
-                // Build the API request URL with all options
-                const apiUrl = new URL(`/api/process/${tokenId}`, window.location.origin);
-                apiUrl.searchParams.append('breed', breed);
-                apiUrl.searchParams.append('imageProvider', imageProvider);
-
-                // Add provider-specific options if available - CRITICAL FOR ADVANCED OPTIONS
-                if (Object.keys(providerOptions).length > 0) {
-                    const optionsJson = JSON.stringify(providerOptions);
-                    apiUrl.searchParams.append('providerOptions', optionsJson);
-                    console.log(`Sending provider options to API: ${optionsJson}`);
-                }
-
-                // Add prompt extras if specified
-                if (promptExtrasValue) {
-                    apiUrl.searchParams.append('promptExtras', promptExtrasValue);
-                }
-
-                // Add negative prompt if specified
-                if (negativePromptValue) {
-                    apiUrl.searchParams.append('negativePrompt', negativePromptValue);
-                }
-
-                try {
-                    // Send request to the server with all options
-                    fetch(apiUrl)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`Server responded with status: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            console.log('Server processing image:', data);
-                            updateProgress(85);
-
-                            // Update generation stage
-                            updateGenerationStage('traits');
-
-                            // Start polling for image status if server supports it
-                            if (data.taskId) {
-                                pollImageStatus(data.taskId, tokenId);
-                            } else {
-                                // No task ID, just show completion after a delay
-                                setTimeout(() => {
-                                    updateProgress(100);
-                                    showMintSuccess(tokenId, tx.hash, imageProvider);
-                                }, 3000);
-                            }
-                        })
-                        .catch(error => {
-                            console.warn('Server notification issue:', error);
-                            // Still show success even if server notification fails
-                            updateProgress(100);
-                            showMintSuccess(tokenId, tx.hash, imageProvider);
-                        });
-                } catch (apiError) {
-                    console.warn('Could not notify server about provider choice:', apiError);
-                    // Still show success
-                    updateProgress(100);
-                    showMintSuccess(tokenId, tx.hash, imageProvider);
-                }
+                // Start polling for task completion using tokenId
+                pollTokenStatus(tokenId, tx.hash, imageProvider);
             } else {
                 // No token ID found, but transaction succeeded
                 updateProgress(100);
@@ -1266,7 +1241,145 @@ function showToast(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-// Poll for image generation status
+// Poll for task completion using tokenId (new improved polling function)
+function pollTokenStatus(tokenId, txHash, provider) {
+    let pollAttempts = 0;
+    const maxPolls = 60; // Maximum number of polling attempts (2 minutes)
+    const pollInterval = 2000; // Poll every 2 seconds
+
+    const checkStatus = async () => {
+        if (pollAttempts >= maxPolls) {
+            // Stop polling after max attempts - show timeout
+            updateProgress(100);
+            showToast('NFT processing is taking longer than expected. Your NFT will be completed in the background.', 'warning', 8000);
+            showMintSuccess(tokenId, txHash, provider);
+            return;
+        }
+
+        pollAttempts++;
+
+        try {
+            const response = await fetch(`/api/token/${tokenId}/status`);
+            
+            if (response.status === 404) {
+                // Task not found yet - this is normal immediately after minting
+                if (pollAttempts < 5) {
+                    // For the first few attempts, this is expected
+                    console.log(`Task for token #${tokenId} not found yet, waiting... (attempt ${pollAttempts})`);
+                    setTimeout(checkStatus, pollInterval);
+                    return;
+                } else {
+                    // After 5 attempts, the task should exist
+                    console.warn(`Task for token #${tokenId} still not found after ${pollAttempts} attempts`);
+                    updateProgress(85);
+                    showToast('NFT processing is starting. This may take a moment...', 'info', 3000);
+                    setTimeout(checkStatus, pollInterval * 2); // Wait longer
+                    return;
+                }
+            }
+
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Token processing status:', data);
+
+            // Update progress based on status
+            if (data.status === 'completed') {
+                // Final stage - all complete
+                updateGenerationStage('metadata');
+
+                // Show completion animation
+                if (window.gsap) {
+                    const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
+                    tl.to('.generation-circle', {
+                        stroke: '#4ade80',
+                        duration: 0.5
+                    })
+                        .to('.generation-path', {
+                            stroke: '#4ade80',
+                            opacity: 0,
+                            duration: 0.3
+                        });
+                }
+
+                updateProgress(100);
+                setTimeout(() => {
+                    showMintSuccess(tokenId, txHash, data.provider || provider);
+                }, 1000);
+                return;
+            } else if (data.status === 'failed') {
+                // Task failed but NFT is still minted
+                updateProgress(100);
+                showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
+                showMintSuccess(tokenId, txHash, data.provider || provider);
+                return;
+            } else if (data.status === 'processing') {
+                // Still processing - update the stage based on progress
+                const progressPercent = data.progress || Math.min(80 + (pollAttempts * 0.5), 95);
+                updateProgress(progressPercent);
+
+                // Update generation stage based on message
+                if (data.stage) {
+                    updateGenerationStage(data.stage);
+                } else if (data.message) {
+                    if (data.message.includes('trait')) {
+                        updateGenerationStage('traits');
+                    } else if (data.message.includes('image') || data.message.includes('generating')) {
+                        updateGenerationStage('image');
+                    } else if (data.message.includes('metadata') || data.message.includes('finalizing')) {
+                        updateGenerationStage('metadata');
+                    }
+                }
+
+                // Update the message in the UI
+                const generationText = document.querySelector('.generation-text h4');
+                if (generationText) {
+                    generationText.textContent = data.message || 'Processing your Ninja Cat...';
+                }
+
+                // Continue polling
+                setTimeout(checkStatus, pollInterval);
+            } else if (data.status === 'pending' || data.status === 'queued') {
+                // Task exists but hasn't started processing yet
+                updateProgress(Math.min(75 + (pollAttempts * 0.5), 80));
+                
+                const generationText = document.querySelector('.generation-text p');
+                if (generationText) {
+                    generationText.textContent = data.message || 'Waiting in queue...';
+                }
+
+                // Continue polling
+                setTimeout(checkStatus, pollInterval);
+            } else {
+                // Unknown status - continue polling but show warning
+                console.warn(`Unknown task status: ${data.status}`);
+                updateProgress(Math.min(80 + (pollAttempts * 0.5), 95));
+                setTimeout(checkStatus, pollInterval);
+            }
+        } catch (error) {
+            console.warn('Error polling for token status:', error);
+            
+            // If we get too many errors, give up
+            if (pollAttempts >= 10) {
+                updateProgress(100);
+                showToast('Unable to check processing status. Your NFT will be completed in the background.', 'warning', 5000);
+                showMintSuccess(tokenId, txHash, provider);
+                return;
+            }
+            
+            // Continue polling despite error
+            updateProgress(Math.min(80 + (pollAttempts * 0.5), 95));
+            setTimeout(checkStatus, pollInterval * 1.5);  // Slightly longer wait on error
+        }
+    };
+
+    // Start polling
+    checkStatus();
+}
+
+// Poll for image generation status (legacy function - kept for compatibility)
 function pollImageStatus(taskId, tokenId) {
     let pollAttempts = 0;
     const maxPolls = 30; // Maximum number of polling attempts

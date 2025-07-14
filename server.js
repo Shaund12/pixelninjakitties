@@ -452,6 +452,46 @@ app.get('/api/status/:taskId', async (req, res) => {
     }
 });
 
+// API endpoint to get task status by tokenId (for frontend polling)
+app.get('/api/token/:tokenId/status', async (req, res) => {
+    try {
+        const tokenId = validateTokenId(req.params.tokenId);
+
+        // Import getTasks from taskManager
+        const { getTasks } = await import('./scripts/taskManager.js');
+        
+        // Find the most recent task for this tokenId
+        const tasks = await getTasks({ tokenId });
+        
+        if (!tasks || tasks.length === 0) {
+            return res.status(404).json({ 
+                error: 'No task found for this token',
+                tokenId,
+                status: 'unknown'
+            });
+        }
+
+        // Get the most recent task (tasks are sorted by creation date)
+        const latestTask = tasks[0];
+        
+        // Return the task status in a format expected by frontend
+        return res.json({
+            tokenId,
+            taskId: latestTask.taskId,
+            status: latestTask.status,
+            progress: latestTask.progress || 0,
+            message: latestTask.message || 'Processing...',
+            provider: latestTask.provider,
+            stage: latestTask.stage,
+            updatedAt: latestTask.updatedAt,
+            createdAt: latestTask.createdAt
+        });
+    } catch (error) {
+        console.error('Error in /api/token/:tokenId/status:', sanitizeForLogging(error.message));
+        return res.status(500).json(createSafeErrorResponse(error, process.env.NODE_ENV === 'development'));
+    }
+});
+
 // API documentation endpoint
 app.get('/api/docs', (req, res) => {
     res.json({
