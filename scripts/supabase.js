@@ -21,7 +21,7 @@ export async function connectToSupabase() {
 
         const supabaseUrl = process.env.SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_ANON_KEY;
-        
+
         if (!supabaseUrl || !supabaseKey) {
             throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY environment variables must be set');
         }
@@ -31,7 +31,7 @@ export async function connectToSupabase() {
 
         // Test the connection by attempting to query a table
         const { error } = await supabase.from('state').select('count', { count: 'exact', head: true });
-        
+
         if (error && error.code !== 'PGRST116') { // PGRST116 is "table doesn't exist" - that's ok, we'll create it
             throw error;
         }
@@ -57,7 +57,7 @@ async function initializeDatabaseStructure() {
     try {
         // Check if state table exists and create if it doesn't
         const { error: stateError } = await supabase.from('state').select('count', { count: 'exact', head: true });
-        
+
         if (stateError && stateError.code === 'PGRST116') {
             console.log('📋 State table does not exist - ensure it is created in Supabase dashboard');
             console.log('Required schema: state (id: uuid, type: text, state: jsonb, updated_at: timestamp)');
@@ -65,7 +65,7 @@ async function initializeDatabaseStructure() {
 
         // Check if tasks table exists
         const { error: tasksError } = await supabase.from('tasks').select('count', { count: 'exact', head: true });
-        
+
         if (tasksError && tasksError.code === 'PGRST116') {
             console.log('📋 Tasks table does not exist - ensure it is created in Supabase dashboard');
             console.log('Required schema: tasks (id: uuid, task_id: text, token_id: integer, status: text, progress: integer, created_at: timestamp, updated_at: timestamp, metadata: jsonb)');
@@ -109,11 +109,11 @@ export async function ensureConnection() {
     try {
         // Test the connection with a simple query
         const { error } = await supabase.from('state').select('count', { count: 'exact', head: true });
-        
+
         if (error && error.code !== 'PGRST116') {
             throw error;
         }
-        
+
         return true;
     } catch (error) {
         console.error('❌ Supabase connection test failed:', error);
@@ -191,7 +191,7 @@ export async function saveState(type, state) {
     return await withSupabase(async (client) => {
         // Validate state before saving
         const validatedState = validateState(state);
-        
+
         const { error } = await client
             .from('state')
             .upsert({

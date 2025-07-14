@@ -14,7 +14,7 @@ const DEFAULT_STATE = {
 async function loadCronState() {
     try {
         const state = await loadState('cron', DEFAULT_STATE);
-        
+
         // Validate that state is an object
         if (!state || typeof state !== 'object') {
             console.warn('⚠️ Invalid state object returned from Supabase, using default state');
@@ -41,9 +41,9 @@ async function loadCronState() {
 
         // Convert array back to Set for processedTokens
         state.processedTokens = new Set(state.processedTokens);
-        
+
         console.log(`📊 Validated state: lastBlock=${state.lastProcessedBlock}, processedTokens=${state.processedTokens.size}, pendingTasks=${state.pendingTasks.length}`);
-        
+
         return state;
     } catch (error) {
         console.error('Failed to load cron state from Supabase:', error);
@@ -86,7 +86,7 @@ async function saveCronState(state) {
             processedTokens: processedTokensArray,
             pendingTasks: pendingTasksArray
         };
-        
+
         await saveState('cron', stateToSave);
         console.log(`💾 State saved to Supabase: lastBlock=${stateToSave.lastProcessedBlock}, processedTokens=${stateToSave.processedTokens.length}, pendingTasks=${stateToSave.pendingTasks.length}`);
     } catch (error) {
@@ -255,7 +255,7 @@ export default async function handler(req, res) {
         // Load persistent state with error handling
         console.log('📂 Loading cron state...');
         const state = await loadCronState();
-        
+
         // Additional safety checks to prevent .length of undefined errors
         if (!state || typeof state !== 'object') {
             console.error('❌ Invalid state object returned from loadCronState');

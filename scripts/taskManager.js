@@ -168,7 +168,7 @@ export async function updateTask(taskId, update) {
             }
 
             const now = new Date().toISOString();
-            let history = task.metadata?.history || [];
+            const history = task.metadata?.history || [];
 
             // Track status changes in history
             if (update.status && update.status !== task.status) {
@@ -204,7 +204,7 @@ export async function updateTask(taskId, update) {
                 const elapsedTime = new Date() - new Date(task.created_at);
                 const estimatedTotalTime = (elapsedTime / update.progress) * 100;
                 const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
-                
+
                 estimatedCompletionTime = new Date(Date.now() + estimatedTimeRemaining).toISOString();
             }
 
@@ -315,8 +315,7 @@ export async function getTaskStatus(taskId, options = {}) {
                 // Convert snake_case to camelCase for compatibility
                 createdAt: task.created_at,
                 updatedAt: task.updated_at,
-                tokenId: task.token_id,
-                taskId: task.task_id
+                tokenId: task.token_id
             };
         }, 'Get task status');
     } catch (error) {
@@ -369,9 +368,14 @@ export async function failTask(taskId, error) {
  */
 export async function cancelTask(taskId, reason = 'User canceled') {
     try {
-        return await withDatabase(async (db) => {
-            const task = await db.collection('tasks').findOne({ _id: taskId });
-            if (!task) {
+        return await withSupabase(async (supabase) => {
+            const { data: task, error } = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('task_id', taskId)
+                .single();
+
+            if (error || !task) {
                 throw new Error(`Task ${taskId} not found`);
             }
 
@@ -387,7 +391,7 @@ export async function cancelTask(taskId, reason = 'User canceled') {
             return await updateTask(taskId, {
                 status: TASK_STATES.CANCELED,
                 message: `Task canceled: ${reason}`,
-                canceledAt: new Date()
+                canceledAt: new Date().toISOString()
             });
         }, 'Cancel task');
     } catch (error) {
@@ -403,25 +407,43 @@ export async function cancelTask(taskId, reason = 'User canceled') {
  */
 export async function getTasks(filters = {}) {
     try {
-        return await withDatabase(async (db) => {
-            // Build MongoDB query from filters
-            const query = {};
+        return await withSupabase(async (supabase) => {
+            // Build Supabase query from filters
+            let query = supabase.from('tasks').select('*');
 
-            if (filters.status) query.status = filters.status;
-            if (filters.provider) query.provider = filters.provider;
-            if (filters.tokenId) query.tokenId = Number(filters.tokenId);
-            if (filters.minProgress) query.progress = { $gte: filters.minProgress };
-
-            // Add date range filters if provided
-            if (filters.createdAfter || filters.createdBefore) {
-                query.createdAt = {};
-                if (filters.createdAfter) query.createdAt.$gte = new Date(filters.createdAfter);
-                if (filters.createdBefore) query.createdAt.$lte = new Date(filters.createdBefore);
+            if (filters.status) {
+                query = query.eq('status', filters.status);
+            }
+            if (filters.provider) {
+                query = query.eq('provider', filters.provider);
+            }
+            if (filters.tokenId) {
+                query = query.eq('token_id', Number(filters.tokenId));
+            }
+            if (filters.minProgress) {
+                query = query.gte('progress', filters.minProgress);
             }
 
-            const tasks = await db.collection('tasks').find(query).toArray();
+            // Add date range filters if provided
+            if (filters.createdAfter) {
+                query = query.gte('created_at', new Date(filters.createdAfter).toISOString());
+            }
+            if (filters.createdBefore) {
+                query = query.lte('created_at', new Date(filters.createdBefore).toISOString());
+            }
+
+            const { data: tasks, error } = await query;
+
+            if (error) {
+                throw error;
+            }
+
+            // Convert to compatible format
             return tasks.map(task => ({
-                taskId: task.taskId,
+                taskId: task.task_id,
+                tokenId: task.token_id,
+                createdAt: task.created_at,
+                updatedAt: task.updated_at,
                 ...task
             }));
         }, 'Get tasks');
@@ -439,19 +461,29 @@ export async function getTaskMetrics() {
     try {
         await loadMetrics();
 
-        return await withDatabase(async (db) => {
-            const pendingCount = await db.collection('tasks').countDocuments({ status: TASK_STATES.PENDING });
-            const processingCount = await db.collection('tasks').countDocuments({ status: TASK_STATES.PROCESSING });
-            const totalCount = await db.collection('tasks').countDocuments();
+        return await withSupabase(async (supabase) => {
+            const { count: pendingCount, error: pendingError } = await supabase
+                .from('tasks')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', TASK_STATES.PENDING);
+
+            const { count: processingCount, error: processingError } = await supabase
+                .from('tasks')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', TASK_STATES.PROCESSING);
+
+            const { count: totalCount, error: totalError } = await supabase
+                .from('tasks')
+                .select('*', { count: 'exact', head: true });
 
             return {
                 ...metrics,
-                totalTasks: totalCount,
+                totalTasks: totalError ? 0 : totalCount,
                 activeTasks: metrics.active,
-                pendingTasks: pendingCount,
-                processingTasks: processingCount,
+                pendingTasks: pendingError ? 0 : pendingCount,
+                processingTasks: processingError ? 0 : processingCount,
                 averageCompletionTimeSeconds: Math.round(metrics.averageCompletionTime / 1000),
-                taskCount: totalCount
+                taskCount: totalError ? 0 : totalCount
             };
         }, 'Get task metrics');
     } catch (error) {
@@ -475,17 +507,35 @@ export async function getTaskMetrics() {
  */
 export async function cleanupTasks(maxAge = 24 * 60 * 60 * 1000) {
     try {
-        return await withDatabase(async (db) => {
-            const cutoffDate = new Date(Date.now() - maxAge);
+        return await withSupabase(async (supabase) => {
+            const cutoffDate = new Date(Date.now() - maxAge).toISOString();
 
-            const result = await db.collection('tasks').deleteMany({
-                status: {
-                    $in: [TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED, TASK_STATES.TIMEOUT]
-                },
-                updatedAt: { $lt: cutoffDate }
-            });
+            const { data: tasksToDelete, error: fetchError } = await supabase
+                .from('tasks')
+                .select('id')
+                .in('status', [TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED, TASK_STATES.TIMEOUT])
+                .lt('updated_at', cutoffDate);
 
-            return result.deletedCount;
+            if (fetchError) {
+                throw fetchError;
+            }
+
+            if (!tasksToDelete || tasksToDelete.length === 0) {
+                return 0;
+            }
+
+            const taskIds = tasksToDelete.map(task => task.id);
+
+            const { error: deleteError } = await supabase
+                .from('tasks')
+                .delete()
+                .in('id', taskIds);
+
+            if (deleteError) {
+                throw deleteError;
+            }
+
+            return tasksToDelete.length;
         }, 'Cleanup tasks');
     } catch (error) {
         console.error('Failed to cleanup tasks:', error);
