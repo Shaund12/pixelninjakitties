@@ -1,0 +1,55 @@
+﻿name: 🐛 Bug Report (Supabase Only)
+description: Report a bug or regression. Reminder: Supabase is the only approved backend.
+title: "[BUG] "
+labels: ["bug", "supabase"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ❗️Reminder:
+        > **Supabase is the only approved backend for this project.**
+        > 
+        > - ❌ Do NOT use MongoDB, Mongoose, MongoClient, or any local file/db alternatives.
+        > - ✅ All data must be handled through Supabase using `@supabase/supabase-js`.
+        > - Required tables: `tasks`, `state`
+
+        If you’re seeing unexpected MongoDB usage, fallback to files, or missing Supabase integration — this is a critical issue.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 🐞 What happened?
+      description: Describe the bug, what you expected to happen, and what actually happened.
+      placeholder: I clicked "Mint" and the status skipped to success, but Supabase never updated the task.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: 🔁 Steps to Reproduce
+      description: Provide steps so others can reproduce the issue reliably.
+      placeholder: |
+        1. Go to index.html
+        2. Click on Mint
+        3. Check console logs and task status
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 💻 Environment
+      description: What environment did this occur in? (e.g. Vercel preview, local dev, production)
+      placeholder: local development
+
+  - type: checkboxes
+    id: db-confirmation
+    attributes:
+      label: ✅ Supabase Usage Confirmation
+      description: Ensure this issue enforces Supabase-only usage.
+      options:
+        - label: I confirm that this bug report assumes Supabase is the only database backend.
+          required: true
