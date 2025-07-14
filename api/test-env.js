@@ -4,7 +4,6 @@
  */
 
 import { ethers } from 'ethers';
-import { ensureConnection } from '../scripts/mongodb.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -23,7 +22,7 @@ export default async function handler(req, res) {
 
         // Test 1: Environment Variables
         console.log('🧪 Test 1: Environment Variables');
-        const requiredEnvVars = ['RPC_URL', 'CONTRACT_ADDRESS', 'PRIVATE_KEY', 'PLACEHOLDER_URI', 'MONGODB_URI'];
+        const requiredEnvVars = ['RPC_URL', 'CONTRACT_ADDRESS', 'PRIVATE_KEY', 'PLACEHOLDER_URI'];
         result.environment = {};
         
         for (const envVar of requiredEnvVars) {
@@ -33,13 +32,19 @@ export default async function handler(req, res) {
         result.environment.IMAGE_PROVIDER = process.env.IMAGE_PROVIDER || 'dall-e (default)';
         result.environment.OPENAI_API_KEY = process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing';
         
-        // Test 2: MongoDB Connection
-        console.log('🧪 Test 2: MongoDB Connection');
+        // Test 2: File System Access
+        console.log('🧪 Test 2: File System Access');
         try {
-            await ensureConnection();
-            result.tests.mongodb = '✅ Connected';
-        } catch (mongoError) {
-            result.tests.mongodb = `❌ Failed: ${mongoError.message}`;
+            // Test file system access by creating a temp file
+            const fs = await import('fs/promises');
+            const path = await import('path');
+            const testFile = path.join(process.cwd(), 'temp-test.json');
+            await fs.writeFile(testFile, JSON.stringify({ test: true }));
+            await fs.readFile(testFile);
+            await fs.unlink(testFile);
+            result.tests.filesystem = '✅ File system accessible';
+        } catch (fsError) {
+            result.tests.filesystem = `❌ Failed: ${fsError.message}`;
         }
 
         // Test 3: Blockchain Connection

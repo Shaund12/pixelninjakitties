@@ -8,3 +8,9 @@ public/images/14.png
 public/images/15.png
 public/images/16.png
 public/images/23.png
+tasks.json
+task-metrics.json
+cron-state.json
+event-state.json
+provider-preferences.json
+temp-test.json

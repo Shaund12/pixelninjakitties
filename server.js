@@ -20,8 +20,8 @@ import cors from 'cors';
 import compression from 'compression';
 import { ethers } from 'ethers';
 import { finalizeMint } from './scripts/finalizeMint.js';
-import { createStorage } from './scripts/storageHelpers.js'; // You'll need to create this file
-import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks } from './scripts/taskManager.js';
+import { createStorage } from './scripts/storageHelpers.js';
+import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks } from './scripts/taskManagerFile.js';
 import {
     validateTokenId,
     validateBreed,
@@ -41,7 +41,6 @@ import {
     errorHandler
 } from './scripts/middleware.js';
 import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
-import { connectToMongoDB } from './scripts/mongodb.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -526,26 +525,11 @@ app.get('/api/docs', (req, res) => {
     });
 });
 
-// Initialize MongoDB connection and start server
-async function startServer() {
-    try {
-        // Connect to MongoDB
-        await connectToMongoDB();
-        console.log('✅ MongoDB connection established');
-
-        // Start Express server
-        app.listen(PORT, () => {
-            console.log(`🌐 Ninja Kitty server running on port ${PORT}`);
-            console.log('📊 MongoDB integrated for task persistence');
-        });
-    } catch (error) {
-        console.error('❌ Failed to start server:', error);
-        process.exit(1);
-    }
-}
-
-// Start the server
-startServer();
+// Initialize Express server
+app.listen(PORT, () => {
+    console.log(`🌐 Ninja Kitty server running on port ${PORT}`);
+    console.log('📁 Using file-based storage for task persistence');
+});
 
 // Add error handling middleware with tracking
 app.use((err, req, res, next) => {

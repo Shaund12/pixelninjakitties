@@ -1,7 +1,10 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
-import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/taskManager.js';
-import { saveState, loadState, ensureConnection } from '../scripts/mongodb.js';
+import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/taskManagerFile.js';
+import { createStorage } from '../scripts/storageHelpers.js';
+
+// Initialize storage for cron state
+const cronStorage = createStorage('cron-state.json');
 
 // Default state structure for cron system
 const DEFAULT_STATE = {
@@ -10,20 +13,20 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from MongoDB
+// Load state from file storage
 async function loadCronState() {
     try {
-        const state = await loadState('cron', DEFAULT_STATE);
+        const state = await cronStorage.get('state') || DEFAULT_STATE;
         // Convert array back to Set for processedTokens
         state.processedTokens = new Set(state.processedTokens);
         return state;
     } catch (error) {
-        console.error('Failed to load cron state from MongoDB:', error);
+        console.error('Failed to load cron state from file:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to MongoDB
+// Save state to file storage
 async function saveCronState(state) {
     try {
         // Convert Set to array for storage
@@ -31,9 +34,9 @@ async function saveCronState(state) {
             ...state,
             processedTokens: Array.from(state.processedTokens)
         };
-        await saveState('cron', stateToSave);
+        await cronStorage.set('state', stateToSave);
     } catch (error) {
-        console.error('Failed to save cron state to MongoDB:', error);
+        console.error('Failed to save cron state to file:', error);
     }
 }
 
@@ -161,8 +164,7 @@ export default async function handler(req, res) {
             CONTRACT_ADDRESS,
             PRIVATE_KEY,
             PLACEHOLDER_URI,
-            IMAGE_PROVIDER = 'dall-e',
-            MONGODB_URI
+            IMAGE_PROVIDER = 'dall-e'
         } = process.env;
 
         // Validate all required environment variables
@@ -180,19 +182,6 @@ export default async function handler(req, res) {
                 timestamp: new Date().toISOString()
             });
         }
-
-        if (!MONGODB_URI) {
-            console.error('❌ MONGODB_URI not configured');
-            return res.status(500).json({
-                error: 'MONGODB_URI not configured',
-                timestamp: new Date().toISOString()
-            });
-        }
-
-        // Ensure MongoDB connection with detailed logging
-        console.log('🔗 Connecting to MongoDB...');
-        await ensureConnection();
-        console.log('✅ MongoDB connection established');
 
         // Load persistent state with error handling
         console.log('📂 Loading cron state...');

@@ -5,7 +5,6 @@
 import { ethers } from 'ethers';
 import fs from 'fs/promises';
 import path from 'path';
-import { mongoHealthCheck } from './mongodb.js';
 
 /**
  * Comprehensive health check for the NFT minting system
@@ -25,14 +24,11 @@ export async function performHealthCheck() {
         // Check environment variables
         results.checks.environment = await checkEnvironment();
 
-        // Check MongoDB connectivity
-        results.checks.mongodb = await mongoHealthCheck();
+        // Check file system
+        results.checks.filesystem = await checkFileSystem();
 
         // Check blockchain connectivity
         results.checks.blockchain = await checkBlockchain();
-
-        // Check file system
-        results.checks.filesystem = await checkFileSystem();
 
         // Check memory usage
         results.checks.memory = checkMemoryUsage();
