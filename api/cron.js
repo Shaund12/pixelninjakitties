@@ -14,9 +14,17 @@ const DEFAULT_STATE = {
 async function loadCronState() {
     try {
         const state = await loadState('cron', DEFAULT_STATE);
+
+        // Ensure all required fields are present and have correct types
+        const safeState = {
+            lastProcessedBlock: state.lastProcessedBlock || DEFAULT_STATE.lastProcessedBlock,
+            processedTokens: Array.isArray(state.processedTokens) ? state.processedTokens : DEFAULT_STATE.processedTokens,
+            pendingTasks: Array.isArray(state.pendingTasks) ? state.pendingTasks : DEFAULT_STATE.pendingTasks
+        };
+
         // Convert array back to Set for processedTokens
-        state.processedTokens = new Set(state.processedTokens);
-        return state;
+        safeState.processedTokens = new Set(safeState.processedTokens);
+        return safeState;
     } catch (error) {
         console.error('Failed to load cron state from MongoDB:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
