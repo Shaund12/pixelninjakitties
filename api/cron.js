@@ -177,59 +177,80 @@ async function saveCronState(state) {
 }
 
 // Process a single pending task
+// Process a single pending task
 async function processSingleTask(nft, taskInfo, state) {
     const { tokenId, breed, buyer, taskId } = taskInfo;
     const id = Number(tokenId);
+    
+    // Extract regeneration-specific parameters
+    const isRegeneration = taskInfo.isRegeneration || false;
+    const promptExtras = taskInfo.promptExtras || '';
+    const negativePrompt = taskInfo.negativePrompt || '';
+    const forceProcess = taskInfo.forceProcess || isRegeneration;
 
     console.log(`⚙️ Processing task ${taskId} for token #${id} (${breed}) by ${buyer}`);
-
+    
     try {
         // Update task status
         await updateTask(taskId, {
             status: TASK_STATES.PROCESSING,
             progress: 10,
-            message: 'Starting NFT generation'
+            message: isRegeneration ? 'Starting NFT regeneration' : 'Starting NFT generation'
         });
 
-        // Check if already processed
-        if (state.processedTokens.has(id)) {
+        // Only skip if already processed AND not a regeneration request
+        if (state.processedTokens.has(id) && !forceProcess) {
             console.log(`⏭️ Token #${id} already processed, marking task complete`);
             await completeTask(taskId, { tokenURI: 'already-processed', skipped: true });
             return { success: true, skipped: true };
         }
 
-        // Set placeholder if needed
-        await updateTask(taskId, {
-            progress: 20,
-            message: 'Setting placeholder image'
-        });
+        if (isRegeneration) {
+            console.log(`🔄 Regenerating token #${id} with new image`);
+        }
 
-        try {
-            const current = await nft.tokenURI(id).catch(() => '');
-            if (!current || current === '') {
-                const txPH = await nft.setTokenURI(id, process.env.PLACEHOLDER_URI);
-                await txPH.wait();
-                console.log(`• Placeholder set for token #${id}`);
-            }
-        } catch (err) {
-            console.error(`• Placeholder failed for token #${id}:`, err);
+        // Set placeholder if needed (not for regeneration)
+        if (!isRegeneration) {
             await updateTask(taskId, {
-                progress: 25,
-                message: `Warning: Placeholder set failed - ${err.message.substring(0, 100)}`
+                progress: 20,
+                message: 'Setting placeholder image'
             });
+
+            try {
+                const current = await nft.tokenURI(id).catch(() => '');
+                if (!current || current === '') {
+                    const txPH = await nft.setTokenURI(id, process.env.PLACEHOLDER_URI);
+                    await txPH.wait();
+                    console.log(`• Placeholder set for token #${id}`);
+                }
+            } catch (err) {
+                console.error(`• Placeholder failed for token #${id}:`, err);
+                await updateTask(taskId, {
+                    progress: 25,
+                    message: `Warning: Placeholder set failed - ${err.message.substring(0, 100)}`
+                });
+            }
         }
 
         // Generate final art and metadata
         await updateTask(taskId, {
             progress: 40,
-            message: 'Generating artwork and metadata'
+            message: isRegeneration ? 'Regenerating artwork' : 'Generating artwork and metadata',
+            metadata: {
+                isRegeneration,
+                hasCustomPrompt: !!promptExtras,
+                hasNegativePrompt: !!negativePrompt
+            }
         });
 
         console.log(`🔍 CRON DEBUG: About to call finalizeMint with breed: "${breed}"`);
         console.log('🔍 CRON DEBUG: finalizeMint parameters:', {
             breed,
             tokenId: id,
-            imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
+            imageProvider: taskInfo.imageProvider || process.env.IMAGE_PROVIDER || 'dall-e',
+            promptExtras,
+            negativePrompt,
+            isRegeneration,
             taskId
         });
 
@@ -238,7 +259,10 @@ async function processSingleTask(nft, taskInfo, state) {
             result = await finalizeMint({
                 breed,
                 tokenId: id,
-                imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
+                imageProvider: taskInfo.imageProvider || process.env.IMAGE_PROVIDER || 'dall-e',
+                promptExtras,
+                negativePrompt,
+                isRegeneration,
                 taskId
             });
             console.log('🔍 CRON DEBUG: finalizeMint completed successfully');
@@ -265,15 +289,18 @@ async function processSingleTask(nft, taskInfo, state) {
 
         // Mark as processed
         state.processedTokens.add(id);
-        console.log(`✅ Finalized #${id} → ${result.tokenURI}`);
+        console.log(`✅ ${isRegeneration ? 'Regenerated' : 'Finalized'} #${id} → ${result.tokenURI}`);
 
-        // Complete the task
+        // Complete the task with regeneration info if applicable
         await completeTask(taskId, {
             tokenURI: result.tokenURI,
             breed,
             tokenId: id,
             transactionHash: tx.hash,
-            provider: result.provider
+            provider: result.provider,
+            isRegeneration,
+            promptExtras: promptExtras || undefined,
+            negativePrompt: negativePrompt || undefined
         });
 
         return { success: true, tokenURI: result.tokenURI };
