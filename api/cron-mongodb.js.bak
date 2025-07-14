@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/taskManager.js';
-import { saveState, loadState, ensureConnection } from '../scripts/supabase.js';
+import { saveState, loadState, ensureConnection } from '../scripts/mongodb.js';
 
 // Default state structure for cron system
 const DEFAULT_STATE = {
@@ -10,7 +10,7 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from Supabase
+// Load state from MongoDB
 async function loadCronState() {
     try {
         const state = await loadState('cron', DEFAULT_STATE);
@@ -18,12 +18,12 @@ async function loadCronState() {
         state.processedTokens = new Set(state.processedTokens);
         return state;
     } catch (error) {
-        console.error('Failed to load cron state from Supabase:', error);
+        console.error('Failed to load cron state from MongoDB:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to Supabase
+// Save state to MongoDB
 async function saveCronState(state) {
     try {
         // Convert Set to array for storage
@@ -33,7 +33,7 @@ async function saveCronState(state) {
         };
         await saveState('cron', stateToSave);
     } catch (error) {
-        console.error('Failed to save cron state to Supabase:', error);
+        console.error('Failed to save cron state to MongoDB:', error);
     }
 }
 
@@ -87,7 +87,7 @@ async function processSingleTask(nft, taskInfo, state) {
         });
 
         console.log(`🔍 CRON DEBUG: About to call finalizeMint with breed: "${breed}"`);
-        console.log('🔍 CRON DEBUG: finalizeMint parameters:', {
+        console.log(`🔍 CRON DEBUG: finalizeMint parameters:`, {
             breed,
             tokenId: id,
             imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
@@ -102,14 +102,14 @@ async function processSingleTask(nft, taskInfo, state) {
                 imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
                 taskId
             });
-            console.log('🔍 CRON DEBUG: finalizeMint completed successfully');
+            console.log(`🔍 CRON DEBUG: finalizeMint completed successfully`);
         } catch (finalizeMintError) {
-            console.error('❌ CRON DEBUG: finalizeMint failed:', finalizeMintError);
-            console.error('❌ CRON DEBUG: finalizeMint error stack:', finalizeMintError.stack);
+            console.error(`❌ CRON DEBUG: finalizeMint failed:`, finalizeMintError);
+            console.error(`❌ CRON DEBUG: finalizeMint error stack:`, finalizeMintError.stack);
             throw finalizeMintError;
         }
 
-        console.log('🔍 CRON DEBUG: finalizeMint result:', {
+        console.log(`🔍 CRON DEBUG: finalizeMint result:`, {
             tokenURI: result.tokenURI,
             provider: result.provider,
             breed: result.metadata?.attributes?.find(a => a.trait_type === 'Breed')?.value
@@ -162,8 +162,7 @@ export default async function handler(req, res) {
             PRIVATE_KEY,
             PLACEHOLDER_URI,
             IMAGE_PROVIDER = 'dall-e',
-            SUPABASE_URL,
-            SUPABASE_ANON_KEY
+            MONGODB_URI
         } = process.env;
 
         // Validate all required environment variables
@@ -182,18 +181,18 @@ export default async function handler(req, res) {
             });
         }
 
-        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-            console.error('❌ Supabase not configured');
+        if (!MONGODB_URI) {
+            console.error('❌ MONGODB_URI not configured');
             return res.status(500).json({
-                error: 'SUPABASE_URL and SUPABASE_ANON_KEY not configured',
+                error: 'MONGODB_URI not configured',
                 timestamp: new Date().toISOString()
             });
         }
 
-        // Ensure Supabase connection with detailed logging
-        console.log('🔗 Connecting to Supabase...');
+        // Ensure MongoDB connection with detailed logging
+        console.log('🔗 Connecting to MongoDB...');
         await ensureConnection();
-        console.log('✅ Supabase connection established');
+        console.log('✅ MongoDB connection established');
 
         // Load persistent state with error handling
         console.log('📂 Loading cron state...');
@@ -352,7 +351,7 @@ export default async function handler(req, res) {
             totalProcessedTokens: state.processedTokens.size,
             environment: {
                 imageProvider: IMAGE_PROVIDER,
-                supabaseConnected: true,
+                mongoConnected: true,
                 blockchainConnected: true
             },
             results

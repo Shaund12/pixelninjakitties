@@ -1,77 +1,80 @@
 /**
- * MongoDB Database Structure Test
- * Use this endpoint to test MongoDB connection and database initialization
+ * Supabase Database Structure Test
+ * Use this endpoint to test Supabase connection and database initialization
  */
 
-import { connectToMongoDB, getDatabase, mongoHealthCheck } from '../scripts/mongodb.js';
+import { connectToSupabase, getSupabaseClient, supabaseHealthCheck } from '../scripts/supabase.js';
 
 export default async function handler(req, res) {
     try {
-        console.log('🧪 Testing MongoDB connection and database structure...');
+        console.log('🧪 Testing Supabase connection and database structure...');
 
         // Test connection
-        const connected = await connectToMongoDB();
+        const connected = await connectToSupabase();
         if (!connected) {
             return res.status(500).json({
-                error: 'Failed to connect to MongoDB',
+                error: 'Failed to connect to Supabase',
                 timestamp: new Date().toISOString()
             });
         }
 
-        // Get database instance
-        const db = getDatabase();
+        // Get Supabase client
+        const supabase = getSupabaseClient();
 
-        // List collections
-        const collections = await db.listCollections().toArray();
-        const collectionNames = collections.map(col => col.name);
+        // Test queries on each table
+        const tables = ['tasks', 'state', 'metrics'];
+        const tableInfo = {};
 
-        // Check if required collections exist
-        const requiredCollections = ['tasks', 'state', 'metrics'];
-        const missingCollections = requiredCollections.filter(name => !collectionNames.includes(name));
+        for (const tableName of tables) {
+            try {
+                // Get row count
+                const { count, error: countError } = await supabase
+                    .from(tableName)
+                    .select('*', { count: 'exact', head: true });
 
-        // Get collection stats
-        const collectionStats = {};
-        for (const name of requiredCollections) {
-            if (collectionNames.includes(name)) {
-                try {
-                    const count = await db.collection(name).countDocuments();
-                    const indexes = await db.collection(name).indexes();
-                    collectionStats[name] = {
-                        documentCount: count,
-                        indexCount: indexes.length,
-                        indexes: indexes.map(idx => ({ name: idx.name, keys: idx.key }))
+                if (countError) {
+                    tableInfo[tableName] = {
+                        exists: false,
+                        error: countError.message
                     };
-                } catch (error) {
-                    collectionStats[name] = { error: error.message };
+                } else {
+                    tableInfo[tableName] = {
+                        exists: true,
+                        documentCount: count || 0
+                    };
                 }
+            } catch (error) {
+                tableInfo[tableName] = {
+                    exists: false,
+                    error: error.message
+                };
             }
         }
 
         // Get health check
-        const healthCheck = await mongoHealthCheck();
+        const healthCheck = await supabaseHealthCheck();
 
         const result = {
             status: 'success',
             timestamp: new Date().toISOString(),
             connection: {
                 connected: true,
-                database: db.databaseName
+                url: process.env.SUPABASE_URL ? 'configured' : 'not configured',
+                database: 'supabase'
             },
-            collections: {
-                total: collectionNames.length,
-                existing: collectionNames,
-                required: requiredCollections,
-                missing: missingCollections,
-                stats: collectionStats
+            tables: {
+                total: tables.length,
+                required: tables,
+                info: tableInfo
             },
             healthCheck
         };
 
-        console.log('✅ MongoDB test completed successfully');
+        console.log('✅ Supabase test completed successfully');
         return res.status(200).json(result);
 
     } catch (error) {
-        console.error('❌ MongoDB test failed:', error);
+        console.error('❌ Supabase test failed:', error);
         return res.status(500).json({
             status: 'error',
             error: error.message,

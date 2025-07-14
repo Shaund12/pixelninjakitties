@@ -1,13 +1,13 @@
 /**
  * Advanced Task Management System
  * Handles tracking, updating, and monitoring of asynchronous NFT generation tasks
- * Now using Supabase for persistent storage instead of MongoDB
+ * Now using MongoDB for persistent storage
  */
 
 import crypto from 'crypto';
-import { withDatabase } from './supabase.js';
+import { withDatabase } from './mongodb.js';
 
-// Task metrics (loaded from Supabase)
+// Task metrics (loaded from MongoDB)
 let metrics = {
     created: 0,
     completed: 0,
@@ -28,62 +28,48 @@ export const TASK_STATES = {
 };
 
 /**
- * Load metrics from Supabase
+ * Load metrics from MongoDB
  */
 async function loadMetrics() {
     try {
-        return await withDatabase(async (client) => {
-            const { data, error } = await client
-                .from('metrics')
-                .select('data')
-                .eq('type', 'task_metrics')
-                .single();
-
-            if (error) {
-                if (error.code === 'PGRST116') { // No rows returned
-                    return metrics;
-                }
-                throw error;
-            }
-
-            if (data) {
-                metrics = { ...metrics, ...data.data };
+        return await withDatabase(async (db) => {
+            const metricsDoc = await db.collection('metrics').findOne({ type: 'task_metrics' });
+            if (metricsDoc) {
+                metrics = { ...metrics, ...metricsDoc.data };
             }
             return metrics;
         }, 'Load task metrics');
     } catch (error) {
-        console.error('Failed to load metrics from Supabase:', error);
+        console.error('Failed to load metrics from MongoDB:', error);
         return metrics;
     }
 }
 
 /**
- * Save metrics to Supabase
+ * Save metrics to MongoDB
  */
 async function saveMetrics() {
     try {
-        return await withDatabase(async (client) => {
-            const { error } = await client
-                .from('metrics')
-                .upsert({
+        return await withDatabase(async (db) => {
+            const result = await db.collection('metrics').replaceOne(
+                { type: 'task_metrics' },
+                {
                     type: 'task_metrics',
                     data: metrics,
-                    updated_at: new Date().toISOString()
-                });
-
-            if (error) {
-                throw error;
-            }
-            return true;
+                    updatedAt: new Date()
+                },
+                { upsert: true }
+            );
+            return result.acknowledged;
         }, 'Save task metrics');
     } catch (error) {
-        console.error('Failed to save metrics to Supabase:', error);
+        console.error('Failed to save metrics to MongoDB:', error);
         return false;
     }
 }
 
 /**
- * Create a new task and store it in Supabase
+ * Create a new task and store it in MongoDB
  * @param {string|number} tokenId - The NFT token ID
  * @param {string} provider - The image provider to use
  * @param {Object} options - Additional task options
@@ -97,38 +83,31 @@ export async function createTask(tokenId, provider, options = {}) {
 
     // Create the task with extended properties
     const task = {
-        id: taskId,
-        task_id: taskId,
-        token_id: tokenId,
+        _id: taskId,
+        taskId,
+        tokenId,
         provider,
         status: TASK_STATES.PENDING,
         progress: 0,
         message: 'Task created',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         history: [{
-            time: new Date().toISOString(),
+            time: new Date(),
             status: TASK_STATES.PENDING,
             message: 'Task created'
         }],
-        timeout_at: options.timeout ? new Date(Date.now() + options.timeout).toISOString() : null,
+        timeoutAt: options.timeout ? new Date(Date.now() + options.timeout) : null,
         priority: options.priority || 'normal',
-        provider_options: options.providerOptions || {},
-        estimated_completion_time: null,
-        breed: options.breed || null,
-        buyer: options.buyer || null
+        providerOptions: options.providerOptions || {},
+        estimatedCompletionTime: null,
+        ...options
     };
 
     try {
-        // Store the task in Supabase
-        await withDatabase(async (client) => {
-            const { error } = await client
-                .from('tasks')
-                .insert([task]);
-
-            if (error) {
-                throw error;
-            }
+        // Store the task in MongoDB
+        await withDatabase(async (db) => {
+            await db.collection('tasks').insertOne(task);
         }, 'Create task');
 
         // Update metrics
@@ -152,24 +131,17 @@ export async function createTask(tokenId, provider, options = {}) {
  */
 export async function updateTask(taskId, update) {
     try {
-        return await withDatabase(async (client) => {
-            // Get current task
-            const { data: task, error: fetchError } = await client
-                .from('tasks')
-                .select('*')
-                .eq('id', taskId)
-                .single();
-
-            if (fetchError) {
-                throw new Error(`Task ${taskId} not found: ${fetchError.message}`);
+        return await withDatabase(async (db) => {
+            const task = await db.collection('tasks').findOne({ _id: taskId });
+            if (!task) {
+                throw new Error(`Task ${taskId} not found`);
             }
 
-            const now = new Date().toISOString();
-            const history = task.history || [];
+            const now = new Date();
 
             // Track status changes in history
             if (update.status && update.status !== task.status) {
-                history.push({
+                task.history.push({
                     time: now,
                     status: update.status,
                     message: update.message || `Status changed to ${update.status}`,
@@ -178,7 +150,7 @@ export async function updateTask(taskId, update) {
             }
             // Track progress updates
             else if (update.progress && update.progress !== task.progress) {
-                history.push({
+                task.history.push({
                     time: now,
                     status: task.status,
                     message: update.message || `Progress updated to ${update.progress}%`,
@@ -187,7 +159,7 @@ export async function updateTask(taskId, update) {
             }
             // Track message updates
             else if (update.message && update.message !== task.message) {
-                history.push({
+                task.history.push({
                     time: now,
                     status: task.status,
                     message: update.message,
@@ -197,19 +169,18 @@ export async function updateTask(taskId, update) {
 
             // Calculate estimated completion time for tasks in progress
             if (update.progress && update.progress > task.progress && update.progress < 100) {
-                const elapsedTime = new Date() - new Date(task.created_at);
+                const elapsedTime = now - task.createdAt;
                 const estimatedTotalTime = (elapsedTime / update.progress) * 100;
                 const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
 
-                update.estimated_completion_time = new Date(Date.now() + estimatedTimeRemaining).toISOString();
+                update.estimatedCompletionTime = new Date(now.getTime() + estimatedTimeRemaining);
             }
 
             // Create the updated task object
             const updatedTask = {
                 ...task,
                 ...update,
-                history,
-                updated_at: now
+                updatedAt: now
             };
 
             // Update task metrics when status changes to completed or failed
@@ -219,7 +190,7 @@ export async function updateTask(taskId, update) {
                 metrics.active--;
 
                 // Update average completion time
-                const completionTime = new Date(now) - new Date(task.created_at);
+                const completionTime = now - task.createdAt;
                 metrics.averageCompletionTime =
                     (metrics.averageCompletionTime * (metrics.completed - 1) + completionTime) / metrics.completed;
             }
@@ -228,15 +199,8 @@ export async function updateTask(taskId, update) {
                 metrics.active--;
             }
 
-            // Save updated task to Supabase
-            const { error: updateError } = await client
-                .from('tasks')
-                .update(updatedTask)
-                .eq('id', taskId);
-
-            if (updateError) {
-                throw updateError;
-            }
+            // Save updated task to MongoDB
+            await db.collection('tasks').replaceOne({ _id: taskId }, updatedTask);
 
             // Save updated metrics
             await saveMetrics();
@@ -257,15 +221,11 @@ export async function updateTask(taskId, update) {
  */
 export async function getTaskStatus(taskId, options = {}) {
     try {
-        return await withDatabase(async (client) => {
-            const { data: task, error } = await client
-                .from('tasks')
-                .select('*')
-                .eq('id', taskId)
-                .single();
+        return await withDatabase(async (db) => {
+            const task = await db.collection('tasks').findOne({ _id: taskId });
 
             // Check if task exists
-            if (error) {
+            if (!task) {
                 return {
                     status: TASK_STATES.UNKNOWN,
                     message: 'Task not found or expired',
@@ -274,7 +234,7 @@ export async function getTaskStatus(taskId, options = {}) {
             }
 
             // Check for task timeout
-            if (task.timeout_at && new Date() > new Date(task.timeout_at) &&
+            if (task.timeoutAt && new Date() > task.timeoutAt &&
                 ![TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED].includes(task.status)) {
                 await updateTask(taskId, {
                     status: TASK_STATES.TIMEOUT,
@@ -290,7 +250,7 @@ export async function getTaskStatus(taskId, options = {}) {
                     status: task.status,
                     progress: task.progress,
                     message: task.message,
-                    updated_at: task.updated_at
+                    updatedAt: task.updatedAt
                 };
             }
 
@@ -319,7 +279,7 @@ export async function completeTask(taskId, result) {
         progress: 100,
         result,
         message: 'Task completed successfully',
-        completed_at: new Date().toISOString()
+        completedAt: new Date()
     });
 }
 
@@ -333,8 +293,8 @@ export async function failTask(taskId, error) {
     return await updateTask(taskId, {
         status: TASK_STATES.FAILED,
         message: error.message || 'Task failed',
-        error_message: error.toString(),
-        failed_at: new Date().toISOString()
+        error: error.toString(),
+        failedAt: new Date()
     });
 }
 
@@ -346,14 +306,9 @@ export async function failTask(taskId, error) {
  */
 export async function cancelTask(taskId, reason = 'User canceled') {
     try {
-        return await withDatabase(async (client) => {
-            const { data: task, error } = await client
-                .from('tasks')
-                .select('*')
-                .eq('id', taskId)
-                .single();
-
-            if (error) {
+        return await withDatabase(async (db) => {
+            const task = await db.collection('tasks').findOne({ _id: taskId });
+            if (!task) {
                 throw new Error(`Task ${taskId} not found`);
             }
 
@@ -369,7 +324,7 @@ export async function cancelTask(taskId, reason = 'User canceled') {
             return await updateTask(taskId, {
                 status: TASK_STATES.CANCELED,
                 message: `Task canceled: ${reason}`,
-                canceled_at: new Date().toISOString()
+                canceledAt: new Date()
             });
         }, 'Cancel task');
     } catch (error) {
@@ -385,36 +340,27 @@ export async function cancelTask(taskId, reason = 'User canceled') {
  */
 export async function getTasks(filters = {}) {
     try {
-        return await withDatabase(async (client) => {
-            let query = client.from('tasks').select('*');
+        return await withDatabase(async (db) => {
+            // Build MongoDB query from filters
+            const query = {};
 
-            // Apply filters
-            if (filters.status) {
-                query = query.eq('status', filters.status);
-            }
-            if (filters.provider) {
-                query = query.eq('provider', filters.provider);
-            }
-            if (filters.tokenId) {
-                query = query.eq('token_id', Number(filters.tokenId));
-            }
-            if (filters.minProgress) {
-                query = query.gte('progress', filters.minProgress);
-            }
-            if (filters.createdAfter) {
-                query = query.gte('created_at', filters.createdAfter);
-            }
-            if (filters.createdBefore) {
-                query = query.lte('created_at', filters.createdBefore);
+            if (filters.status) query.status = filters.status;
+            if (filters.provider) query.provider = filters.provider;
+            if (filters.tokenId) query.tokenId = Number(filters.tokenId);
+            if (filters.minProgress) query.progress = { $gte: filters.minProgress };
+
+            // Add date range filters if provided
+            if (filters.createdAfter || filters.createdBefore) {
+                query.createdAt = {};
+                if (filters.createdAfter) query.createdAt.$gte = new Date(filters.createdAfter);
+                if (filters.createdBefore) query.createdAt.$lte = new Date(filters.createdBefore);
             }
 
-            const { data, error } = await query;
-
-            if (error) {
-                throw error;
-            }
-
-            return data || [];
+            const tasks = await db.collection('tasks').find(query).toArray();
+            return tasks.map(task => ({
+                taskId: task.taskId,
+                ...task
+            }));
         }, 'Get tasks');
     } catch (error) {
         console.error('Failed to get tasks:', error);
@@ -430,24 +376,10 @@ export async function getTaskMetrics() {
     try {
         await loadMetrics();
 
-        return await withDatabase(async (client) => {
-            const { data: pendingTasks, error: pendingError } = await client
-                .from('tasks')
-                .select('id', { count: 'exact' })
-                .eq('status', TASK_STATES.PENDING);
-
-            const { data: processingTasks, error: processingError } = await client
-                .from('tasks')
-                .select('id', { count: 'exact' })
-                .eq('status', TASK_STATES.PROCESSING);
-
-            const { data: allTasks, error: allError } = await client
-                .from('tasks')
-                .select('id', { count: 'exact' });
-
-            const pendingCount = pendingError ? 0 : pendingTasks?.length || 0;
-            const processingCount = processingError ? 0 : processingTasks?.length || 0;
-            const totalCount = allError ? 0 : allTasks?.length || 0;
+        return await withDatabase(async (db) => {
+            const pendingCount = await db.collection('tasks').countDocuments({ status: TASK_STATES.PENDING });
+            const processingCount = await db.collection('tasks').countDocuments({ status: TASK_STATES.PROCESSING });
+            const totalCount = await db.collection('tasks').countDocuments();
 
             return {
                 ...metrics,
@@ -480,20 +412,17 @@ export async function getTaskMetrics() {
  */
 export async function cleanupTasks(maxAge = 24 * 60 * 60 * 1000) {
     try {
-        return await withDatabase(async (client) => {
-            const cutoffDate = new Date(Date.now() - maxAge).toISOString();
+        return await withDatabase(async (db) => {
+            const cutoffDate = new Date(Date.now() - maxAge);
 
-            const { data, error } = await client
-                .from('tasks')
-                .delete()
-                .in('status', [TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED, TASK_STATES.TIMEOUT])
-                .lt('updated_at', cutoffDate);
+            const result = await db.collection('tasks').deleteMany({
+                status: {
+                    $in: [TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED, TASK_STATES.TIMEOUT]
+                },
+                updatedAt: { $lt: cutoffDate }
+            });
 
-            if (error) {
-                throw error;
-            }
-
-            return data?.length || 0;
+            return result.deletedCount;
         }, 'Cleanup tasks');
     } catch (error) {
         console.error('Failed to cleanup tasks:', error);
