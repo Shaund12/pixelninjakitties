@@ -1,7 +1,7 @@
-import express from "express";
-import cors from "cors";
-import { ethers } from "ethers";
-import { finalizeMint } from "../scripts/finalizeMint.js";
+import express from 'express';
+import cors from 'cors';
+import { ethers } from 'ethers';
+// import { finalizeMint } from '../scripts/finalizeMint.js'; // Currently unused
 
 const app = express();
 app.use(cors());
@@ -12,7 +12,7 @@ const {
     RPC_URL,
     CONTRACT_ADDRESS,
     PRIVATE_KEY,
-    PLACEHOLDER_URI,
+    // PLACEHOLDER_URI, // Currently unused
     MARKETPLACE_ADDRESS
 } = process.env;
 
@@ -22,25 +22,25 @@ const signer = new ethers.Wallet(PRIVATE_KEY, provider);
 
 // NFT contract setup
 const nftAbi = [
-    "event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)",
-    "function tokenURI(uint256) view returns (string)",
-    "function setTokenURI(uint256,string)",
-    "function totalSupply() view returns (uint256)",
-    "function tokenByIndex(uint256) view returns (uint256)",
-    "function ownerOf(uint256) view returns (address)",
-    "function balanceOf(address) view returns (uint256)",
-    "function tokenOfOwnerByIndex(address,uint256) view returns (uint256)"
+    'event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)',
+    'function tokenURI(uint256) view returns (string)',
+    'function setTokenURI(uint256,string)',
+    'function totalSupply() view returns (uint256)',
+    'function tokenByIndex(uint256) view returns (uint256)',
+    'function ownerOf(uint256) view returns (address)',
+    'function balanceOf(address) view returns (uint256)',
+    'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)'
 ];
 const nft = new ethers.Contract(CONTRACT_ADDRESS, nftAbi, signer);
 
 // Marketplace contract setup
 const marketplaceAbi = [
-    "function createListing(uint256 tokenId, uint256 price, address currency) external",
-    "function cancelListing(uint256 tokenId) external",
-    "function buyItem(uint256 tokenId) external payable",
-    "function buyItemWithERC20(uint256 tokenId) external",
-    "function getListings() view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active)[])",
-    "function getListing(uint256 tokenId) view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active))"
+    'function createListing(uint256 tokenId, uint256 price, address currency) external',
+    'function cancelListing(uint256 tokenId) external',
+    'function buyItem(uint256 tokenId) external payable',
+    'function buyItemWithERC20(uint256 tokenId) external',
+    'function getListings() view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active)[])',
+    'function getListing(uint256 tokenId) view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active))'
 ];
 
 let marketplace;
@@ -71,7 +71,7 @@ app.get('/api/kitties/total', async (req, res) => {
         const totalSupply = await nft.totalSupply();
         res.json({ totalSupply: Number(totalSupply) });
     } catch (error) {
-        console.error("Error fetching total supply:", error);
+        console.error('Error fetching total supply:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -79,8 +79,8 @@ app.get('/api/kitties/total', async (req, res) => {
 // Get a page of kitties with pagination
 app.get('/api/kitties', async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 12;
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 12;
         const skip = (page - 1) * limit;
 
         const totalSupply = Number(await nft.totalSupply());
@@ -126,7 +126,7 @@ app.get('/api/kitties', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Error fetching kitties:", error);
+        console.error('Error fetching kitties:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -140,8 +140,8 @@ app.get('/api/kitties/:id', async (req, res) => {
         let owner;
         try {
             owner = await nft.ownerOf(id);
-        } catch (error) {
-            return res.status(404).json({ error: "Token not found" });
+        } catch {
+            return res.status(404).json({ error: 'Token not found' });
         }
 
         // Get metadata
@@ -168,7 +168,7 @@ app.get('/api/kitties/:id', async (req, res) => {
                         active: listingData.active
                     };
                 }
-            } catch (error) {
+            } catch {
                 // Listing not found or error, continue without listing data
             }
         }
@@ -228,7 +228,7 @@ app.get('/api/kitties/owner/:address', async (req, res) => {
 // Get all marketplace listings
 app.get('/api/marketplace/listings', async (req, res) => {
     if (!marketplace) {
-        return res.status(404).json({ error: "Marketplace not configured" });
+        return res.status(404).json({ error: 'Marketplace not configured' });
     }
 
     try {
@@ -267,7 +267,7 @@ app.get('/api/marketplace/listings', async (req, res) => {
 
         res.json({ listings: activeListings });
     } catch (error) {
-        console.error("Error fetching marketplace listings:", error);
+        console.error('Error fetching marketplace listings:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -275,7 +275,7 @@ app.get('/api/marketplace/listings', async (req, res) => {
 // Get a specific listing
 app.get('/api/marketplace/listings/:tokenId', async (req, res) => {
     if (!marketplace) {
-        return res.status(404).json({ error: "Marketplace not configured" });
+        return res.status(404).json({ error: 'Marketplace not configured' });
     }
 
     try {
@@ -283,7 +283,7 @@ app.get('/api/marketplace/listings/:tokenId', async (req, res) => {
         const listing = await marketplace.getListing(tokenId);
 
         if (!listing.active) {
-            return res.status(404).json({ error: "Listing not active" });
+            return res.status(404).json({ error: 'Listing not active' });
         }
 
         const formattedListing = {
@@ -327,7 +327,7 @@ function getRarity(id, metadata) {
     }
 
     // Fallback to the previous ID-based calculation for backward compatibility
-    const numId = parseInt(id);
+    const numId = parseInt(id, 10);
     if (numId % 100 === 0) return 'legendary';
     if (numId % 10 === 0) return 'epic';
     if (numId % 2 === 0) return 'rare';

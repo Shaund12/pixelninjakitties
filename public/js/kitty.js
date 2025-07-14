@@ -103,7 +103,7 @@ async function downloadImage(url, filename) {
 async function fetchTokenHistory(provider, tokenId, contractAddress) {
     try {
         // Define the Transfer event signature
-        const transferEventSignature = "Transfer(address,address,uint256)";
+        const transferEventSignature = 'Transfer(address,address,uint256)';
         const transferTopic = ethers.keccak256(ethers.toUtf8Bytes(transferEventSignature));
 
         // Create a topic filter for our token ID
@@ -124,7 +124,7 @@ async function fetchTokenHistory(provider, tokenId, contractAddress) {
 
             // Get gas price and estimate cost
             const gasCost = tx ? (tx.gasPrice * tx.gasLimit) : null;
-            const gasCostEth = gasCost ? ethers.formatEther(gasCost) : "Unknown";
+            const gasCostEth = gasCost ? ethers.formatEther(gasCost) : 'Unknown';
 
             return {
                 type: log.topics[1] === '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -142,7 +142,7 @@ async function fetchTokenHistory(provider, tokenId, contractAddress) {
         // Sort by block number ascending
         return transactions.sort((a, b) => a.blockNumber - b.blockNumber);
     } catch (error) {
-        console.error("Error fetching token history:", error);
+        console.error('Error fetching token history:', error);
         return null;
     }
 }
@@ -153,7 +153,7 @@ function setupSharing(metadata, tokenId) {
     const baseUrl = window.location.origin + window.location.pathname;
     const shareUrl = `${baseUrl}?id=${tokenId}`;
     const nftName = metadata?.name || `Pixel Ninja Cat #${tokenId}`;
-    const description = metadata?.description || `Check out my awesome Ninja Cat NFT!`;
+    const description = metadata?.description || 'Check out my awesome Ninja Cat NFT!';
     const imageUrl = metadata?.image || '';
 
     // Set up Twitter share with enhanced content
@@ -219,8 +219,8 @@ function setupSharing(metadata, tokenId) {
                         text: shareUrl,
                         width: 128,
                         height: 128,
-                        colorDark: "#8a65ff",
-                        colorLight: "#ffffff"
+                        colorDark: '#8a65ff',
+                        colorLight: '#ffffff'
                     };
 
                     new QRCode(qrCodeContainer, options);
@@ -394,7 +394,7 @@ function setupRegenerationInterface(tokenId) {
 
                 if (statusEl && statusTextEl) {
                     statusEl.style.display = 'block';
-                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Initiating payment transaction...`;
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Initiating payment transaction...';
                 }
 
                 // Validate inputs
@@ -416,7 +416,7 @@ function setupRegenerationInterface(tokenId) {
                     const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6); // Use config value instead of hardcoded "10"
 
                     // Request account access
-                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Connecting to wallet...`;
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Connecting to wallet...';
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     if (accounts.length === 0) {
                         throw new Error('No accounts found. Please connect your wallet.');
@@ -429,29 +429,29 @@ function setupRegenerationInterface(tokenId) {
 
                     // USDC ABI for the transfer function
                     const usdcAbi = [
-                        "function transfer(address to, uint256 value) returns (bool)",
-                        "function balanceOf(address owner) view returns (uint256)"
+                        'function transfer(address to, uint256 value) returns (bool)',
+                        'function balanceOf(address owner) view returns (uint256)'
                     ];
 
                     const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
 
                     // Check USDC balance
-                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Checking USDC balance...`;
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Checking USDC balance...';
                     const balance = await usdcContract.balanceOf(userAddress);
                     if (balance < AMOUNT) {
-                        throw new Error(`Insufficient USDC balance. You need at least 10 USDC.`);
+                        throw new Error('Insufficient USDC balance. You need at least 10 USDC.');
                     }
 
                     // Send the transaction
-                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Sending payment transaction...`;
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Sending payment transaction...';
                     const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, AMOUNT);
 
                     // Wait for confirmation
-                    statusTextEl.innerHTML = `<div class="loading-spinner"></div>Confirming payment transaction...`;
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Confirming payment transaction...';
                     await tx.wait();
 
                     // Payment successful, now proceed with regeneration
-                    statusTextEl.innerHTML = `<div class="success-icon">✓</div>Payment successful! Initiating regeneration...`;
+                    statusTextEl.innerHTML = '<div class="success-icon">✓</div>Payment successful! Initiating regeneration...';
 
                 } catch (paymentError) {
                     console.error('Payment failed:', paymentError);
@@ -474,7 +474,7 @@ function setupRegenerationInterface(tokenId) {
                 apiUrl.searchParams.append('breed', breed);
 
                 // Make the API call
-                statusTextEl.innerHTML = `<div class="loading-spinner"></div>Submitting regeneration request...`;
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Submitting regeneration request...';
 
                 const response = await fetch(apiUrl.toString());
 
@@ -490,7 +490,7 @@ function setupRegenerationInterface(tokenId) {
                     throw new Error('No task ID returned from server');
                 }
 
-                statusTextEl.innerHTML = `<div class="loading-spinner"></div>Request accepted! Monitoring progress...`;
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Request accepted! Monitoring progress...';
 
                 // Start polling for status
                 await pollTaskStatus(taskId, statusTextEl);
@@ -544,7 +544,7 @@ function setupRegenerationInterface(tokenId) {
                             statusMsg = `<div class="loading-spinner"></div>${message || 'Processing'} - ${progress || 0}%`;
                             break;
                         case 'completed':
-                            statusMsg = `<div class="success-icon">✓</div>Image regenerated successfully!`;
+                            statusMsg = '<div class="success-icon">✓</div>Image regenerated successfully!';
                             completed = true;
                             break;
                         case 'failed':
@@ -567,7 +567,7 @@ function setupRegenerationInterface(tokenId) {
                     // If completed successfully, reload the page to show the new image
                     if (status === 'completed') {
                         setTimeout(() => {
-                            statusElement.innerHTML = `<div class="success-icon">✓</div>Reloading page to show your new image...`;
+                            statusElement.innerHTML = '<div class="success-icon">✓</div>Reloading page to show your new image...';
 
                             // Reload the page after a brief delay
                             setTimeout(() => {
@@ -599,7 +599,7 @@ function setupRegenerationInterface(tokenId) {
         // If we reached max attempts without completion
         if (!completed) {
             if (statusElement) {
-                statusElement.innerHTML = `<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check "My Kitties" page later.`;
+                statusElement.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check "My Kitties" page later.';
             }
         }
     }
@@ -693,17 +693,17 @@ function formatSpecialTrait(trait) {
 // Generate HTML for a trait card based on trait information with improved styling
 function createTraitCard(attr, showRarity = true) {
     // Get rarity from the attribute or use default
-    const rarity = attr.rarity || "Common";
+    const rarity = attr.rarity || 'Common';
 
     // Calculate progress width based on rarity tier
     const rarityTierScore = {
-        "Common": 25,
-        "Uncommon": 50,
-        "Rare": 75,
-        "Epic": 85,
-        "Legendary": 95,
-        "Mythic": 98,
-        "Unique": 90
+        'Common': 25,
+        'Uncommon': 50,
+        'Rare': 75,
+        'Epic': 85,
+        'Legendary': 95,
+        'Mythic': 98,
+        'Unique': 90
     };
 
     // Use rarity score if provided or fall back to tier-based score
@@ -852,7 +852,7 @@ function createTimelineVisualization(transactions) {
                                 </svg>
                                 <span class="to-address">${formatAddress(tx.to)}</span>
                               </div>`
-                : `<div class="mint-detail">Original creation on Vitruveo</div>`
+                : '<div class="mint-detail">Original creation on Vitruveo</div>'
             }
                         <div class="tx-gas">Gas: ${tx.gasCost} ETH</div>
                         <div class="tx-confirmations">${tx.confirmations} confirmations</div>
@@ -872,9 +872,9 @@ function createStoryTimeline(metadata) {
 
     // Extract story parts
     const backstory = metadata?.ninja_data?.backstory || {};
-    const origin = backstory.origin || "Born during the third moon of the Great Bit-Eclipse, this ninja cat showed exceptional promise from the earliest days of training.";
-    const training = backstory.training || "Years of rigorous training in the ancient art of Paw-Hash-Do forged both mind and body into the perfect infiltration instrument.";
-    const currentRole = backstory.currentRole || "Now a full-fledged Ninja, this cat specializes in network infiltration and smart contract protection.";
+    const origin = backstory.origin || 'Born during the third moon of the Great Bit-Eclipse, this ninja cat showed exceptional promise from the earliest days of training.';
+    const training = backstory.training || 'Years of rigorous training in the ancient art of Paw-Hash-Do forged both mind and body into the perfect infiltration instrument.';
+    const currentRole = backstory.currentRole || 'Now a full-fledged Ninja, this cat specializes in network infiltration and smart contract protection.';
 
     storyEl.innerHTML = `
         <div class="story-timeline">
@@ -945,7 +945,7 @@ function setupTiltEffect() {
         const tiltY = percentX * tiltAmount;
 
         card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
-        img.style.transform = `translateZ(30px) scale(1.05)`;
+        img.style.transform = 'translateZ(30px) scale(1.05)';
 
         // Light reflection effect
         const glare = card.querySelector('.glare');
@@ -1030,7 +1030,7 @@ function setupAchievements(metadata) {
 
     // Render achievements
     if (achievements.length > 0) {
-        let achievementsHTML = `<h3>Achievements</h3><div class="achievements-grid">`;
+        let achievementsHTML = '<h3>Achievements</h3><div class="achievements-grid">';
 
         achievements.forEach(achievement => {
             achievementsHTML += `
@@ -1044,7 +1044,7 @@ function setupAchievements(metadata) {
             `;
         });
 
-        achievementsHTML += `</div>`;
+        achievementsHTML += '</div>';
         achievementsEl.innerHTML = achievementsHTML;
     }
 }
@@ -1066,12 +1066,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         safeSetTextContent('catId', '#' + id);
 
         // Constants for blockchain interaction
-        const CONTRACT = "0x2D732b0Bb33566A13E586aE83fB21d2feE34e906";
+        const CONTRACT = '0x2D732b0Bb33566A13E586aE83fB21d2feE34e906';
         const ABI = [
-            "function tokenURI(uint256 id) view returns (string)",
-            "function ownerOf(uint256 tokenId) view returns (address)"
+            'function tokenURI(uint256 id) view returns (string)',
+            'function ownerOf(uint256 tokenId) view returns (address)'
         ];
-        const EXPLORER_URL = "https://explorer.vitruveo.xyz";
+        const EXPLORER_URL = 'https://explorer.vitruveo.xyz';
 
         // Fetch token data
         try {
@@ -1084,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             try {
                 // Try to get data from blockchain
-                provider = new ethers.JsonRpcProvider("https://rpc.vitruveo.xyz");
+                provider = new ethers.JsonRpcProvider('https://rpc.vitruveo.xyz');
                 const nft = new ethers.Contract(CONTRACT, ABI, provider);
 
                 uri = await nft.tokenURI(id);
@@ -1093,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 console.log('Error fetching from contract, using fallback:', err);
                 // Fallback to local URI
                 uri = `/metadata/${id}.json`;
-                owner = "0x0000000000000000000000000000000000000000"; // Placeholder
+                owner = '0x0000000000000000000000000000000000000000'; // Placeholder
             }
 
             // Convert IPFS URI if needed
@@ -1108,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
 
             const metadata = await response.json();
-            console.log("Retrieved metadata:", metadata);
+            console.log('Retrieved metadata:', metadata);
 
             // Show content and hide loading
             safeUpdateElement('loadingState', el => el.style.display = 'none');
@@ -1163,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const rankAttr = metadata.attributes.find(attr => attr.trait_type === 'Rank');
 
                 // Create tagline from actual traits
-                let tagline = rankAttr ? `${rankAttr.value} ninja cat` : "Master ninja cat";
+                let tagline = rankAttr ? `${rankAttr.value} ninja cat` : 'Master ninja cat';
 
                 if (elementAttr && weaponAttr) {
                     tagline = `${elementAttr.value} ${weaponAttr.value} specialist`;
@@ -1190,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                 // Check if we have ninja_data.backstory.name to use as title
                 if (metadata.ninja_data && metadata.ninja_data.backstory && metadata.ninja_data.backstory.name) {
-                    tagline = metadata.ninja_data.backstory.name + " • " + tagline;
+                    tagline = metadata.ninja_data.backstory.name + ' • ' + tagline;
                 }
 
                 safeSetTextContent('catTagline', tagline);
@@ -1209,8 +1209,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 } else {
                     // Fallback rarity detection from attributes
                     const rarityAttr = metadata.attributes.find(attr =>
-                        attr.trait_type === "Rarity" ||
-                        attr.trait_type === "Rank"
+                        attr.trait_type === 'Rarity' ||
+                        attr.trait_type === 'Rank'
                     );
 
                     if (rarityAttr) {
@@ -1240,13 +1240,13 @@ document.addEventListener('DOMContentLoaded', async function () {
                 // Display all core attributes
                 safeUpdateElement('attributesGrid', el => {
                     el.innerHTML = coreTraits
-                        .filter(attr => attr.trait_type !== "Breed") // Skip breed as it's shown elsewhere
+                        .filter(attr => attr.trait_type !== 'Breed') // Skip breed as it's shown elsewhere
                         .map(attr => createTraitCard(attr))
                         .join('');
 
                     // Add any special traits at the end
                     if (specialTraits.length > 0) {
-                        el.innerHTML += `<div class="attributes-divider"><span>Special Traits</span></div>`;
+                        el.innerHTML += '<div class="attributes-divider"><span>Special Traits</span></div>';
                         el.innerHTML += specialTraits
                             .map(attr => createTraitCard(attr))
                             .join('');
@@ -1262,10 +1262,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                     safeUpdateElement('combatSkillsGrid', el => {
                         const stats = metadata.ninja_data.combat_stats;
                         const combatStatsArray = [
-                            { trait_type: 'Agility', value: stats.agility || 5, display_type: "number" },
-                            { trait_type: 'Stealth', value: stats.stealth || 5, display_type: "number" },
-                            { trait_type: 'Power', value: stats.power || 5, display_type: "number" },
-                            { trait_type: 'Intelligence', value: stats.intelligence || 5, display_type: "number" }
+                            { trait_type: 'Agility', value: stats.agility || 5, display_type: 'number' },
+                            { trait_type: 'Stealth', value: stats.stealth || 5, display_type: 'number' },
+                            { trait_type: 'Power', value: stats.power || 5, display_type: 'number' },
+                            { trait_type: 'Intelligence', value: stats.intelligence || 5, display_type: 'number' }
                         ];
 
                         el.innerHTML = combatStatsArray
@@ -1340,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 } else if (specialTrait || mythicTrait) {
                     // Generate special abilities based on special/mythic traits
                     safeUpdateElement('specialAbilities', el => {
-                        let abilities = [];
+                        const abilities = [];
 
                         if (specialTrait) {
                             abilities.push(`<li><strong>${specialTrait.trait_type}:</strong> ${specialTrait.value} - A rare technique mastered by only the most skilled ninja cats.</li>`);
@@ -1422,7 +1422,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                 } else {
                     // Fallback to placeholder
-                    const txHash = "0x" + parseInt(id).toString(16).padStart(8, '0') + "..." + (parseInt(id) * 2).toString(16).padStart(4, '0');
+                    const txHash = '0x' + parseInt(id).toString(16).padStart(8, '0') + '...' + (parseInt(id) * 2).toString(16).padStart(4, '0');
                     el.innerHTML = `
                         <li class="transaction-item">
                             <div>
@@ -1453,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             setTimeout(animateSkillBars, 500);
 
         } catch (error) {
-            console.error("Error fetching NFT data:", error);
+            console.error('Error fetching NFT data:', error);
             safeUpdateElement('loadingState', el => {
                 el.innerHTML = `
                     <div style="text-align: center; padding: 2rem;">
@@ -1472,7 +1472,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
         }
     } catch (error) {
-        console.error("Fatal error:", error);
+        console.error('Fatal error:', error);
     }
 });
 

@@ -1089,7 +1089,7 @@
 
     <script src="/js/audio-player.js"></script>
     <!-- Load wallet connection script -->
-    <script type="module" src="js/connect-only.js"></script>
+    <script type="module" src="js/wallet.js"></script>
 
     <!-- Include the footer -->
     <footer id="footer"></footer>
@@ -1097,5 +1097,11 @@
 
     <!-- Include the navbar script -->
     <script type="module" src="js/navbar.js"></script>
+
+    <!-- Vercel Analytics -->
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

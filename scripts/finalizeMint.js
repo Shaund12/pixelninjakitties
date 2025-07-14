@@ -18,7 +18,7 @@
  *   "huggingface" - Free with token (register at huggingface.co)
  *   "dall-e"      - OpenAI's DALL-E 3 (paid API)
  *   "stability"   - Stability AI (paid API)
- * 
+ *
  * MODEL SELECTION:
  * For HuggingFace, set HF_MODEL to one of:
  *   "stabilityai/stable-diffusion-xl-base-1.0" (default, highest quality)
@@ -26,7 +26,7 @@
  *   "runwayml/stable-diffusion-v1-5" (faster)
  *   "ByteDance/SDXL-Lightning" (faster generations)
  *   "Lykon/dreamshaper-xl-1-0" (stylized art)
- * 
+ *
  * Required env:
  *   At least one of: OPENAI_API_KEY, STABILITY_API_KEY, HUGGING_FACE_TOKEN
  * Optional env:
@@ -40,16 +40,16 @@
  *   npm i sharp
  */
 
-import "dotenv/config";
-import OpenAI from "openai";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
-import FormData from "form-data";
-import fetch from "node-fetch";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { createHash } from "crypto";
+import 'dotenv/config';
+import OpenAI from 'openai';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { createHash } from 'crypto';
 const execAsync = promisify(exec);
 
 /* ─── env ────────────────────────────────────────────────────── */
@@ -62,441 +62,441 @@ const {
     BASE_URL,
     PROJECT_NAME,
     // Default to DALL-E as the provider
-    IMAGE_PROVIDER = "dall-e",
+    IMAGE_PROVIDER = 'dall-e',
     // HuggingFace model options
-    HF_MODEL = "stabilityai/stable-diffusion-xl-base-1.0",
+    HF_MODEL = 'stabilityai/stable-diffusion-xl-base-1.0',
     // DALL-E model options (dall-e-3 or dall-e-2)
-    DALLE_MODEL = "dall-e-3",
+    DALLE_MODEL = 'dall-e-3',
     // Stability models
-    STABILITY_MODEL = "stable-diffusion-xl-1024-v1-0",
-    // IPFS gateway for compatibility
-    IPFS_GATEWAY = "https://ipfs.io/ipfs/"
+    STABILITY_MODEL = 'stable-diffusion-xl-1024-v1-0'
+    // IPFS gateway for compatibility - currently unused but kept for future use
+    // IPFS_GATEWAY = 'https://ipfs.io/ipfs/'
 } = process.env;
 
 // Enhanced provider configuration with expanded background options and storytelling
 const PROVIDERS = {
     huggingface: {
-        name: "HuggingFace",
+        name: 'HuggingFace',
         key: HUGGING_FACE_TOKEN,
         model: HF_MODEL,
         models: {
-            "stabilityai/stable-diffusion-xl-base-1.0": "SDXL (High Quality)",
-            "prompthero/openjourney": "Openjourney (Midjourney Style)",
-            "runwayml/stable-diffusion-v1-5": "SD 1.5 (Faster)",
-            "ByteDance/SDXL-Lightning": "SDXL Lightning (Fastest)",
-            "Lykon/dreamshaper-xl-1-0": "Dreamshaper XL (Stylized)"
+            'stabilityai/stable-diffusion-xl-base-1.0': 'SDXL (High Quality)',
+            'prompthero/openjourney': 'Openjourney (Midjourney Style)',
+            'runwayml/stable-diffusion-v1-5': 'SD 1.5 (Faster)',
+            'ByteDance/SDXL-Lightning': 'SDXL Lightning (Fastest)',
+            'Lykon/dreamshaper-xl-1-0': 'Dreamshaper XL (Stylized)'
         },
         free: true,
         pixelSettings: {
             guidance_scale: 8.5,
             num_inference_steps: 50,
-            prompt_prefix: "32x32 pixel art of a ninja cat, ",
-            prompt_suffix: ", retro game style, limited color palette, charming, detailed pixel art, NES style",
+            prompt_prefix: '32x32 pixel art of a ninja cat, ',
+            prompt_suffix: ', retro game style, limited color palette, charming, detailed pixel art, NES style',
             backgrounds: [
                 {
-                    name: "Dojo",
-                    description: "in a traditional Japanese dojo with wooden floors and training equipment",
-                    rarity: "Common",
+                    name: 'Dojo',
+                    description: 'in a traditional Japanese dojo with wooden floors and training equipment',
+                    rarity: 'Common',
                     rarityScore: 30,
-                    keywords: ["training", "wooden", "indoor"],
-                    affinityBreeds: ["Tabby", "Bengal"],
+                    keywords: ['training', 'wooden', 'indoor'],
+                    affinityBreeds: ['Tabby', 'Bengal'],
                     statBonus: { power: 1 }
                 },
                 {
-                    name: "Bamboo Forest",
-                    description: "in a dense bamboo forest with dappled light filtering through",
-                    rarity: "Common",
+                    name: 'Bamboo Forest',
+                    description: 'in a dense bamboo forest with dappled light filtering through',
+                    rarity: 'Common',
                     rarityScore: 25,
-                    keywords: ["green", "nature", "peaceful"],
-                    affinityBreeds: ["Calico", "Siamese"],
+                    keywords: ['green', 'nature', 'peaceful'],
+                    affinityBreeds: ['Calico', 'Siamese'],
                     statBonus: { stealth: 1 }
                 },
                 {
-                    name: "Night Sky",
-                    description: "under a starlit night sky with a full moon illuminating the scene",
-                    rarity: "Uncommon",
+                    name: 'Night Sky',
+                    description: 'under a starlit night sky with a full moon illuminating the scene',
+                    rarity: 'Uncommon',
                     rarityScore: 20,
-                    keywords: ["dark", "moon", "stars"],
-                    affinityBreeds: ["Bombay", "Shadow"],
+                    keywords: ['dark', 'moon', 'stars'],
+                    affinityBreeds: ['Bombay', 'Shadow'],
                     statBonus: { stealth: 1 }
                 },
                 {
-                    name: "Mountain Temple",
-                    description: "at an ancient mountain temple with stone lanterns and cherry blossoms",
-                    rarity: "Uncommon",
+                    name: 'Mountain Temple',
+                    description: 'at an ancient mountain temple with stone lanterns and cherry blossoms',
+                    rarity: 'Uncommon',
                     rarityScore: 18,
-                    keywords: ["spiritual", "ancient", "stone"],
-                    affinityBreeds: ["Persian", "Sphynx"],
+                    keywords: ['spiritual', 'ancient', 'stone'],
+                    affinityBreeds: ['Persian', 'Sphynx'],
                     statBonus: { intelligence: 1 }
                 },
                 {
-                    name: "Neon City",
-                    description: "on city rooftops with vibrant neon signs illuminating the night",
-                    rarity: "Rare",
+                    name: 'Neon City',
+                    description: 'on city rooftops with vibrant neon signs illuminating the night',
+                    rarity: 'Rare',
                     rarityScore: 15,
-                    keywords: ["urban", "bright", "modern"],
-                    affinityBreeds: ["Bengal", "Nyan"],
+                    keywords: ['urban', 'bright', 'modern'],
+                    affinityBreeds: ['Bengal', 'Nyan'],
                     statBonus: { agility: 1 }
                 },
                 {
-                    name: "Pixel Void",
-                    description: "against a simple pixel art background with minimal details",
-                    rarity: "Common",
+                    name: 'Pixel Void',
+                    description: 'against a simple pixel art background with minimal details',
+                    rarity: 'Common',
                     rarityScore: 28,
-                    keywords: ["minimal", "clean", "simple"],
+                    keywords: ['minimal', 'clean', 'simple'],
                     affinityBreeds: [],
                     statBonus: {}
                 },
                 {
-                    name: "Sakura Garden",
-                    description: "in a tranquil garden with falling cherry blossom petals",
-                    rarity: "Rare",
+                    name: 'Sakura Garden',
+                    description: 'in a tranquil garden with falling cherry blossom petals',
+                    rarity: 'Rare',
                     rarityScore: 12,
-                    keywords: ["pink", "peaceful", "flowers"],
-                    affinityBreeds: ["Persian", "Calico"],
+                    keywords: ['pink', 'peaceful', 'flowers'],
+                    affinityBreeds: ['Persian', 'Calico'],
                     statBonus: { intelligence: 1 }
                 },
                 {
-                    name: "Ninja Fortress",
-                    description: "inside a secret fortress with training dummies and weapon racks",
-                    rarity: "Rare",
+                    name: 'Ninja Fortress',
+                    description: 'inside a secret fortress with training dummies and weapon racks',
+                    rarity: 'Rare',
                     rarityScore: 15,
-                    keywords: ["fortress", "training", "weapons"],
-                    affinityBreeds: ["Tabby", "Siamese"],
+                    keywords: ['fortress', 'training', 'weapons'],
+                    affinityBreeds: ['Tabby', 'Siamese'],
                     statBonus: { power: 1, stealth: 1 }
                 },
                 {
-                    name: "Cosmic Dimension",
-                    description: "in a strange dimension with swirling cosmic energies and floating platforms",
-                    rarity: "Epic",
+                    name: 'Cosmic Dimension',
+                    description: 'in a strange dimension with swirling cosmic energies and floating platforms',
+                    rarity: 'Epic',
                     rarityScore: 8,
-                    keywords: ["space", "magical", "otherworldly"],
-                    affinityBreeds: ["Nyan", "Shadow"],
+                    keywords: ['space', 'magical', 'otherworldly'],
+                    affinityBreeds: ['Nyan', 'Shadow'],
                     statBonus: { power: 1, intelligence: 1 }
                 },
                 {
-                    name: "Lava Cavern",
-                    description: "inside a volcanic cavern with bubbling lava and glowing crystals",
-                    rarity: "Epic",
+                    name: 'Lava Cavern',
+                    description: 'inside a volcanic cavern with bubbling lava and glowing crystals',
+                    rarity: 'Epic',
                     rarityScore: 10,
-                    keywords: ["hot", "danger", "orange"],
-                    affinityBreeds: ["Bengal", "Tabby"],
+                    keywords: ['hot', 'danger', 'orange'],
+                    affinityBreeds: ['Bengal', 'Tabby'],
                     statBonus: { power: 2 }
                 },
                 {
-                    name: "Ancient Scroll",
-                    description: "depicted on an ancient scroll painting with ink wash style",
-                    rarity: "Legendary",
+                    name: 'Ancient Scroll',
+                    description: 'depicted on an ancient scroll painting with ink wash style',
+                    rarity: 'Legendary',
                     rarityScore: 5,
-                    keywords: ["scroll", "painting", "ink"],
-                    affinityBreeds: ["Sphynx", "Persian"],
+                    keywords: ['scroll', 'painting', 'ink'],
+                    affinityBreeds: ['Sphynx', 'Persian'],
                     statBonus: { intelligence: 2 }
                 },
                 {
-                    name: "Spirit Realm",
-                    description: "in the ethereal spirit realm with glowing wisps and floating lanterns",
-                    rarity: "Legendary",
+                    name: 'Spirit Realm',
+                    description: 'in the ethereal spirit realm with glowing wisps and floating lanterns',
+                    rarity: 'Legendary',
                     rarityScore: 3,
-                    keywords: ["spiritual", "glowing", "magical"],
-                    affinityBreeds: ["Shadow", "Nyan"],
+                    keywords: ['spiritual', 'glowing', 'magical'],
+                    affinityBreeds: ['Shadow', 'Nyan'],
                     statBonus: { stealth: 1, intelligence: 1, agility: 1 }
                 }
             ],
-            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality"
+            negativePrompt: 'text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality'
         }
     },
-    "dall-e": {
-        name: "DALL-E",
+    'dall-e': {
+        name: 'DALL-E',
         key: OPENAI_API_KEY,
         model: DALLE_MODEL,
         models: {
-            "dall-e-3": "DALL-E 3 (Best Quality)",
-            "dall-e-2": "DALL-E 2 (Faster)"
+            'dall-e-3': 'DALL-E 3 (Best Quality)',
+            'dall-e-2': 'DALL-E 2 (Faster)'
         },
         free: false,
         pixelSettings: {
-            quality: "hd",
-            style: "vivid",
-            size: "1024x1024",
-            prompt_prefix: "32x32 pixel art sprite of a ninja cat: ",
-            prompt_suffix: ". Retro game style, chunky pixels, extremely limited color palette, cute, charming, high-contrast pixel art. NES/SNES era game graphics, no anti-aliasing, blocky pixel edges. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS.",
+            quality: 'hd',
+            style: 'vivid',
+            size: '1024x1024',
+            prompt_prefix: '32x32 pixel art sprite of a ninja cat: ',
+            prompt_suffix: '. Retro game style, chunky pixels, extremely limited color palette, cute, charming, high-contrast pixel art. NES/SNES era game graphics, no anti-aliasing, blocky pixel edges. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS.',
             backgrounds: [
                 {
-                    name: "Dojo",
-                    description: "in a traditional Japanese dojo with wooden floors and training equipment",
-                    rarity: "Common",
+                    name: 'Dojo',
+                    description: 'in a traditional Japanese dojo with wooden floors and training equipment',
+                    rarity: 'Common',
                     rarityScore: 30,
-                    keywords: ["training", "wooden", "indoor"],
-                    affinityBreeds: ["Tabby", "Bengal"],
+                    keywords: ['training', 'wooden', 'indoor'],
+                    affinityBreeds: ['Tabby', 'Bengal'],
                     statBonus: { power: 1 }
                 },
                 {
-                    name: "Bamboo Forest",
-                    description: "in a dense bamboo forest with dappled light filtering through",
-                    rarity: "Common",
+                    name: 'Bamboo Forest',
+                    description: 'in a dense bamboo forest with dappled light filtering through',
+                    rarity: 'Common',
                     rarityScore: 25,
-                    keywords: ["green", "nature", "peaceful"],
-                    affinityBreeds: ["Calico", "Siamese"],
+                    keywords: ['green', 'nature', 'peaceful'],
+                    affinityBreeds: ['Calico', 'Siamese'],
                     statBonus: { stealth: 1 }
                 },
                 {
-                    name: "Night Sky",
-                    description: "under a starlit night sky with a full moon illuminating the scene",
-                    rarity: "Uncommon",
+                    name: 'Night Sky',
+                    description: 'under a starlit night sky with a full moon illuminating the scene',
+                    rarity: 'Uncommon',
                     rarityScore: 20,
-                    keywords: ["dark", "moon", "stars"],
-                    affinityBreeds: ["Bombay", "Shadow"],
+                    keywords: ['dark', 'moon', 'stars'],
+                    affinityBreeds: ['Bombay', 'Shadow'],
                     statBonus: { stealth: 1 }
                 },
                 {
-                    name: "Mountain Temple",
-                    description: "at an ancient mountain temple with stone lanterns and cherry blossoms",
-                    rarity: "Uncommon",
+                    name: 'Mountain Temple',
+                    description: 'at an ancient mountain temple with stone lanterns and cherry blossoms',
+                    rarity: 'Uncommon',
                     rarityScore: 18,
-                    keywords: ["spiritual", "ancient", "stone"],
-                    affinityBreeds: ["Persian", "Sphynx"],
+                    keywords: ['spiritual', 'ancient', 'stone'],
+                    affinityBreeds: ['Persian', 'Sphynx'],
                     statBonus: { intelligence: 1 }
                 },
                 {
-                    name: "Neon City",
-                    description: "on city rooftops with vibrant neon signs illuminating the night",
-                    rarity: "Rare",
+                    name: 'Neon City',
+                    description: 'on city rooftops with vibrant neon signs illuminating the night',
+                    rarity: 'Rare',
                     rarityScore: 15,
-                    keywords: ["urban", "bright", "modern"],
-                    affinityBreeds: ["Bengal", "Nyan"],
+                    keywords: ['urban', 'bright', 'modern'],
+                    affinityBreeds: ['Bengal', 'Nyan'],
                     statBonus: { agility: 1 }
                 },
                 {
-                    name: "Pixel Void",
-                    description: "against a simple pixel art background with minimal details",
-                    rarity: "Common",
+                    name: 'Pixel Void',
+                    description: 'against a simple pixel art background with minimal details',
+                    rarity: 'Common',
                     rarityScore: 28,
-                    keywords: ["minimal", "clean", "simple"],
+                    keywords: ['minimal', 'clean', 'simple'],
                     affinityBreeds: [],
                     statBonus: {}
                 },
                 {
-                    name: "Sakura Garden",
-                    description: "in a tranquil garden with falling cherry blossom petals",
-                    rarity: "Rare",
+                    name: 'Sakura Garden',
+                    description: 'in a tranquil garden with falling cherry blossom petals',
+                    rarity: 'Rare',
                     rarityScore: 12,
-                    keywords: ["pink", "peaceful", "flowers"],
-                    affinityBreeds: ["Persian", "Calico"],
+                    keywords: ['pink', 'peaceful', 'flowers'],
+                    affinityBreeds: ['Persian', 'Calico'],
                     statBonus: { intelligence: 1 }
                 },
                 {
-                    name: "Ninja Fortress",
-                    description: "inside a secret fortress with training dummies and weapon racks",
-                    rarity: "Rare",
+                    name: 'Ninja Fortress',
+                    description: 'inside a secret fortress with training dummies and weapon racks',
+                    rarity: 'Rare',
                     rarityScore: 15,
-                    keywords: ["fortress", "training", "weapons"],
-                    affinityBreeds: ["Tabby", "Siamese"],
+                    keywords: ['fortress', 'training', 'weapons'],
+                    affinityBreeds: ['Tabby', 'Siamese'],
                     statBonus: { power: 1, stealth: 1 }
                 },
                 {
-                    name: "Cosmic Dimension",
-                    description: "in a strange dimension with swirling cosmic energies and floating platforms",
-                    rarity: "Epic",
+                    name: 'Cosmic Dimension',
+                    description: 'in a strange dimension with swirling cosmic energies and floating platforms',
+                    rarity: 'Epic',
                     rarityScore: 8,
-                    keywords: ["space", "magical", "otherworldly"],
-                    affinityBreeds: ["Nyan", "Shadow"],
+                    keywords: ['space', 'magical', 'otherworldly'],
+                    affinityBreeds: ['Nyan', 'Shadow'],
                     statBonus: { power: 1, intelligence: 1 }
                 },
                 {
-                    name: "Lava Cavern",
-                    description: "inside a volcanic cavern with bubbling lava and glowing crystals",
-                    rarity: "Epic",
+                    name: 'Lava Cavern',
+                    description: 'inside a volcanic cavern with bubbling lava and glowing crystals',
+                    rarity: 'Epic',
                     rarityScore: 10,
-                    keywords: ["hot", "danger", "orange"],
-                    affinityBreeds: ["Bengal", "Tabby"],
+                    keywords: ['hot', 'danger', 'orange'],
+                    affinityBreeds: ['Bengal', 'Tabby'],
                     statBonus: { power: 2 }
                 },
                 {
-                    name: "Ancient Scroll",
-                    description: "depicted on an ancient scroll painting with ink wash style",
-                    rarity: "Legendary",
+                    name: 'Ancient Scroll',
+                    description: 'depicted on an ancient scroll painting with ink wash style',
+                    rarity: 'Legendary',
                     rarityScore: 5,
-                    keywords: ["scroll", "painting", "ink"],
-                    affinityBreeds: ["Sphynx", "Persian"],
+                    keywords: ['scroll', 'painting', 'ink'],
+                    affinityBreeds: ['Sphynx', 'Persian'],
                     statBonus: { intelligence: 2 }
                 },
                 {
-                    name: "Spirit Realm",
-                    description: "in the ethereal spirit realm with glowing wisps and floating lanterns",
-                    rarity: "Legendary",
+                    name: 'Spirit Realm',
+                    description: 'in the ethereal spirit realm with glowing wisps and floating lanterns',
+                    rarity: 'Legendary',
                     rarityScore: 3,
-                    keywords: ["spiritual", "glowing", "magical"],
-                    affinityBreeds: ["Shadow", "Nyan"],
+                    keywords: ['spiritual', 'glowing', 'magical'],
+                    affinityBreeds: ['Shadow', 'Nyan'],
                     statBonus: { stealth: 1, intelligence: 1, agility: 1 }
                 }
             ]
         }
     },
     stability: {
-        name: "Stability AI",
+        name: 'Stability AI',
         key: STABILITY_API_KEY,
         model: STABILITY_MODEL,
         models: {
-            "stable-diffusion-xl-1024-v1-0": "SDXL 1.0",
-            "stable-diffusion-v1-5": "SD 1.5 (Faster)"
+            'stable-diffusion-xl-1024-v1-0': 'SDXL 1.0',
+            'stable-diffusion-v1-5': 'SD 1.5 (Faster)'
         },
         free: false,
         pixelSettings: {
             cfg_scale: 9.5, // Increased for better prompt adherence
             steps: 40, // Increased for better quality
-            prompt_prefix: "32x32 pixel art sprite of a ninja cat: ",
-            prompt_suffix: ", retro game style, limited color palette (8-16 colors max), chunky pixels, no anti-aliasing, clean pixel art, NES/SNES aesthetic",
+            prompt_prefix: '32x32 pixel art sprite of a ninja cat: ',
+            prompt_suffix: ', retro game style, limited color palette (8-16 colors max), chunky pixels, no anti-aliasing, clean pixel art, NES/SNES aesthetic',
             backgrounds: [
                 {
-                    name: "Dojo",
-                    description: "in a traditional Japanese dojo with wooden floors and training equipment",
-                    rarity: "Common",
+                    name: 'Dojo',
+                    description: 'in a traditional Japanese dojo with wooden floors and training equipment',
+                    rarity: 'Common',
                     rarityScore: 30,
-                    keywords: ["training", "wooden", "indoor"],
-                    affinityBreeds: ["Tabby", "Bengal"],
+                    keywords: ['training', 'wooden', 'indoor'],
+                    affinityBreeds: ['Tabby', 'Bengal'],
                     statBonus: { power: 1 }
                 },
                 {
-                    name: "Bamboo Forest",
-                    description: "in a dense bamboo forest with dappled light filtering through",
-                    rarity: "Common",
+                    name: 'Bamboo Forest',
+                    description: 'in a dense bamboo forest with dappled light filtering through',
+                    rarity: 'Common',
                     rarityScore: 25,
-                    keywords: ["green", "nature", "peaceful"],
-                    affinityBreeds: ["Calico", "Siamese"],
+                    keywords: ['green', 'nature', 'peaceful'],
+                    affinityBreeds: ['Calico', 'Siamese'],
                     statBonus: { stealth: 1 }
                 },
                 {
-                    name: "Night Sky",
-                    description: "under a starlit night sky with a full moon illuminating the scene",
-                    rarity: "Uncommon",
+                    name: 'Night Sky',
+                    description: 'under a starlit night sky with a full moon illuminating the scene',
+                    rarity: 'Uncommon',
                     rarityScore: 20,
-                    keywords: ["dark", "moon", "stars"],
-                    affinityBreeds: ["Bombay", "Shadow"],
+                    keywords: ['dark', 'moon', 'stars'],
+                    affinityBreeds: ['Bombay', 'Shadow'],
                     statBonus: { stealth: 1 }
                 },
                 {
-                    name: "Mountain Temple",
-                    description: "at an ancient mountain temple with stone lanterns and cherry blossoms",
-                    rarity: "Uncommon",
+                    name: 'Mountain Temple',
+                    description: 'at an ancient mountain temple with stone lanterns and cherry blossoms',
+                    rarity: 'Uncommon',
                     rarityScore: 18,
-                    keywords: ["spiritual", "ancient", "stone"],
-                    affinityBreeds: ["Persian", "Sphynx"],
+                    keywords: ['spiritual', 'ancient', 'stone'],
+                    affinityBreeds: ['Persian', 'Sphynx'],
                     statBonus: { intelligence: 1 }
                 },
                 {
-                    name: "Neon City",
-                    description: "on city rooftops with vibrant neon signs illuminating the night",
-                    rarity: "Rare",
+                    name: 'Neon City',
+                    description: 'on city rooftops with vibrant neon signs illuminating the night',
+                    rarity: 'Rare',
                     rarityScore: 15,
-                    keywords: ["urban", "bright", "modern"],
-                    affinityBreeds: ["Bengal", "Nyan"],
+                    keywords: ['urban', 'bright', 'modern'],
+                    affinityBreeds: ['Bengal', 'Nyan'],
                     statBonus: { agility: 1 }
                 },
                 {
-                    name: "Pixel Void",
-                    description: "against a simple pixel art background with minimal details",
-                    rarity: "Common",
+                    name: 'Pixel Void',
+                    description: 'against a simple pixel art background with minimal details',
+                    rarity: 'Common',
                     rarityScore: 28,
-                    keywords: ["minimal", "clean", "simple"],
+                    keywords: ['minimal', 'clean', 'simple'],
                     affinityBreeds: [],
                     statBonus: {}
                 },
                 {
-                    name: "Sakura Garden",
-                    description: "in a tranquil garden with falling cherry blossom petals",
-                    rarity: "Rare",
+                    name: 'Sakura Garden',
+                    description: 'in a tranquil garden with falling cherry blossom petals',
+                    rarity: 'Rare',
                     rarityScore: 12,
-                    keywords: ["pink", "peaceful", "flowers"],
-                    affinityBreeds: ["Persian", "Calico"],
+                    keywords: ['pink', 'peaceful', 'flowers'],
+                    affinityBreeds: ['Persian', 'Calico'],
                     statBonus: { intelligence: 1 }
                 },
                 {
-                    name: "Ninja Fortress",
-                    description: "inside a secret fortress with training dummies and weapon racks",
-                    rarity: "Rare",
+                    name: 'Ninja Fortress',
+                    description: 'inside a secret fortress with training dummies and weapon racks',
+                    rarity: 'Rare',
                     rarityScore: 15,
-                    keywords: ["fortress", "training", "weapons"],
-                    affinityBreeds: ["Tabby", "Siamese"],
+                    keywords: ['fortress', 'training', 'weapons'],
+                    affinityBreeds: ['Tabby', 'Siamese'],
                     statBonus: { power: 1, stealth: 1 }
                 },
                 {
-                    name: "Cosmic Dimension",
-                    description: "in a strange dimension with swirling cosmic energies and floating platforms",
-                    rarity: "Epic",
+                    name: 'Cosmic Dimension',
+                    description: 'in a strange dimension with swirling cosmic energies and floating platforms',
+                    rarity: 'Epic',
                     rarityScore: 8,
-                    keywords: ["space", "magical", "otherworldly"],
-                    affinityBreeds: ["Nyan", "Shadow"],
+                    keywords: ['space', 'magical', 'otherworldly'],
+                    affinityBreeds: ['Nyan', 'Shadow'],
                     statBonus: { power: 1, intelligence: 1 }
                 },
                 {
-                    name: "Lava Cavern",
-                    description: "inside a volcanic cavern with bubbling lava and glowing crystals",
-                    rarity: "Epic",
+                    name: 'Lava Cavern',
+                    description: 'inside a volcanic cavern with bubbling lava and glowing crystals',
+                    rarity: 'Epic',
                     rarityScore: 10,
-                    keywords: ["hot", "danger", "orange"],
-                    affinityBreeds: ["Bengal", "Tabby"],
+                    keywords: ['hot', 'danger', 'orange'],
+                    affinityBreeds: ['Bengal', 'Tabby'],
                     statBonus: { power: 2 }
                 },
                 {
-                    name: "Ancient Scroll",
-                    description: "depicted on an ancient scroll painting with ink wash style",
-                    rarity: "Legendary",
+                    name: 'Ancient Scroll',
+                    description: 'depicted on an ancient scroll painting with ink wash style',
+                    rarity: 'Legendary',
                     rarityScore: 5,
-                    keywords: ["scroll", "painting", "ink"],
-                    affinityBreeds: ["Sphynx", "Persian"],
+                    keywords: ['scroll', 'painting', 'ink'],
+                    affinityBreeds: ['Sphynx', 'Persian'],
                     statBonus: { intelligence: 2 }
                 },
                 {
-                    name: "Spirit Realm",
-                    description: "in the ethereal spirit realm with glowing wisps and floating lanterns",
-                    rarity: "Legendary",
+                    name: 'Spirit Realm',
+                    description: 'in the ethereal spirit realm with glowing wisps and floating lanterns',
+                    rarity: 'Legendary',
                     rarityScore: 3,
-                    keywords: ["spiritual", "glowing", "magical"],
-                    affinityBreeds: ["Shadow", "Nyan"],
+                    keywords: ['spiritual', 'glowing', 'magical'],
+                    affinityBreeds: ['Shadow', 'Nyan'],
                     statBonus: { stealth: 1, intelligence: 1, agility: 1 }
                 }
             ],
-            negativePrompt: "text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality"
+            negativePrompt: 'text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality'
         },
         stylePresets: {
-            "pixel-art": "Pixel Art",
-            "anime": "Anime",
-            "3d-model": "3D Model",
-            "photographic": "Photographic",
-            "digital-art": "Digital Art"
+            'pixel-art': 'Pixel Art',
+            'anime': 'Anime',
+            '3d-model': '3D Model',
+            'photographic': 'Photographic',
+            'digital-art': 'Digital Art'
         },
-        defaultStylePreset: "pixel-art"
+        defaultStylePreset: 'pixel-art'
     }
 };
 
 // Verify we have at least one image generation API key
 if (!OPENAI_API_KEY && !STABILITY_API_KEY && !HUGGING_FACE_TOKEN) {
-    throw new Error("Missing API keys in .env: need at least one of HUGGING_FACE_TOKEN, OPENAI_API_KEY, or STABILITY_API_KEY");
+    throw new Error('Missing API keys in .env: need at least one of HUGGING_FACE_TOKEN, OPENAI_API_KEY, or STABILITY_API_KEY');
 }
 
 // Check if the selected provider is configured
 const selectedProvider = PROVIDERS[IMAGE_PROVIDER];
 if (!selectedProvider) {
-    console.warn(`⚠️ Unknown provider "${IMAGE_PROVIDER}". Valid options are: ${Object.keys(PROVIDERS).join(", ")}`);
-    console.warn(`⚠️ Falling back to available provider...`);
+    console.warn(`⚠️ Unknown provider "${IMAGE_PROVIDER}". Valid options are: ${Object.keys(PROVIDERS).join(', ')}`);
+    console.warn('⚠️ Falling back to available provider...');
 }
 if (selectedProvider && !selectedProvider.key) {
     console.warn(`⚠️ Selected provider "${IMAGE_PROVIDER}" has no API key configured.`);
-    console.warn(`⚠️ Falling back to available provider...`);
+    console.warn('⚠️ Falling back to available provider...');
 }
 
 console.log(`🖼️ Default image provider: ${selectedProvider && selectedProvider.key ?
     `${selectedProvider.name} (${selectedProvider.model})` :
-    "Will try all available providers"
+    'Will try all available providers'
     }`);
 
-const baseUrl = BASE_URL || "http://localhost:5000";
-const projectName = PROJECT_NAME || "Pixel Ninja Cats";
+const baseUrl = BASE_URL || 'http://localhost:5000';
+const projectName = PROJECT_NAME || 'Pixel Ninja Cats';
 const isPinataConfigured = PINATA_API_KEY && PINATA_SECRET_KEY;
 
 /* ─── optional sharp (auto-crop) ─────────────────────────────── */
 let sharp;
-try { sharp = (await import("sharp")).default; } catch { /* fine */ }
+try { sharp = (await import('sharp')).default; } catch { /* fine */ }
 
 /* ─── OpenAI client ──────────────────────────────────────────── */
 let openai;
@@ -507,7 +507,7 @@ if (OPENAI_API_KEY) {
 /* ─── trait generation ─────────────────────────────────────────── */
 function generateTraits(breed, tokenId) {
     // Use tokenId as a seed for deterministic but "random" traits
-    const seed = parseInt(tokenId);
+    const seed = parseInt(tokenId, 10);
 
     // Create a proper hash for better distribution
     function getTraitHash(traitType, tokenSeed) {
@@ -519,104 +519,132 @@ function generateTraits(breed, tokenId) {
     /* ─── Enhanced trait categories with more variety ─────────── */
     const traitCategories = {
         breeds: [
-            { value: "Tabby", rarity: "Common", rarityScore: 30, keywords: ["striped", "orange", "common"] },
-            { value: "Siamese", rarity: "Common", rarityScore: 25, keywords: ["cream", "pointed", "sleek"] },
-            { value: "Calico", rarity: "Uncommon", rarityScore: 20, keywords: ["patched", "tricolor", "spots"] },
-            { value: "Bengal", rarity: "Rare", rarityScore: 15, keywords: ["spotted", "wild", "agile"] },
-            { value: "Bombay", rarity: "Rare", rarityScore: 14, keywords: ["black", "sleek", "shadow"] },
-            { value: "Persian", rarity: "Epic", rarityScore: 10, keywords: ["fluffy", "round", "ornate"] },
-            { value: "Sphynx", rarity: "Epic", rarityScore: 8, keywords: ["hairless", "wrinkled", "alien"] },
-            { value: "Nyan", rarity: "Legendary", rarityScore: 5, keywords: ["rainbow", "pixelated", "meme"] },
-            { value: "Shadow", rarity: "Legendary", rarityScore: 3, keywords: ["void", "mist", "phantom"] }
+            { value: 'Tabby', rarity: 'Common', rarityScore: 30, keywords: ['striped', 'orange', 'common'] },
+            { value: 'Siamese', rarity: 'Common', rarityScore: 25, keywords: ['cream', 'pointed', 'sleek'] },
+            { value: 'Calico', rarity: 'Uncommon', rarityScore: 20, keywords: ['patched', 'tricolor', 'spots'] },
+            { value: 'Maine Coon', rarity: 'Uncommon', rarityScore: 18, keywords: ['large', 'fluffy', 'powerful'] },
+            { value: 'Bengal', rarity: 'Rare', rarityScore: 15, keywords: ['spotted', 'wild', 'agile'] },
+            { value: 'Bombay', rarity: 'Rare', rarityScore: 14, keywords: ['black', 'sleek', 'shadow'] },
+            { value: 'Persian', rarity: 'Epic', rarityScore: 10, keywords: ['fluffy', 'round', 'ornate'] },
+            { value: 'Sphynx', rarity: 'Epic', rarityScore: 8, keywords: ['hairless', 'wrinkled', 'alien'] },
+            { value: 'Nyan', rarity: 'Legendary', rarityScore: 5, keywords: ['rainbow', 'pixelated', 'meme'] },
+            { value: 'Shadow', rarity: 'Legendary', rarityScore: 3, keywords: ['void', 'mist', 'phantom'] }
         ],
         weapons: [
-            { value: "Katana", rarity: "Common", rarityScore: 30, keywords: ["sword", "blade", "japanese"] },
-            { value: "Shuriken", rarity: "Common", rarityScore: 25, keywords: ["throwing star", "metal", "sharp"] },
-            { value: "Nunchucks", rarity: "Uncommon", rarityScore: 20, keywords: ["chain", "wood", "swinging"] },
-            { value: "Kunai", rarity: "Uncommon", rarityScore: 18, keywords: ["dagger", "throwing", "rope"] },
-            { value: "Sai", rarity: "Rare", rarityScore: 15, keywords: ["fork", "prongs", "defensive"] },
-            { value: "Bo Staff", rarity: "Rare", rarityScore: 12, keywords: ["long", "wooden", "staff"] },
-            { value: "Twin Blades", rarity: "Epic", rarityScore: 10, keywords: ["dual", "daggers", "fast"] },
-            { value: "Kusarigama", rarity: "Epic", rarityScore: 8, keywords: ["chain", "sickle", "weight"] },
-            { value: "War Fan", rarity: "Legendary", rarityScore: 5, keywords: ["metal", "bladed", "elegant"] },
-            { value: "Ghost Dagger", rarity: "Legendary", rarityScore: 3, keywords: ["ethereal", "translucent", "glowing"] }
+            { value: 'Katana', rarity: 'Common', rarityScore: 30, keywords: ['sword', 'blade', 'japanese'] },
+            { value: 'Shuriken', rarity: 'Common', rarityScore: 25, keywords: ['throwing star', 'metal', 'sharp'] },
+            { value: 'Nunchucks', rarity: 'Uncommon', rarityScore: 20, keywords: ['chain', 'wood', 'swinging'] },
+            { value: 'Kunai', rarity: 'Uncommon', rarityScore: 18, keywords: ['dagger', 'throwing', 'rope'] },
+            { value: 'Sai', rarity: 'Rare', rarityScore: 15, keywords: ['fork', 'prongs', 'defensive'] },
+            { value: 'Bo Staff', rarity: 'Rare', rarityScore: 12, keywords: ['long', 'wooden', 'staff'] },
+            { value: 'Twin Blades', rarity: 'Epic', rarityScore: 10, keywords: ['dual', 'daggers', 'fast'] },
+            { value: 'Kusarigama', rarity: 'Epic', rarityScore: 8, keywords: ['chain', 'sickle', 'weight'] },
+            { value: 'War Fan', rarity: 'Legendary', rarityScore: 5, keywords: ['metal', 'bladed', 'elegant'] },
+            { value: 'Ghost Dagger', rarity: 'Legendary', rarityScore: 3, keywords: ['ethereal', 'translucent', 'glowing'] }
         ],
         stances: [
-            { value: "Attack", rarity: "Common", rarityScore: 30, keywords: ["aggressive", "forward", "striking"] },
-            { value: "Defense", rarity: "Common", rarityScore: 25, keywords: ["guarded", "balanced", "blocking"] },
-            { value: "Stealth", rarity: "Uncommon", rarityScore: 20, keywords: ["hidden", "crouching", "sneaking"] },
-            { value: "Agility", rarity: "Uncommon", rarityScore: 18, keywords: ["acrobatic", "jumping", "flipping"] },
-            { value: "Focus", rarity: "Rare", rarityScore: 15, keywords: ["concentration", "meditation", "precise"] },
-            { value: "Shadow", rarity: "Rare", rarityScore: 12, keywords: ["darkness", "invisible", "merging"] },
-            { value: "Berserker", rarity: "Epic", rarityScore: 8, keywords: ["rage", "fury", "wild"] },
-            { value: "Crane", rarity: "Epic", rarityScore: 10, keywords: ["balanced", "one-leg", "patient"] },
-            { value: "Dragon", rarity: "Legendary", rarityScore: 5, keywords: ["powerful", "mythical", "flowing"] },
-            { value: "Void", rarity: "Legendary", rarityScore: 3, keywords: ["emptiness", "formless", "transcendent"] }
+            { value: 'Attack', rarity: 'Common', rarityScore: 30, keywords: ['aggressive', 'forward', 'striking'] },
+            { value: 'Defense', rarity: 'Common', rarityScore: 25, keywords: ['guarded', 'balanced', 'blocking'] },
+            { value: 'Stealth', rarity: 'Uncommon', rarityScore: 20, keywords: ['hidden', 'crouching', 'sneaking'] },
+            { value: 'Agility', rarity: 'Uncommon', rarityScore: 18, keywords: ['acrobatic', 'jumping', 'flipping'] },
+            { value: 'Focus', rarity: 'Rare', rarityScore: 15, keywords: ['concentration', 'meditation', 'precise'] },
+            { value: 'Shadow', rarity: 'Rare', rarityScore: 12, keywords: ['darkness', 'invisible', 'merging'] },
+            { value: 'Berserker', rarity: 'Epic', rarityScore: 8, keywords: ['rage', 'fury', 'wild'] },
+            { value: 'Crane', rarity: 'Epic', rarityScore: 10, keywords: ['balanced', 'one-leg', 'patient'] },
+            { value: 'Dragon', rarity: 'Legendary', rarityScore: 5, keywords: ['powerful', 'mythical', 'flowing'] },
+            { value: 'Void', rarity: 'Legendary', rarityScore: 3, keywords: ['emptiness', 'formless', 'transcendent'] }
         ],
         elements: [
-            { value: "Fire", rarity: "Common", rarityScore: 30, keywords: ["flames", "burning", "red"] },
-            { value: "Water", rarity: "Common", rarityScore: 25, keywords: ["flowing", "blue", "adaptable"] },
-            { value: "Earth", rarity: "Uncommon", rarityScore: 20, keywords: ["solid", "brown", "strong"] },
-            { value: "Wind", rarity: "Uncommon", rarityScore: 18, keywords: ["air", "quick", "invisible"] },
-            { value: "Lightning", rarity: "Rare", rarityScore: 15, keywords: ["electric", "fast", "yellow"] },
-            { value: "Ice", rarity: "Rare", rarityScore: 12, keywords: ["frozen", "cold", "crystalline"] },
-            { value: "Shadow", rarity: "Epic", rarityScore: 8, keywords: ["darkness", "black", "stealth"] },
-            { value: "Light", rarity: "Epic", rarityScore: 10, keywords: ["bright", "white", "blinding"] },
-            { value: "Void", rarity: "Legendary", rarityScore: 5, keywords: ["empty", "nothingness", "purple"] },
-            { value: "Cosmic", rarity: "Legendary", rarityScore: 3, keywords: ["stars", "space", "universal"] }
+            { value: 'Fire', rarity: 'Common', rarityScore: 30, keywords: ['flames', 'burning', 'red'] },
+            { value: 'Water', rarity: 'Common', rarityScore: 25, keywords: ['flowing', 'blue', 'adaptable'] },
+            { value: 'Earth', rarity: 'Uncommon', rarityScore: 20, keywords: ['solid', 'brown', 'strong'] },
+            { value: 'Wind', rarity: 'Uncommon', rarityScore: 18, keywords: ['air', 'quick', 'invisible'] },
+            { value: 'Lightning', rarity: 'Rare', rarityScore: 15, keywords: ['electric', 'fast', 'yellow'] },
+            { value: 'Ice', rarity: 'Rare', rarityScore: 12, keywords: ['frozen', 'cold', 'crystalline'] },
+            { value: 'Shadow', rarity: 'Epic', rarityScore: 8, keywords: ['darkness', 'black', 'stealth'] },
+            { value: 'Light', rarity: 'Epic', rarityScore: 10, keywords: ['bright', 'white', 'blinding'] },
+            { value: 'Void', rarity: 'Legendary', rarityScore: 5, keywords: ['empty', 'nothingness', 'purple'] },
+            { value: 'Cosmic', rarity: 'Legendary', rarityScore: 3, keywords: ['stars', 'space', 'universal'] }
         ],
         ranks: [
-            { value: "Novice", rarity: "Common", rarityScore: 30, keywords: ["beginner", "training", "inexperienced"] },
-            { value: "Adept", rarity: "Common", rarityScore: 25, keywords: ["skilled", "practiced", "competent"] },
-            { value: "Elite", rarity: "Uncommon", rarityScore: 20, keywords: ["specialized", "talented", "expert"] },
-            { value: "Veteran", rarity: "Uncommon", rarityScore: 18, keywords: ["experienced", "battle-worn", "proven"] },
-            { value: "Master", rarity: "Rare", rarityScore: 15, keywords: ["perfected", "teacher", "superior"] },
-            { value: "Shadow Master", rarity: "Rare", rarityScore: 12, keywords: ["stealth", "unseen", "infiltrator"] },
-            { value: "Mystic", rarity: "Epic", rarityScore: 10, keywords: ["magical", "spiritual", "enlightened"] },
-            { value: "Warlord", rarity: "Epic", rarityScore: 8, keywords: ["commander", "feared", "powerful"] },
-            { value: "Legendary", rarity: "Legendary", rarityScore: 5, keywords: ["mythical", "story-worthy", "renowned"] },
-            { value: "Immortal", rarity: "Legendary", rarityScore: 3, keywords: ["deathless", "eternal", "godlike"] }
+            { value: 'Novice', rarity: 'Common', rarityScore: 30, keywords: ['beginner', 'training', 'inexperienced'] },
+            { value: 'Adept', rarity: 'Common', rarityScore: 25, keywords: ['skilled', 'practiced', 'competent'] },
+            { value: 'Elite', rarity: 'Uncommon', rarityScore: 20, keywords: ['specialized', 'talented', 'expert'] },
+            { value: 'Veteran', rarity: 'Uncommon', rarityScore: 18, keywords: ['experienced', 'battle-worn', 'proven'] },
+            { value: 'Master', rarity: 'Rare', rarityScore: 15, keywords: ['perfected', 'teacher', 'superior'] },
+            { value: 'Shadow Master', rarity: 'Rare', rarityScore: 12, keywords: ['stealth', 'unseen', 'infiltrator'] },
+            { value: 'Mystic', rarity: 'Epic', rarityScore: 10, keywords: ['magical', 'spiritual', 'enlightened'] },
+            { value: 'Warlord', rarity: 'Epic', rarityScore: 8, keywords: ['commander', 'feared', 'powerful'] },
+            { value: 'Legendary', rarity: 'Legendary', rarityScore: 5, keywords: ['mythical', 'story-worthy', 'renowned'] },
+            { value: 'Immortal', rarity: 'Legendary', rarityScore: 3, keywords: ['deathless', 'eternal', 'godlike'] }
         ],
         accessories: [
-            { value: "Headband", rarity: "Common", rarityScore: 30, keywords: ["cloth", "forehead", "symbol"] },
-            { value: "Scarf", rarity: "Common", rarityScore: 25, keywords: ["neck", "flowing", "colored"] },
-            { value: "Armor Piece", rarity: "Uncommon", rarityScore: 20, keywords: ["protection", "metal", "plated"] },
-            { value: "Belt", rarity: "Uncommon", rarityScore: 18, keywords: ["waist", "utility", "colored"] },
-            { value: "Gloves", rarity: "Rare", rarityScore: 15, keywords: ["hands", "grip", "armored"] },
-            { value: "Face Mask", rarity: "Rare", rarityScore: 12, keywords: ["concealed", "mysterious", "hidden"] },
-            { value: "Enchanted Amulet", rarity: "Epic", rarityScore: 10, keywords: ["glowing", "magical", "powerful"] },
-            { value: "Spirit Companion", rarity: "Epic", rarityScore: 8, keywords: ["floating", "ethereal", "helper"] },
-            { value: "Ancient Scroll", rarity: "Legendary", rarityScore: 5, keywords: ["knowledge", "power", "secret"] },
-            { value: "Celestial Mark", rarity: "Legendary", rarityScore: 3, keywords: ["glowing", "divine", "blessed"] }
+            { value: 'Headband', rarity: 'Common', rarityScore: 30, keywords: ['cloth', 'forehead', 'symbol'] },
+            { value: 'Scarf', rarity: 'Common', rarityScore: 25, keywords: ['neck', 'flowing', 'colored'] },
+            { value: 'Armor Piece', rarity: 'Uncommon', rarityScore: 20, keywords: ['protection', 'metal', 'plated'] },
+            { value: 'Belt', rarity: 'Uncommon', rarityScore: 18, keywords: ['waist', 'utility', 'colored'] },
+            { value: 'Gloves', rarity: 'Rare', rarityScore: 15, keywords: ['hands', 'grip', 'armored'] },
+            { value: 'Face Mask', rarity: 'Rare', rarityScore: 12, keywords: ['concealed', 'mysterious', 'hidden'] },
+            { value: 'Enchanted Amulet', rarity: 'Epic', rarityScore: 10, keywords: ['glowing', 'magical', 'powerful'] },
+            { value: 'Spirit Companion', rarity: 'Epic', rarityScore: 8, keywords: ['floating', 'ethereal', 'helper'] },
+            { value: 'Ancient Scroll', rarity: 'Legendary', rarityScore: 5, keywords: ['knowledge', 'power', 'secret'] },
+            { value: 'Celestial Mark', rarity: 'Legendary', rarityScore: 3, keywords: ['glowing', 'divine', 'blessed'] }
         ]
     };
 
     /* ─── Breed-based trait weightings ──────────────────────────── */
     const breedWeightings = {
-        "Tabby": {
-            weapons: ["Shuriken", "Katana"],
-            stances: ["Attack", "Agility"],
-            elements: ["Fire", "Earth"]
+        'Tabby': {
+            weapons: ['Shuriken', 'Katana'],
+            stances: ['Attack', 'Agility'],
+            elements: ['Fire', 'Earth']
         },
-        "Siamese": {
-            stances: ["Stealth", "Agility"],
-            elements: ["Water", "Wind"],
-            accessories: ["Face Mask", "Scarf"]
+        'Siamese': {
+            stances: ['Stealth', 'Agility'],
+            elements: ['Water', 'Wind'],
+            accessories: ['Face Mask', 'Scarf']
         },
-        "Bengal": {
-            weapons: ["Twin Blades", "Kunai"],
-            stances: ["Berserker", "Agility"],
-            elements: ["Lightning", "Fire"]
+        'Calico': {
+            weapons: ['Sai', 'Nunchucks'],
+            stances: ['Focus', 'Defense'],
+            elements: ['Earth', 'Fire']
         },
-        "Shadow": {
-            elements: ["Shadow", "Void"],
-            stances: ["Shadow", "Stealth"],
-            weapons: ["Ghost Dagger", "Kusarigama"]
+        'Maine Coon': {
+            weapons: ['Bo Staff', 'Kusarigama'],
+            stances: ['Defense', 'Focus'],
+            elements: ['Earth', 'Ice']
         },
-        "Nyan": {
-            elements: ["Cosmic", "Light"],
-            accessories: ["Celestial Mark"],
-            ranks: ["Immortal", "Legendary"]
+        'Bengal': {
+            weapons: ['Twin Blades', 'Kunai'],
+            stances: ['Berserker', 'Agility'],
+            elements: ['Lightning', 'Fire']
+        },
+        'Bombay': {
+            weapons: ['Kusarigama', 'Ghost Dagger'],
+            stances: ['Shadow', 'Stealth'],
+            elements: ['Shadow', 'Void']
+        },
+        'Persian': {
+            weapons: ['War Fan', 'Sai'],
+            stances: ['Focus', 'Crane'],
+            elements: ['Light', 'Wind'],
+            accessories: ['Enchanted Amulet', 'Celestial Mark']
+        },
+        'Sphynx': {
+            weapons: ['Kusarigama', 'War Fan'],
+            stances: ['Focus', 'Void'],
+            elements: ['Void', 'Lightning'],
+            accessories: ['Ancient Scroll', 'Spirit Companion']
+        },
+        'Nyan': {
+            elements: ['Cosmic', 'Light'],
+            accessories: ['Celestial Mark'],
+            ranks: ['Immortal', 'Legendary']
+        },
+        'Shadow': {
+            elements: ['Shadow', 'Void'],
+            stances: ['Shadow', 'Stealth'],
+            weapons: ['Ghost Dagger', 'Kusarigama']
         }
     };
 
@@ -652,29 +680,29 @@ function generateTraits(breed, tokenId) {
 
     /* ─── Ultra Rare Legendary Traits ──────────────────────────── */
     // Check for ultra rare "Mythic" tier traits (1 in 1000 chance)
-    const isMythic = parseInt(getTraitHash("mythic", seed).substring(0, 8), 16) % 1000 === 0;
+    const isMythic = parseInt(getTraitHash('mythic', seed).substring(0, 8), 16) % 1000 === 0;
 
     // Mythic traits with extremely rare occurrence
     const mythicTraits = [
         {
-            trait_type: "Blessing", value: "Nine Lives", rarity: "Mythic", rarityScore: 1,
-            keywords: ["resurrection", "immortal", "reborn"]
+            trait_type: 'Blessing', value: 'Nine Lives', rarity: 'Mythic', rarityScore: 1,
+            keywords: ['resurrection', 'immortal', 'reborn']
         },
         {
-            trait_type: "Power", value: "Time Whisker", rarity: "Mythic", rarityScore: 1,
-            keywords: ["temporal", "time-bending", "clock"]
+            trait_type: 'Power', value: 'Time Whisker', rarity: 'Mythic', rarityScore: 1,
+            keywords: ['temporal', 'time-bending', 'clock']
         },
         {
-            trait_type: "Title", value: "Cat God", rarity: "Mythic", rarityScore: 1,
-            keywords: ["deity", "worship", "almighty"]
+            trait_type: 'Title', value: 'Cat God', rarity: 'Mythic', rarityScore: 1,
+            keywords: ['deity', 'worship', 'almighty']
         },
         {
-            trait_type: "Ability", value: "Dimension Pounce", rarity: "Mythic", rarityScore: 1,
-            keywords: ["teleport", "reality-shift", "portal"]
+            trait_type: 'Ability', value: 'Dimension Pounce', rarity: 'Mythic', rarityScore: 1,
+            keywords: ['teleport', 'reality-shift', 'portal']
         },
         {
-            trait_type: "Secret", value: "Catnip Mastery", rarity: "Mythic", rarityScore: 1,
-            keywords: ["euphoria", "hallucination", "power-boost"]
+            trait_type: 'Secret', value: 'Catnip Mastery', rarity: 'Mythic', rarityScore: 1,
+            keywords: ['euphoria', 'hallucination', 'power-boost']
         }
     ];
 
@@ -689,7 +717,7 @@ function generateTraits(breed, tokenId) {
         const totalWeight = arr.reduce((sum, item) => sum + Math.pow(item.rarityScore, 2), 0);
 
         // Generate a target value from the hash
-        let target = hashValue * totalWeight;
+        const target = hashValue * totalWeight;
         let cumulativeWeight = 0;
 
         // Find the item that corresponds to the target value
@@ -707,41 +735,41 @@ function generateTraits(breed, tokenId) {
 
     /* ─── Special trait generation with enhanced probabilities ─── */
     // Check for special trait (1 in 50 chance instead of 1 in 100)
-    const isSpecial = parseInt(getTraitHash("special", seed).substring(0, 6), 16) % 50 === 0;
+    const isSpecial = parseInt(getTraitHash('special', seed).substring(0, 6), 16) % 50 === 0;
 
     // Enhanced special traits with more variety
     const specialTraits = [
         {
-            trait_type: "Technique", value: "Shadow Clone", rarity: "Unique", rarityScore: 2,
-            keywords: ["duplicate", "illusion", "multiple"]
+            trait_type: 'Technique', value: 'Shadow Clone', rarity: 'Unique', rarityScore: 2,
+            keywords: ['duplicate', 'illusion', 'multiple']
         },
         {
-            trait_type: "Skill", value: "Whisker Sense", rarity: "Unique", rarityScore: 2,
-            keywords: ["detection", "precognition", "awareness"]
+            trait_type: 'Skill', value: 'Whisker Sense', rarity: 'Unique', rarityScore: 2,
+            keywords: ['detection', 'precognition', 'awareness']
         },
         {
-            trait_type: "Move", value: "Purrfect Strike", rarity: "Unique", rarityScore: 2,
-            keywords: ["critical", "devastating", "precise"]
+            trait_type: 'Move', value: 'Purrfect Strike', rarity: 'Unique', rarityScore: 2,
+            keywords: ['critical', 'devastating', 'precise']
         },
         {
-            trait_type: "Style", value: "Feline Fury", rarity: "Unique", rarityScore: 2,
-            keywords: ["aggressive", "combo", "rapid"]
+            trait_type: 'Style', value: 'Feline Fury', rarity: 'Unique', rarityScore: 2,
+            keywords: ['aggressive', 'combo', 'rapid']
         },
         {
-            trait_type: "Secret", value: "Nine Shadow Paths", rarity: "Unique", rarityScore: 2,
-            keywords: ["teleport", "afterimage", "confusion"]
+            trait_type: 'Secret', value: 'Nine Shadow Paths', rarity: 'Unique', rarityScore: 2,
+            keywords: ['teleport', 'afterimage', 'confusion']
         },
         {
-            trait_type: "Ability", value: "Cat's Eye", rarity: "Unique", rarityScore: 2,
-            keywords: ["perception", "night-vision", "analysis"]
+            trait_type: 'Ability', value: "Cat's Eye", rarity: 'Unique', rarityScore: 2,
+            keywords: ['perception', 'night-vision', 'analysis']
         },
         {
-            trait_type: "Power", value: "Sonic Meow", rarity: "Unique", rarityScore: 2,
-            keywords: ["sound", "shockwave", "stun"]
+            trait_type: 'Power', value: 'Sonic Meow', rarity: 'Unique', rarityScore: 2,
+            keywords: ['sound', 'shockwave', 'stun']
         },
         {
-            trait_type: "Mastery", value: "Yarn Manipulation", rarity: "Unique", rarityScore: 2,
-            keywords: ["binding", "whip", "ensnare"]
+            trait_type: 'Mastery', value: 'Yarn Manipulation', rarity: 'Unique', rarityScore: 2,
+            keywords: ['binding', 'whip', 'ensnare']
         }
     ];
 
@@ -762,40 +790,44 @@ function generateTraits(breed, tokenId) {
         };
 
         // Apply breed bonuses
-        const breed = traits.find(t => t.trait_type === "Breed")?.value;
+        const breed = traits.find(t => t.trait_type === 'Breed')?.value;
         switch (breed) {
-            case "Tabby":
+            case 'Tabby':
                 baseStats.agility += 2;
                 baseStats.power += 1;
                 break;
-            case "Siamese":
+            case 'Siamese':
                 baseStats.stealth += 2;
                 baseStats.intelligence += 1;
                 break;
-            case "Bengal":
+            case 'Maine Coon':
+                baseStats.power += 3;
+                baseStats.intelligence += 1;
+                break;
+            case 'Bengal':
                 baseStats.agility += 3;
                 baseStats.power += 1;
                 break;
-            case "Calico":
+            case 'Calico':
                 baseStats.intelligence += 2;
                 baseStats.stealth += 1;
                 break;
-            case "Bombay":
+            case 'Bombay':
                 baseStats.stealth += 3;
                 break;
-            case "Persian":
+            case 'Persian':
                 baseStats.intelligence += 3;
                 baseStats.agility -= 1;
                 break;
-            case "Sphynx":
+            case 'Sphynx':
                 baseStats.stealth += 1;
                 baseStats.intelligence += 2;
                 break;
-            case "Nyan":
+            case 'Nyan':
                 baseStats.agility += 2;
                 baseStats.power += 2;
                 break;
-            case "Shadow":
+            case 'Shadow':
                 baseStats.stealth += 3;
                 baseStats.power += 2;
                 baseStats.agility += 1;
@@ -803,96 +835,96 @@ function generateTraits(breed, tokenId) {
         }
 
         // Apply weapon bonuses
-        const weapon = traits.find(t => t.trait_type === "Weapon")?.value;
+        const weapon = traits.find(t => t.trait_type === 'Weapon')?.value;
         switch (weapon) {
-            case "Katana":
+            case 'Katana':
                 baseStats.power += 2;
                 break;
-            case "Shuriken":
+            case 'Shuriken':
                 baseStats.agility += 1;
                 baseStats.stealth += 1;
                 break;
-            case "Nunchucks":
+            case 'Nunchucks':
                 baseStats.agility += 2;
                 break;
-            case "Kunai":
+            case 'Kunai':
                 baseStats.stealth += 2;
                 break;
-            case "Sai":
+            case 'Sai':
                 baseStats.power += 1;
                 baseStats.agility += 1;
                 break;
-            case "Bo Staff":
+            case 'Bo Staff':
                 baseStats.intelligence += 2;
                 break;
-            case "Twin Blades":
+            case 'Twin Blades':
                 baseStats.agility += 2;
                 baseStats.power += 1;
                 break;
-            case "Kusarigama":
+            case 'Kusarigama':
                 baseStats.stealth += 1;
                 baseStats.intelligence += 2;
                 break;
-            case "War Fan":
+            case 'War Fan':
                 baseStats.intelligence += 2;
                 baseStats.power += 1;
                 break;
-            case "Ghost Dagger":
+            case 'Ghost Dagger':
                 baseStats.stealth += 3;
                 baseStats.power += 1;
                 break;
         }
 
         // Apply element bonuses
-        const element = traits.find(t => t.trait_type === "Element")?.value;
+        const element = traits.find(t => t.trait_type === 'Element')?.value;
         switch (element) {
-            case "Fire":
+            case 'Fire':
                 baseStats.power += 2;
                 break;
-            case "Water":
+            case 'Water':
                 baseStats.agility += 2;
                 break;
-            case "Earth":
+            case 'Earth':
                 baseStats.power += 1;
                 baseStats.intelligence += 1;
                 break;
-            case "Wind":
+            case 'Wind':
                 baseStats.agility += 3;
                 break;
-            case "Lightning":
+            case 'Lightning':
                 baseStats.agility += 2;
                 baseStats.power += 1;
                 break;
-            case "Ice":
+            case 'Ice':
                 baseStats.intelligence += 2;
                 baseStats.stealth += 1;
                 break;
-            case "Shadow":
+            case 'Shadow':
                 baseStats.stealth += 3;
                 break;
-            case "Light":
+            case 'Light':
                 baseStats.intelligence += 2;
                 baseStats.power += 1;
                 break;
-            case "Void":
+            case 'Void':
                 baseStats.power += 2;
                 baseStats.stealth += 2;
                 break;
-            case "Cosmic":
+            case 'Cosmic':
                 baseStats.power += 2;
                 baseStats.intelligence += 2;
                 break;
         }
 
         // Apply random modifiers
-        baseStats.agility += modifier("agility");
-        baseStats.stealth += modifier("stealth");
-        baseStats.power += modifier("power");
-        baseStats.intelligence += modifier("intelligence");
+        baseStats.agility += modifier('agility');
+        baseStats.stealth += modifier('stealth');
+        baseStats.power += modifier('power');
+        baseStats.intelligence += modifier('intelligence');
 
         // Apply mythic and special bonuses
-        const hasMythic = traits.some(t => t.rarity === "Mythic");
-        const hasSpecial = traits.some(t => t.rarity === "Unique");
+        const hasMythic = traits.some(t => t.rarity === 'Mythic');
+        const hasSpecial = traits.some(t => t.rarity === 'Unique');
 
         if (hasMythic) {
             Object.keys(baseStats).forEach(key => {
@@ -901,32 +933,32 @@ function generateTraits(breed, tokenId) {
         }
 
         if (hasSpecial) {
-            const specialTrait = traits.find(t => t.rarity === "Unique");
+            const specialTrait = traits.find(t => t.rarity === 'Unique');
             switch (specialTrait?.trait_type) {
-                case "Technique":
+                case 'Technique':
                     baseStats.agility += 2;
                     break;
-                case "Skill":
+                case 'Skill':
                     baseStats.intelligence += 2;
                     break;
-                case "Move":
+                case 'Move':
                     baseStats.power += 2;
                     break;
-                case "Style":
+                case 'Style':
                     baseStats.agility += 1;
                     baseStats.power += 1;
                     break;
-                case "Secret":
+                case 'Secret':
                     baseStats.stealth += 2;
                     break;
-                case "Ability":
+                case 'Ability':
                     baseStats.intelligence += 1;
                     baseStats.stealth += 1;
                     break;
-                case "Power":
+                case 'Power':
                     baseStats.power += 2;
                     break;
-                case "Mastery":
+                case 'Mastery':
                     baseStats.intelligence += 1;
                     baseStats.agility += 1;
                     break;
@@ -942,32 +974,61 @@ function generateTraits(breed, tokenId) {
     };
 
     /* ─── Generate core traits ─────────────────────────────────── */
-    // Generate core traits
-    const breedTrait = getWeightedTrait(weightedCategories.breeds, "breed");
-    const weaponTrait = getWeightedTrait(weightedCategories.weapons, "weapon");
-    const stanceTrait = getWeightedTrait(weightedCategories.stances, "stance");
-    const elementTrait = getWeightedTrait(weightedCategories.elements, "element");
-    const rankTrait = getWeightedTrait(weightedCategories.ranks, "rank");
+    // Generate core traits - use the specified breed instead of random selection
+    console.log(`🔍 DEBUG: Looking for breed "${breed}" in available breeds`);
+    console.log(`🔍 DEBUG: Available breeds: ${traitCategories.breeds.map(b => b.value).join(', ')}`);
+    console.log(`🔍 DEBUG: Breed type: ${typeof breed}, Length: ${breed.length}`);
+
+    let breedTrait = traitCategories.breeds.find(b => b.value === breed);
+    console.log('🔍 DEBUG: Found breed trait:', breedTrait);
+    
+    // Additional debugging for the exact comparison
+    console.log(`🔍 DEBUG: Searching for breed "${breed}" with strict comparison`);
+    traitCategories.breeds.forEach((b, index) => {
+        console.log(`🔍 DEBUG: Available breed ${index}: "${b.value}" (${b.value === breed ? 'MATCH' : 'NO MATCH'})`);
+    });
+    
+    // If the breed is not found, try a more flexible comparison
+    if (!breedTrait) {
+        console.log(`⚠️ Exact match failed, trying case-insensitive match`);
+        breedTrait = traitCategories.breeds.find(b => b.value.toLowerCase() === breed.toLowerCase());
+        console.log('🔍 DEBUG: Case-insensitive match result:', breedTrait);
+    }
+
+    if (!breedTrait) {
+        console.log(`⚠️ Breed "${breed}" not found in available breeds, using random selection`);
+        breedTrait = getWeightedTrait(weightedCategories.breeds, 'breed');
+        console.log(`TokenId ${tokenId} - Selected breed: ${breedTrait.value} (${breedTrait.rarity}) [${breedTrait.rarityScore}] - RANDOM FALLBACK`);
+    } else {
+        console.log(`TokenId ${tokenId} - Selected breed: ${breedTrait.value} (${breedTrait.rarity}) [${breedTrait.rarityScore}] - USER SPECIFIED`);
+    }
+    
+    // Additional debugging for breed trait content
+    console.log(`🔍 DEBUG: Final breedTrait object:`, JSON.stringify(breedTrait, null, 2));
+    const weaponTrait = getWeightedTrait(weightedCategories.weapons, 'weapon');
+    const stanceTrait = getWeightedTrait(weightedCategories.stances, 'stance');
+    const elementTrait = getWeightedTrait(weightedCategories.elements, 'element');
+    const rankTrait = getWeightedTrait(weightedCategories.ranks, 'rank');
 
     // 75% chance to have accessory
-    const hasAccessory = parseInt(getTraitHash("hasAccessory", seed).substring(0, 4), 16) % 100 < 75;
+    const hasAccessory = parseInt(getTraitHash('hasAccessory', seed).substring(0, 4), 16) % 100 < 75;
     const accessoryTrait = hasAccessory ?
-        getWeightedTrait(weightedCategories.accessories, "accessory") : null;
+        getWeightedTrait(weightedCategories.accessories, 'accessory') : null;
 
     /* ─── Build attribute array ───────────────────────────────── */
     // Generate basic attributes
     const attributes = [
-        { trait_type: "Breed", value: breedTrait.value, rarity: breedTrait.rarity, keywords: breedTrait.keywords },
-        { trait_type: "Weapon", value: weaponTrait.value, rarity: weaponTrait.rarity, keywords: weaponTrait.keywords },
-        { trait_type: "Stance", value: stanceTrait.value, rarity: stanceTrait.rarity, keywords: stanceTrait.keywords },
-        { trait_type: "Element", value: elementTrait.value, rarity: elementTrait.rarity, keywords: elementTrait.keywords },
-        { trait_type: "Rank", value: rankTrait.value, rarity: rankTrait.rarity, keywords: rankTrait.keywords }
+        { trait_type: 'Breed', value: breedTrait.value, rarity: breedTrait.rarity, keywords: breedTrait.keywords },
+        { trait_type: 'Weapon', value: weaponTrait.value, rarity: weaponTrait.rarity, keywords: weaponTrait.keywords },
+        { trait_type: 'Stance', value: stanceTrait.value, rarity: stanceTrait.rarity, keywords: stanceTrait.keywords },
+        { trait_type: 'Element', value: elementTrait.value, rarity: elementTrait.rarity, keywords: elementTrait.keywords },
+        { trait_type: 'Rank', value: rankTrait.value, rarity: rankTrait.rarity, keywords: rankTrait.keywords }
     ];
 
     // Add accessory if present
     if (accessoryTrait) {
         attributes.push({
-            trait_type: "Accessory",
+            trait_type: 'Accessory',
             value: accessoryTrait.value,
             rarity: accessoryTrait.rarity,
             keywords: accessoryTrait.keywords
@@ -976,11 +1037,11 @@ function generateTraits(breed, tokenId) {
 
     // Add special trait if lucky
     if (isSpecial) {
-        const specialIndex = parseInt(getTraitHash("special-type", seed).substring(0, 4), 16) % specialTraits.length;
+        const specialIndex = parseInt(getTraitHash('special-type', seed).substring(0, 4), 16) % specialTraits.length;
         attributes.push({
             trait_type: specialTraits[specialIndex].trait_type,
             value: specialTraits[specialIndex].value,
-            rarity: "Unique",
+            rarity: 'Unique',
             keywords: specialTraits[specialIndex].keywords
         });
         console.log(`TokenId ${tokenId} - 🎁 SPECIAL TRAIT ADDED: ${specialTraits[specialIndex].trait_type}: ${specialTraits[specialIndex].value}! 🎁`);
@@ -988,11 +1049,11 @@ function generateTraits(breed, tokenId) {
 
     // Add mythic trait if extremely lucky (1 in 1000)
     if (isMythic) {
-        const mythicIndex = parseInt(getTraitHash("mythic-type", seed).substring(0, 4), 16) % mythicTraits.length;
+        const mythicIndex = parseInt(getTraitHash('mythic-type', seed).substring(0, 4), 16) % mythicTraits.length;
         attributes.push({
             trait_type: mythicTraits[mythicIndex].trait_type,
             value: mythicTraits[mythicIndex].value,
-            rarity: "Mythic",
+            rarity: 'Mythic',
             keywords: mythicTraits[mythicIndex].keywords
         });
         console.log(`TokenId ${tokenId} - 🌟 MYTHIC TRAIT ADDED: ${mythicTraits[mythicIndex].trait_type}: ${mythicTraits[mythicIndex].value}! 🌟`);
@@ -1006,7 +1067,7 @@ function generateTraits(breed, tokenId) {
         attributes.push({
             trait_type: stat.charAt(0).toUpperCase() + stat.slice(1),
             value,
-            display_type: "number"
+            display_type: 'number'
         });
     });
 
@@ -1050,86 +1111,87 @@ function generateTraits(breed, tokenId) {
 
 // Generate ninja cat backstory and description with enhanced background integration
 function generateNinjaCatDescription(tokenId, breed, attributes) {
-    const seed = parseInt(tokenId);
+    const seed = parseInt(tokenId, 10);
     const hash = createHash('sha256').update(`${seed}-description`).digest('hex');
 
     // Extract trait values with fallbacks
-    const weapon = attributes.find(attr => attr.trait_type === "Weapon")?.value || "Katana";
-    const element = attributes.find(attr => attr.trait_type === "Element")?.value || "Fire";
-    const stance = attributes.find(attr => attr.trait_type === "Stance")?.value || "Attack";
-    const rank = attributes.find(attr => attr.trait_type === "Rank")?.value || "Novice";
-    const accessory = attributes.find(attr => attr.trait_type === "Accessory")?.value;
-    const background = attributes.find(attr => attr.trait_type === "Background")?.value;
+    const weapon = attributes.find(attr => attr.trait_type === 'Weapon')?.value || 'Katana';
+    const element = attributes.find(attr => attr.trait_type === 'Element')?.value || 'Fire';
+    const stance = attributes.find(attr => attr.trait_type === 'Stance')?.value || 'Attack';
+    const rank = attributes.find(attr => attr.trait_type === 'Rank')?.value || 'Novice';
+    const accessory = attributes.find(attr => attr.trait_type === 'Accessory')?.value;
+    const background = attributes.find(attr => attr.trait_type === 'Background')?.value;
 
     // Check for special/mythic traits
-    const special = attributes.find(attr => attr.rarity === "Unique");
-    const mythic = attributes.find(attr => attr.rarity === "Mythic");
+    const special = attributes.find(attr => attr.rarity === 'Unique');
+    const mythic = attributes.find(attr => attr.rarity === 'Mythic');
 
     // Get stats
-    const agility = attributes.find(attr => attr.trait_type === "Agility")?.value || 5;
-    const stealth = attributes.find(attr => attr.trait_type === "Stealth")?.value || 5;
-    const power = attributes.find(attr => attr.trait_type === "Power")?.value || 5;
-    const intelligence = attributes.find(attr => attr.trait_type === "Intelligence")?.value || 5;
+    const agility = attributes.find(attr => attr.trait_type === 'Agility')?.value || 5;
+    const stealth = attributes.find(attr => attr.trait_type === 'Stealth')?.value || 5;
+    const power = attributes.find(attr => attr.trait_type === 'Power')?.value || 5;
+    const intelligence = attributes.find(attr => attr.trait_type === 'Intelligence')?.value || 5;
 
     // Determine cat's prowess based on stats
     const highestStat = Math.max(agility, stealth, power, intelligence);
-    let specialty = "balanced fighting";
+    let specialty = 'balanced fighting';
 
-    if (highestStat === agility) specialty = "swift movements";
-    else if (highestStat === stealth) specialty = "silent operations";
-    else if (highestStat === power) specialty = "powerful strikes";
-    else if (highestStat === intelligence) specialty = "tactical mastery";
+    if (highestStat === agility) specialty = 'swift movements';
+    else if (highestStat === stealth) specialty = 'silent operations';
+    else if (highestStat === power) specialty = 'powerful strikes';
+    else if (highestStat === intelligence) specialty = 'tactical mastery';
 
     // Clan names based on breed
     const clans = {
-        "Tabby": "Tora Clan",
-        "Siamese": "Twin Moon Clan",
-        "Bengal": "Spotted Fang Clan",
-        "Bombay": "Night Shadow Clan",
-        "Calico": "Three Colors Clan",
-        "Persian": "Royal Whisker Clan",
-        "Sphynx": "Ancient Sphinx Order",
-        "Nyan": "Rainbow Path",
-        "Shadow": "Void Walker Sect"
+        'Tabby': 'Tora Clan',
+        'Siamese': 'Twin Moon Clan',
+        'Maine Coon': 'Mountain Peak Clan',
+        'Bengal': 'Spotted Fang Clan',
+        'Bombay': 'Night Shadow Clan',
+        'Calico': 'Three Colors Clan',
+        'Persian': 'Royal Whisker Clan',
+        'Sphynx': 'Ancient Sphinx Order',
+        'Nyan': 'Rainbow Path',
+        'Shadow': 'Void Walker Sect'
     };
 
-    const clan = clans[breed] || "Shadow Paw Clan";
+    const clan = clans[breed] || 'Shadow Paw Clan';
 
     // Villain names based on element
     const villains = {
-        "Fire": "the Flame Tyrant",
-        "Water": "the Deep Ocean Shogun",
-        "Earth": "the Stone Emperor",
-        "Wind": "the Cyclone Daimyo",
-        "Lightning": "the Thunder King",
-        "Ice": "the Frost Monarch",
-        "Shadow": "the Darkness Overlord",
-        "Light": "the Blinding Sovereign",
-        "Void": "the Emptiness Devourer",
-        "Cosmic": "the Star Conqueror"
+        'Fire': 'the Flame Tyrant',
+        'Water': 'the Deep Ocean Shogun',
+        'Earth': 'the Stone Emperor',
+        'Wind': 'the Cyclone Daimyo',
+        'Lightning': 'the Thunder King',
+        'Ice': 'the Frost Monarch',
+        'Shadow': 'the Darkness Overlord',
+        'Light': 'the Blinding Sovereign',
+        'Void': 'the Emptiness Devourer',
+        'Cosmic': 'the Star Conqueror'
     };
 
-    const villain = villains[element] || "the Evil Overlord";
+    const villain = villains[element] || 'the Evil Overlord';
 
     // Background flavor text integration
     const backgroundFlavor = {
-        "Dojo": "where they train tirelessly to perfect their technique",
-        "Bamboo Forest": "where they meditate among the rustling bamboo",
-        "Night Sky": "where they blend with shadows under moonlight",
-        "Mountain Temple": "where ancient wisdom guides their path",
-        "Neon City": "where they prowl the rooftops unseen",
-        "Pixel Void": "where they hone their skills in isolation",
-        "Sakura Garden": "where falling petals mark their graceful movements",
-        "Ninja Fortress": "where they prepare for dangerous missions",
-        "Cosmic Dimension": "where reality bends to their will",
-        "Lava Cavern": "where they temper their spirit in extreme heat",
-        "Ancient Scroll": "where their legend is preserved for eternity",
-        "Spirit Realm": "where they commune with ancestral spirits"
+        'Dojo': 'where they train tirelessly to perfect their technique',
+        'Bamboo Forest': 'where they meditate among the rustling bamboo',
+        'Night Sky': 'where they blend with shadows under moonlight',
+        'Mountain Temple': 'where ancient wisdom guides their path',
+        'Neon City': 'where they prowl the rooftops unseen',
+        'Pixel Void': 'where they hone their skills in isolation',
+        'Sakura Garden': 'where falling petals mark their graceful movements',
+        'Ninja Fortress': 'where they prepare for dangerous missions',
+        'Cosmic Dimension': 'where reality bends to their will',
+        'Lava Cavern': 'where they temper their spirit in extreme heat',
+        'Ancient Scroll': 'where their legend is preserved for eternity',
+        'Spirit Realm': 'where they commune with ancestral spirits'
     };
 
     const backgroundContext = background && backgroundFlavor[background]
         ? backgroundFlavor[background]
-        : "where they pursue their ninja path";
+        : 'where they pursue their ninja path';
 
     // Pattern selection with expanded variety (8 patterns)
     const pattern = parseInt(hash.substring(0, 4), 16) % 8;
@@ -1138,28 +1200,28 @@ function generateNinjaCatDescription(tokenId, breed, attributes) {
     let description;
 
     if (pattern === 0) {
-        description = `A ${rank.toLowerCase()} ${breed} ninja cat from the ${clan}, wielding a ${weapon.toLowerCase()} infused with ${element.toLowerCase()} energy. Known for ${specialty}, this warrior has sworn to defeat ${villain} and restore peace to the realm. They are often found in the ${background ? background.toLowerCase() : "shadows"}, ${backgroundContext}.`;
+        description = `A ${rank.toLowerCase()} ${breed} ninja cat from the ${clan}, wielding a ${weapon.toLowerCase()} infused with ${element.toLowerCase()} energy. Known for ${specialty}, this warrior has sworn to defeat ${villain} and restore peace to the realm. They are often found in the ${background ? background.toLowerCase() : 'shadows'}, ${backgroundContext}.`;
     }
     else if (pattern === 1) {
-        description = `Trained in the secret arts of the ${clan}, this ${breed} ninja cat has mastered the ${stance.toLowerCase()} stance. Armed with a legendary ${weapon.toLowerCase()} and commanding ${element.toLowerCase()} techniques, the ${rank.toLowerCase()} warrior excels at ${specialty}. The ${background ? background.toLowerCase() : "shadows"} ${backgroundContext}.`;
+        description = `Trained in the secret arts of the ${clan}, this ${breed} ninja cat has mastered the ${stance.toLowerCase()} stance. Armed with a legendary ${weapon.toLowerCase()} and commanding ${element.toLowerCase()} techniques, the ${rank.toLowerCase()} warrior excels at ${specialty}. The ${background ? background.toLowerCase() : 'shadows'} ${backgroundContext}.`;
     }
     else if (pattern === 2) {
-        description = `This ${breed} ninja of ${rank.toLowerCase()} status serves the ancient ${clan}. Having perfected the ${stance.toLowerCase()} stance and carrying a trusty ${weapon.toLowerCase()}, they harness ${element.toLowerCase()} powers with exceptional skill in ${specialty}. The ${background ? background.toLowerCase() : "dojo"} is ${backgroundContext}.`;
+        description = `This ${breed} ninja of ${rank.toLowerCase()} status serves the ancient ${clan}. Having perfected the ${stance.toLowerCase()} stance and carrying a trusty ${weapon.toLowerCase()}, they harness ${element.toLowerCase()} powers with exceptional skill in ${specialty}. The ${background ? background.toLowerCase() : 'dojo'} is ${backgroundContext}.`;
     }
     else if (pattern === 3) {
-        description = `A mysterious ${breed} warrior from the shadows of the ${clan}, this ${rank.toLowerCase()} ninja cat wields a deadly ${weapon.toLowerCase()}. Their mastery of ${element.toLowerCase()} techniques and ${stance.toLowerCase()} stance makes them formidable in ${specialty}, especially when in the ${background ? background.toLowerCase() : "night"}, ${backgroundContext}.`;
+        description = `A mysterious ${breed} warrior from the shadows of the ${clan}, this ${rank.toLowerCase()} ninja cat wields a deadly ${weapon.toLowerCase()}. Their mastery of ${element.toLowerCase()} techniques and ${stance.toLowerCase()} stance makes them formidable in ${specialty}, especially when in the ${background ? background.toLowerCase() : 'night'}, ${backgroundContext}.`;
     }
     else if (pattern === 4) {
-        description = `The ${clan} has produced few warriors as talented as this ${breed} ninja cat. Rising to the rank of ${rank.toLowerCase()}, they've become legendary for their ${stance.toLowerCase()} technique, ${weapon.toLowerCase()} prowess, and ${element.toLowerCase()} manipulation, particularly excelling in ${specialty}. They seek sanctuary in the ${background ? background.toLowerCase() : "temple"}, ${backgroundContext}.`;
+        description = `The ${clan} has produced few warriors as talented as this ${breed} ninja cat. Rising to the rank of ${rank.toLowerCase()}, they've become legendary for their ${stance.toLowerCase()} technique, ${weapon.toLowerCase()} prowess, and ${element.toLowerCase()} manipulation, particularly excelling in ${specialty}. They seek sanctuary in the ${background ? background.toLowerCase() : 'temple'}, ${backgroundContext}.`;
     }
     else if (pattern === 5) {
-        description = `Whispers speak of a ${breed} ninja cat from the ${clan}, who reached the ${rank.toLowerCase()} rank before age three. With unparalleled skill in the ${stance.toLowerCase()} stance and wielding a ${weapon.toLowerCase()} with deadly precision, they channel ${element.toLowerCase()} energy while specializing in ${specialty}. Legends say they emerged from the ${background ? background.toLowerCase() : "mist"}, ${backgroundContext}.`;
+        description = `Whispers speak of a ${breed} ninja cat from the ${clan}, who reached the ${rank.toLowerCase()} rank before age three. With unparalleled skill in the ${stance.toLowerCase()} stance and wielding a ${weapon.toLowerCase()} with deadly precision, they channel ${element.toLowerCase()} energy while specializing in ${specialty}. Legends say they emerged from the ${background ? background.toLowerCase() : 'mist'}, ${backgroundContext}.`;
     }
     else if (pattern === 6) {
-        description = `Born under a rare celestial alignment, this ${breed} ninja of the ${clan} carries the mark of destiny. Their ${element.toLowerCase()} powers flow through their ${weapon.toLowerCase()} as they move with perfect ${stance.toLowerCase()} form. Now a ${rank.toLowerCase()} warrior known for ${specialty}, they've claimed the ${background ? background.toLowerCase() : "mountain"} as their domain, ${backgroundContext}.`;
+        description = `Born under a rare celestial alignment, this ${breed} ninja of the ${clan} carries the mark of destiny. Their ${element.toLowerCase()} powers flow through their ${weapon.toLowerCase()} as they move with perfect ${stance.toLowerCase()} form. Now a ${rank.toLowerCase()} warrior known for ${specialty}, they've claimed the ${background ? background.toLowerCase() : 'mountain'} as their domain, ${backgroundContext}.`;
     }
     else {
-        description = `Neither friend nor foe can predict the movements of this ${breed} ninja from the ${clan}. Their ${stance.toLowerCase()} stance combined with masterful control of ${element.toLowerCase()} energy makes their ${weapon.toLowerCase()} strikes devastatingly effective. As a ${rank.toLowerCase()} who excels in ${specialty}, they've found their true calling in the ${background ? background.toLowerCase() : "forest"}, ${backgroundContext}.`;
+        description = `Neither friend nor foe can predict the movements of this ${breed} ninja from the ${clan}. Their ${stance.toLowerCase()} stance combined with masterful control of ${element.toLowerCase()} energy makes their ${weapon.toLowerCase()} strikes devastatingly effective. As a ${rank.toLowerCase()} who excels in ${specialty}, they've found their true calling in the ${background ? background.toLowerCase() : 'forest'}, ${backgroundContext}.`;
     }
 
     // Add accessory detail if present
@@ -1190,56 +1252,57 @@ function calculateRarityScore(attributes) {
     let count = 0;
 
     // Skip these types in calculation
-    const skipTypes = ["Agility", "Stealth", "Power", "Intelligence"];
+    const skipTypes = ['Agility', 'Stealth', 'Power', 'Intelligence'];
 
     // Enhanced synergy pairs that boost score when appearing together
     // Now includes background synergies
     const synergyPairs = [
         // Breed + Element combinations
-        { type1: "Breed", value1: "Shadow", type2: "Element", value2: "Shadow", bonus: 15 },
-        { type1: "Breed", value1: "Nyan", type2: "Element", value2: "Cosmic", bonus: 15 },
-        { type1: "Breed", value1: "Bengal", type2: "Element", value2: "Fire", bonus: 10 },
-        { type1: "Breed", value1: "Siamese", type2: "Element", value2: "Water", bonus: 10 },
+        { type1: 'Breed', value1: 'Shadow', type2: 'Element', value2: 'Shadow', bonus: 15 },
+        { type1: 'Breed', value1: 'Nyan', type2: 'Element', value2: 'Cosmic', bonus: 15 },
+        { type1: 'Breed', value1: 'Bengal', type2: 'Element', value2: 'Fire', bonus: 10 },
+        { type1: 'Breed', value1: 'Siamese', type2: 'Element', value2: 'Water', bonus: 10 },
+        { type1: 'Breed', value1: 'Maine Coon', type2: 'Element', value2: 'Earth', bonus: 10 },
 
         // Weapon + Stance combinations
-        { type1: "Weapon", value1: "Katana", type2: "Stance", value2: "Attack", bonus: 8 },
-        { type1: "Weapon", value1: "Bo Staff", type2: "Stance", value2: "Defense", bonus: 10 },
-        { type1: "Weapon", value1: "Shuriken", type2: "Stance", value2: "Stealth", bonus: 12 },
-        { type1: "Weapon", value1: "Twin Blades", type2: "Stance", value2: "Agility", bonus: 14 },
-        { type1: "Weapon", value1: "Ghost Dagger", type2: "Stance", value2: "Shadow", bonus: 16 },
-        { type1: "Weapon", value1: "War Fan", type2: "Stance", value2: "Focus", bonus: 12 },
+        { type1: 'Weapon', value1: 'Katana', type2: 'Stance', value2: 'Attack', bonus: 8 },
+        { type1: 'Weapon', value1: 'Bo Staff', type2: 'Stance', value2: 'Defense', bonus: 10 },
+        { type1: 'Weapon', value1: 'Shuriken', type2: 'Stance', value2: 'Stealth', bonus: 12 },
+        { type1: 'Weapon', value1: 'Twin Blades', type2: 'Stance', value2: 'Agility', bonus: 14 },
+        { type1: 'Weapon', value1: 'Ghost Dagger', type2: 'Stance', value2: 'Shadow', bonus: 16 },
+        { type1: 'Weapon', value1: 'War Fan', type2: 'Stance', value2: 'Focus', bonus: 12 },
 
         // Element + Accessory combinations
-        { type1: "Element", value1: "Fire", type2: "Accessory", value2: "Headband", bonus: 7 },
-        { type1: "Element", value1: "Water", type2: "Accessory", value2: "Scarf", bonus: 9 },
-        { type1: "Element", value1: "Shadow", type2: "Accessory", value2: "Face Mask", bonus: 13 },
-        { type1: "Element", value1: "Cosmic", type2: "Accessory", value2: "Celestial Mark", bonus: 15 },
+        { type1: 'Element', value1: 'Fire', type2: 'Accessory', value2: 'Headband', bonus: 7 },
+        { type1: 'Element', value1: 'Water', type2: 'Accessory', value2: 'Scarf', bonus: 9 },
+        { type1: 'Element', value1: 'Shadow', type2: 'Accessory', value2: 'Face Mask', bonus: 13 },
+        { type1: 'Element', value1: 'Cosmic', type2: 'Accessory', value2: 'Celestial Mark', bonus: 15 },
 
         // Background + Breed combinations
-        { type1: "Background", value1: "Dojo", type2: "Breed", value2: "Tabby", bonus: 10 },
-        { type1: "Background", value1: "Bamboo Forest", type2: "Breed", value2: "Calico", bonus: 10 },
-        { type1: "Background", value1: "Night Sky", type2: "Breed", value2: "Bombay", bonus: 12 },
-        { type1: "Background", value1: "Night Sky", type2: "Breed", value2: "Shadow", bonus: 15 },
-        { type1: "Background", value1: "Night Sky", type2: "Breed", value2: "Shadow", bonus: 15 },
-        { type1: "Background", value1: "Mountain Temple", type2: "Breed", value2: "Persian", bonus: 12 },
-        { type1: "Background", value1: "Neon City", type2: "Breed", value2: "Nyan", bonus: 14 },
-        { type1: "Background", value1: "Sakura Garden", type2: "Element", value2: "Wind", bonus: 11 },
-        { type1: "Background", value1: "Ninja Fortress", type2: "Weapon", value2: "Katana", bonus: 8 },
-        { type1: "Background", value1: "Cosmic Dimension", type2: "Element", value2: "Cosmic", bonus: 16 },
-        { type1: "Background", value1: "Lava Cavern", type2: "Element", value2: "Fire", bonus: 13 },
-        { type1: "Background", value1: "Ancient Scroll", type2: "Rank", value2: "Legendary", bonus: 17 },
-        { type1: "Background", value1: "Spirit Realm", type2: "Element", value2: "Void", bonus: 18 }
+        { type1: 'Background', value1: 'Dojo', type2: 'Breed', value2: 'Tabby', bonus: 10 },
+        { type1: 'Background', value1: 'Bamboo Forest', type2: 'Breed', value2: 'Calico', bonus: 10 },
+        { type1: 'Background', value1: 'Night Sky', type2: 'Breed', value2: 'Bombay', bonus: 12 },
+        { type1: 'Background', value1: 'Night Sky', type2: 'Breed', value2: 'Shadow', bonus: 15 },
+        { type1: 'Background', value1: 'Night Sky', type2: 'Breed', value2: 'Shadow', bonus: 15 },
+        { type1: 'Background', value1: 'Mountain Temple', type2: 'Breed', value2: 'Persian', bonus: 12 },
+        { type1: 'Background', value1: 'Neon City', type2: 'Breed', value2: 'Nyan', bonus: 14 },
+        { type1: 'Background', value1: 'Sakura Garden', type2: 'Element', value2: 'Wind', bonus: 11 },
+        { type1: 'Background', value1: 'Ninja Fortress', type2: 'Weapon', value2: 'Katana', bonus: 8 },
+        { type1: 'Background', value1: 'Cosmic Dimension', type2: 'Element', value2: 'Cosmic', bonus: 16 },
+        { type1: 'Background', value1: 'Lava Cavern', type2: 'Element', value2: 'Fire', bonus: 13 },
+        { type1: 'Background', value1: 'Ancient Scroll', type2: 'Rank', value2: 'Legendary', bonus: 17 },
+        { type1: 'Background', value1: 'Spirit Realm', type2: 'Element', value2: 'Void', bonus: 18 }
     ];
 
     // Base rarityScore mapping by rarity level
     const rarityMapping = {
-        "Common": 25,
-        "Uncommon": 45,
-        "Rare": 65,
-        "Epic": 80,
-        "Legendary": 90,
-        "Unique": 98,
-        "Mythic": 125
+        'Common': 25,
+        'Uncommon': 45,
+        'Rare': 65,
+        'Epic': 80,
+        'Legendary': 90,
+        'Unique': 98,
+        'Mythic': 125
     };
 
     // Calculate base score from rarity values
@@ -1268,10 +1331,10 @@ function calculateRarityScore(attributes) {
     }
 
     // Special bonuses for mythic traits
-    const hasMythic = attributes.some(attr => attr.rarity === "Mythic");
+    const hasMythic = attributes.some(attr => attr.rarity === 'Mythic');
     if (hasMythic) {
         totalScore += 50;
-        console.log(`✨ Mythic trait detected: +50 points bonus!`);
+        console.log('✨ Mythic trait detected: +50 points bonus!');
     }
 
     // Calculate final average score
@@ -1284,13 +1347,13 @@ function calculateRarityScore(attributes) {
  * @returns {String} - Rarity tier name
  */
 function getRarityTier(score) {
-    if (score >= 120) return "Mythic";      // Ultra-rare
-    if (score >= 100) return "Legendary";   // Extremely rare
-    if (score >= 85) return "Epic";         // Very rare
-    if (score >= 70) return "Rare";         // Rare
-    if (score >= 60) return "Uncommon";     // Uncommon
-    if (score >= 40) return "Common";       // Common
-    return "Standard";                      // Default
+    if (score >= 120) return 'Mythic';      // Ultra-rare
+    if (score >= 100) return 'Legendary';   // Extremely rare
+    if (score >= 85) return 'Epic';         // Very rare
+    if (score >= 70) return 'Rare';         // Rare
+    if (score >= 60) return 'Uncommon';     // Uncommon
+    if (score >= 40) return 'Common';       // Common
+    return 'Standard';                      // Default
 }
 
 /* ─── Image generation with various providers ─────────────────── */
@@ -1301,10 +1364,10 @@ function getRarityTier(score) {
  * @returns {Promise<Object>} Image generation result
  */
 async function generateDallEImage(prompt, options = {}) {
-    if (!openai) throw new Error("OpenAI API not configured");
+    if (!openai) throw new Error('OpenAI API not configured');
 
-    const settings = PROVIDERS["dall-e"].pixelSettings;
-    const model = PROVIDERS["dall-e"].model;
+    const settings = PROVIDERS['dall-e'].pixelSettings;
+    const model = PROVIDERS['dall-e'].model;
     const maxRetries = options.maxRetries || 2;
 
     // Allow using the prompt directly if specified
@@ -1363,14 +1426,14 @@ async function generateDallEImage(prompt, options = {}) {
                 url: data[0].url,
                 base64: data[0].b64_json,
                 isLocal: false,
-                provider: "dall-e",
+                provider: 'dall-e',
                 model: model,
                 prompt: enhancedPrompt,
                 contentHash,
                 metadata: {
                     generationTime: parseFloat(generationTime),
-                    width: parseInt(settings.size.split('x')[0]),
-                    height: parseInt(settings.size.split('x')[1]),
+                    width: parseInt(settings.size.split('x')[0], 10),
+                    height: parseInt(settings.size.split('x')[1], 10),
                     quality: settings.quality,
                     attempts: attempt
                 }
@@ -1385,7 +1448,7 @@ async function generateDallEImage(prompt, options = {}) {
             // If it's a content violation and not using a custom prompt, try simplifying
             if (isContentViolation && !options.useCustomPrompt && attempt <= maxRetries) {
                 console.warn(`⚠️ DALL-E content policy triggered: ${error.message}`);
-                console.warn(`🔄 Simplifying prompt and retrying...`);
+                console.warn('🔄 Simplifying prompt and retrying...');
 
                 // Simplify the prompt by removing potentially problematic terms
                 const simplifiedPrompt = enhancedPrompt
@@ -1420,15 +1483,15 @@ async function generateDallEImage(prompt, options = {}) {
 /**
  * Generate an image using Stability AI's API
  * @param {string} prompt - The prompt to generate an image from
- * @param {Object} options - Optional configuration 
+ * @param {Object} options - Optional configuration
  * @returns {Promise<Object>} Image generation result
  */
 async function generateStabilityImage(prompt, options = {}) {
-    if (!STABILITY_API_KEY) throw new Error("Stability AI API not configured");
+    if (!STABILITY_API_KEY) throw new Error('Stability AI API not configured');
 
     const settings = PROVIDERS.stability.pixelSettings;
     const model = options.model || PROVIDERS.stability.model;
-    const stylePreset = options.stylePreset || PROVIDERS.stability.defaultStylePreset || "pixel-art";
+    const stylePreset = options.stylePreset || PROVIDERS.stability.defaultStylePreset || 'pixel-art';
 
     // Allow using the prompt directly if specified
     const enhancedPrompt = options.useCustomPrompt ? prompt :
@@ -1505,7 +1568,7 @@ async function generateStabilityImage(prompt, options = {}) {
         return {
             localPath: imagePath,
             isLocal: true,
-            provider: "stability",
+            provider: 'stability',
             model: model,
             prompt: enhancedPrompt,
             base64: base64Image,
@@ -1529,7 +1592,7 @@ async function generateStabilityImage(prompt, options = {}) {
  * @returns {Promise<Object>} Image generation result
  */
 async function generateHuggingFaceImage(prompt, options = {}) {
-    if (!HUGGING_FACE_TOKEN) throw new Error("HuggingFace API not configured");
+    if (!HUGGING_FACE_TOKEN) throw new Error('HuggingFace API not configured');
 
     const settings = PROVIDERS.huggingface.pixelSettings;
     const model = options.model || PROVIDERS.huggingface.model;
@@ -1593,7 +1656,7 @@ async function generateHuggingFaceImage(prompt, options = {}) {
         return {
             localPath: imagePath,
             isLocal: true,
-            provider: "huggingface",
+            provider: 'huggingface',
             model: model,
             prompt: enhancedPrompt,
             metadata: {
@@ -1611,7 +1674,7 @@ async function generateHuggingFaceImage(prompt, options = {}) {
 
 /**
  * Enhance pixel art quality with better processing
- * @param {Object} imageResult - Result from image generator 
+ * @param {Object} imageResult - Result from image generator
  * @returns {Promise<Object>} - Enhanced processed image
  */
 async function enhancePixelArt(processedImage) {
@@ -1638,7 +1701,7 @@ async function enhancePixelArt(processedImage) {
             })
             .toFile(enhancedPath);
 
-        console.log("✅ Applied pixel art enhancements");
+        console.log('✅ Applied pixel art enhancements');
         return {
             path: enhancedPath,
             directory: processedImage.directory
@@ -1663,11 +1726,11 @@ async function enhancePixelArt(processedImage) {
  * @returns {Promise<Object>} Image and metadata URLs
  */
 export async function finalizeMint({
-    breed = "Tabby",
+    breed = 'Tabby',
     tokenId,
     imageProvider,
-    promptExtras = "",
-    negativePrompt = "",
+    promptExtras = '',
+    negativePrompt = '',
     providerOptions = {},
     metadataExtras = {},
     taskId = null,
@@ -1699,17 +1762,21 @@ export async function finalizeMint({
     try {
         // Validate required parameters
         if (!tokenId) {
-            throw new Error("TokenId is required");
+            throw new Error('TokenId is required');
         }
 
-        // Normalize the breed name
+        // Normalize the breed name properly for multi-word breeds
         if (typeof breed !== 'string' || breed.trim() === '') {
             breed = 'Tabby';
         }
-        const normalizedBreed = breed.charAt(0).toUpperCase() + breed.slice(1).toLowerCase();
+        const normalizedBreed = breed.trim()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
 
         // Generate traits based on breed and tokenId
         console.log(`💫 Generating traits for #${tokenId}...`);
+        console.log(`🔍 FINALIZE DEBUG: Original breed: "${breed}", Normalized breed: "${normalizedBreed}"`);
         if (taskManager) {
             taskManager.updateTask(taskId, {
                 progress: 20,
@@ -1718,15 +1785,16 @@ export async function finalizeMint({
         }
 
         const traits = generateTraits(normalizedBreed, tokenId);
+        console.log(`🔍 FINALIZE DEBUG: Generated traits breed: "${traits.rawTraits.find(t => t.trait_type === 'Breed')?.value}"`);
 
         // Build prompt from traits
-        const weapon = traits.rawTraits.find(t => t.trait_type === "Weapon")?.value || "Katana";
-        const stance = traits.rawTraits.find(t => t.trait_type === "Stance")?.value || "Attack";
-        const element = traits.rawTraits.find(t => t.trait_type === "Element")?.value || "Fire";
-        const rank = traits.rawTraits.find(t => t.trait_type === "Rank")?.value || "Novice";
+        const weapon = traits.rawTraits.find(t => t.trait_type === 'Weapon')?.value || 'Katana';
+        const stance = traits.rawTraits.find(t => t.trait_type === 'Stance')?.value || 'Attack';
+        const element = traits.rawTraits.find(t => t.trait_type === 'Element')?.value || 'Fire';
+        const rank = traits.rawTraits.find(t => t.trait_type === 'Rank')?.value || 'Novice';
 
         // Get all keywords from traits for a richer prompt
-        const keywordString = traits.keywords.join(", ");
+        const keywordString = traits.keywords.join(', ');
 
         // Determine which provider we're using - USE THE LOCKED PROVIDER
         const providerKey = LOCKED_PROVIDER || IMAGE_PROVIDER;
@@ -1734,12 +1802,12 @@ export async function finalizeMint({
 
         // STEP 1: ENHANCED BACKGROUND SELECTION WITH BREED AFFINITIES
         let backgroundTrait = null;
-        let backgroundDescription = "";
+        let backgroundDescription = '';
 
         // Only proceed if we have backgrounds defined for this provider
         if (provider?.pixelSettings?.backgrounds?.length > 0) {
             // Create a deterministic but "random" selection based on tokenId
-            const seed = parseInt(tokenId);
+            const seed = parseInt(tokenId, 10);
             const backgroundHash = createHash('sha256')
                 .update(`${seed}-${normalizedBreed}-background`)
                 .digest('hex');
@@ -1757,12 +1825,12 @@ export async function finalizeMint({
             const useAffinityBackground = affinityBackgrounds.length > 0 &&
                 (hashValue % 100 < 60);
 
-            let selectedBackgrounds = useAffinityBackground ? affinityBackgrounds : backgrounds;
+            const selectedBackgrounds = useAffinityBackground ? affinityBackgrounds : backgrounds;
 
             // Weighted selection based on rarity
             // FIX: Use proper direct weighting based on rarityScore
             const totalWeight = selectedBackgrounds.reduce((sum, bg) => sum + Math.pow(bg.rarityScore || 30, 2), 0);
-            let target = (hashValue / (2 ** 32)) * totalWeight;
+            const target = (hashValue / (2 ** 32)) * totalWeight;
             let cumulativeWeight = 0;
 
             // Find the background that corresponds to the target value
@@ -1793,15 +1861,15 @@ export async function finalizeMint({
 
                 // Add the background to traits list with rarity information
                 traits.attributes.push({
-                    trait_type: "Background",
+                    trait_type: 'Background',
                     value: backgroundTrait.name
                 });
 
                 // Add to raw traits for later reference
                 traits.rawTraits.push({
-                    trait_type: "Background",
+                    trait_type: 'Background',
                     value: backgroundTrait.name,
-                    rarity: backgroundTrait.rarity || "Common",
+                    rarity: backgroundTrait.rarity || 'Common',
                     keywords: backgroundTrait.keywords || backgroundTrait.name.split(' ')
                 });
 
@@ -1825,7 +1893,7 @@ export async function finalizeMint({
 
         // STEP 2: BUILD FINAL PROMPT WITH ENHANCED BACKGROUND AND EXTRAS
         // Extract background keywords for better prompt enhancement
-        const backgroundKeywords = backgroundTrait?.keywords?.join(", ") || "";
+        const backgroundKeywords = backgroundTrait?.keywords?.join(', ') || '';
 
         // Create the base prompt
         const basePrompt = `A pixel art ninja cat of ${normalizedBreed} breed in ${stance} stance wielding ${weapon} with ${element} powers, ${rank} rank`;
@@ -1833,7 +1901,7 @@ export async function finalizeMint({
         // Create a more descriptive background integration
         const enhancedBackgroundDesc = backgroundTrait ?
             `, set in ${backgroundTrait.description}, ${backgroundKeywords}` :
-            "";
+            '';
 
         // Always include keywords and background in prompt, even with custom extras
         const prompt = promptExtras
@@ -1855,12 +1923,12 @@ export async function finalizeMint({
         }
 
         // Generate the image with detailed logging
-        console.log(`🎨 Generating image...`);
+        console.log('🎨 Generating image...');
         console.log(`🚨 STRICT PROVIDER: "${LOCKED_PROVIDER || IMAGE_PROVIDER}" (no fallbacks)`);
 
         // Log provider options if available
         if (Object.keys(providerOptions).length > 0) {
-            console.log(`📋 PROVIDER OPTIONS:`, JSON.stringify(providerOptions, null, 2));
+            console.log('📋 PROVIDER OPTIONS:', JSON.stringify(providerOptions, null, 2));
         }
 
         // Update task status for image generation
@@ -1947,7 +2015,7 @@ export async function finalizeMint({
         console.log(`✅ Image processed in ${processTime}s`);
 
         // Add pixel art enhancements (optional - only if sharp is available)
-        const enhancedImage = await enhancePixelArt(processedImage);
+        await enhancePixelArt(processedImage);
 
         // Update task status for IPFS upload
         if (taskManager) {
@@ -1958,7 +2026,7 @@ export async function finalizeMint({
         }
 
         // Upload image to IPFS with retry logic
-        console.log(`📦 Saving and uploading image...`);
+        console.log('📦 Saving and uploading image...');
         const uploadStartTime = Date.now();
         let imageUri;
         try {
@@ -1991,7 +2059,7 @@ export async function finalizeMint({
         }
 
         // Create enhanced metadata
-        console.log(`📝 Creating metadata...`);
+        console.log('📝 Creating metadata...');
         const metadata = {
             name: `${projectName} #${tokenId}`,
             description: traits.description,
@@ -2006,7 +2074,7 @@ export async function finalizeMint({
                 rarity: traits.rarity,
                 background: backgroundTrait?.name,
                 generation: {
-                    version: "2.0",
+                    version: '2.0',
                     engine: imageResult.provider,
                     promptEnhanced: !!promptExtras,
                     negativePrompt: negativePrompt || undefined,
@@ -2113,11 +2181,11 @@ export async function finalizeMint({
 
 /**
  * Process an image (download, crop palette bar if needed)
- * @param {Object} imageResult - Result from image generator 
+ * @param {Object} imageResult - Result from image generator
  * @returns {Promise<string>} - Path to the processed image
  */
 async function processImage(imageResult) {
-    console.log(`📥 Processing image...`);
+    console.log('📥 Processing image...');
 
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ninjacat-'));
     const outputPath = path.join(tmpDir, 'image.png');
@@ -2155,7 +2223,7 @@ async function processImage(imageResult) {
         }
     }
     else {
-        throw new Error("No valid image source in generation result");
+        throw new Error('No valid image source in generation result');
     }
 
     // Auto-crop palette bar if sharp is available
@@ -2169,15 +2237,15 @@ async function processImage(imageResult) {
             // Only process if it's big enough (some models return tiny images)
             if (width > 100 && height > 100) {
                 // Analyze the image to look for palette bars (horizontal or vertical)
-                const { data } = await image
-                    .raw()
-                    .toBuffer({ resolveWithObject: true });
+                // const { data: imageData } = await image
+                //     .raw()
+                //     .toBuffer({ resolveWithObject: true });
 
                 // Look for horizontal palette bars at top or bottom
-                let cropTop = 0;
-                let cropBottom = 0;
-                let cropLeft = 0;
-                let cropRight = 0;
+                const cropTop = 0;
+                const cropBottom = 0;
+                const cropLeft = 0;
+                const cropRight = 0;
 
                 // This is a simplified detection - looks for solid horizontal/vertical lines
                 // that might be palette bars in AI-generated images
@@ -2197,7 +2265,7 @@ async function processImage(imageResult) {
                                 height: newHeight
                             })
                             .toFile(outputPath);
-                        console.log(`✂️ Image processed successfully`);
+                        console.log('✂️ Image processed successfully');
                     }
                 }
             }
@@ -2206,7 +2274,7 @@ async function processImage(imageResult) {
             console.warn(`⚠️ Image auto-crop failed: ${err.message}`);
         }
     } else {
-        console.log("ℹ️ Sharp library not available, skipping auto-crop");
+        console.log('ℹ️ Sharp library not available, skipping auto-crop');
     }
 
     return {
@@ -2279,7 +2347,7 @@ async function uploadToIPFS(filePath, name) {
             return await uploadToPinata(filePath, name);
         } catch (error) {
             console.warn(`⚠️ Pinata upload failed: ${error.message}`);
-            console.warn(`⚠️ Falling back to local w3.storage CLI...`);
+            console.warn('⚠️ Falling back to local w3.storage CLI...');
         }
     }
 
@@ -2351,18 +2419,18 @@ async function generateImage(prompt, options = {}) {
 
     // Enhance prompts based on provider for better pixel art results
     if (!options.useCustomPrompt) {
-        const basePixelArtEnhancer = ", true pixel art, 16-bit style, limited color palette, no anti-aliasing, pixel perfect";
+        const basePixelArtEnhancer = ', true pixel art, 16-bit style, limited color palette, no anti-aliasing, pixel perfect';
 
         if (ORIGINAL_PROVIDER === 'dall-e') {
             prompt = `${prompt}${basePixelArtEnhancer}, clean edges, blocky style, NES/SNES era game sprite`;
             // DALL-E specific parameters for better pixel results
-            enhancedOptions.quality = enhancedOptions.quality || "hd";
+            enhancedOptions.quality = enhancedOptions.quality || 'hd';
         }
         else if (ORIGINAL_PROVIDER === 'stability') {
             prompt = `${prompt}${basePixelArtEnhancer}, crisp pixels, 8-16 colors maximum`;
             // Stability specific parameters for better pixel results
             enhancedOptions.cfgScale = enhancedOptions.cfgScale || 9.5; // Stronger prompt adherence
-            enhancedOptions.stylePreset = enhancedOptions.stylePreset || "pixel-art";
+            enhancedOptions.stylePreset = enhancedOptions.stylePreset || 'pixel-art';
         }
         else if (ORIGINAL_PROVIDER === 'huggingface') {
             prompt = `${prompt}${basePixelArtEnhancer}, 32x32 resolution, gameboy style, pixel perfect`;
@@ -2373,8 +2441,8 @@ async function generateImage(prompt, options = {}) {
 
         // Enhanced negative prompt for better pixel art
         if (!enhancedOptions.negativePrompt) {
-            const pixelArtNegative = "blurry, anti-aliasing, smooth edges, high detail, realistic, 3D, shading, gradient, " +
-                "photorealistic, text, signature, watermark, blur, noise, grain, high-resolution detail";
+            const pixelArtNegative = 'blurry, anti-aliasing, smooth edges, high detail, realistic, 3D, shading, gradient, ' +
+                'photorealistic, text, signature, watermark, blur, noise, grain, high-resolution detail';
             enhancedOptions.negativePrompt = pixelArtNegative;
         }
     }
@@ -2388,13 +2456,13 @@ async function generateImage(prompt, options = {}) {
 
         // Validate provider and API key availability
         if (ORIGINAL_PROVIDER === 'stability' && !STABILITY_API_KEY) {
-            throw new Error(`Cannot use requested provider "stability" - Missing STABILITY_API_KEY`);
+            throw new Error('Cannot use requested provider "stability" - Missing STABILITY_API_KEY');
         }
         else if (ORIGINAL_PROVIDER === 'huggingface' && !HUGGING_FACE_TOKEN) {
-            throw new Error(`Cannot use requested provider "huggingface" - Missing HUGGING_FACE_TOKEN`);
+            throw new Error('Cannot use requested provider "huggingface" - Missing HUGGING_FACE_TOKEN');
         }
         else if (ORIGINAL_PROVIDER === 'dall-e' && !OPENAI_API_KEY) {
-            throw new Error(`Cannot use requested provider "dall-e" - Missing OPENAI_API_KEY`);
+            throw new Error('Cannot use requested provider "dall-e" - Missing OPENAI_API_KEY');
         }
         else if (!['stability', 'huggingface', 'dall-e'].includes(ORIGINAL_PROVIDER)) {
             throw new Error(`Unknown provider "${ORIGINAL_PROVIDER}" - Valid options: stability, huggingface, dall-e`);
@@ -2402,15 +2470,15 @@ async function generateImage(prompt, options = {}) {
 
         // Use ONLY the requested provider - no fallbacks whatsoever
         if (ORIGINAL_PROVIDER === 'stability') {
-            console.log(`✅ EXECUTING: Using Stability AI (100% confirmed)`);
+            console.log('✅ EXECUTING: Using Stability AI (100% confirmed)');
             return await generateStabilityImage(prompt, enhancedOptions);
         }
         else if (ORIGINAL_PROVIDER === 'huggingface') {
-            console.log(`✅ EXECUTING: Using HuggingFace (100% confirmed)`);
+            console.log('✅ EXECUTING: Using HuggingFace (100% confirmed)');
             return await generateHuggingFaceImage(prompt, enhancedOptions);
         }
         else if (ORIGINAL_PROVIDER === 'dall-e') {
-            console.log(`✅ EXECUTING: Using DALL-E (100% confirmed)`);
+            console.log('✅ EXECUTING: Using DALL-E (100% confirmed)');
             return await generateDallEImage(prompt, enhancedOptions);
         }
     }

@@ -3,39 +3,39 @@
     // Collection of high-quality, reliable meditation/ambient streams
     const streamingSources = [
         {
-            url: "https://ice1.somafm.com/dronezone-128-mp3",
-            name: "SomaFM Drone Zone",
-            bitrate: "128 kbps",
-            genre: "Ambient, Atmospheric",
-            provider: "SomaFM"
+            url: 'https://ice1.somafm.com/dronezone-128-mp3',
+            name: 'SomaFM Drone Zone',
+            bitrate: '128 kbps',
+            genre: 'Ambient, Atmospheric',
+            provider: 'SomaFM'
         },
         {
-            url: "https://radio4.cdm-radio.com:18020/stream-mp3-Zen",
-            name: "CDM Zen Radio",
-            bitrate: "192 kbps",
-            genre: "Meditation, Eastern",
-            provider: "CDM-Radio"
+            url: 'https://radio4.cdm-radio.com:18020/stream-mp3-Zen',
+            name: 'CDM Zen Radio',
+            bitrate: '192 kbps',
+            genre: 'Meditation, Eastern',
+            provider: 'CDM-Radio'
         },
         {
-            url: "https://icecast.cloudradionetwork.com:8037/spacedreams",
-            name: "Space Dreams",
-            bitrate: "128 kbps",
-            genre: "Ambient, Space",
-            provider: "Cloud Radio"
+            url: 'https://icecast.cloudradionetwork.com:8037/spacedreams',
+            name: 'Space Dreams',
+            bitrate: '128 kbps',
+            genre: 'Ambient, Space',
+            provider: 'Cloud Radio'
         },
         {
-            url: "https://streams.calmradio.com/api/36/128/stream",
-            name: "Calm Radio - Zen",
-            bitrate: "128 kbps",
-            genre: "Meditation, Relaxation",
-            provider: "Calm Radio"
+            url: 'https://streams.calmradio.com/api/36/128/stream',
+            name: 'Calm Radio - Zen',
+            bitrate: '128 kbps',
+            genre: 'Meditation, Relaxation',
+            provider: 'Calm Radio'
         },
         {
-            url: "https://streaming.live365.com/b05055_128mp3",
-            name: "Ambient Sleeping Pill",
-            bitrate: "128 kbps",
-            genre: "Ambient, Sleep",
-            provider: "Live365"
+            url: 'https://streaming.live365.com/b05055_128mp3',
+            name: 'Ambient Sleeping Pill',
+            bitrate: '128 kbps',
+            genre: 'Ambient, Sleep',
+            provider: 'Live365'
         }
     ];
 
@@ -1237,7 +1237,7 @@
             setTimeout(() => {
                 // Set the audio source with crossOrigin for CORS support
                 try {
-                    audioPlayer.crossOrigin = "anonymous";
+                    audioPlayer.crossOrigin = 'anonymous';
                     audioPlayer.src = currentStream.url;
                     audioPlayer.volume = Math.min(0.2, playerState.volume); // Start low and fade in
 

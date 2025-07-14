@@ -4,9 +4,9 @@
 
 /* global ethers */
 // Configurable constants
-const RPC_URL = "https://rpc.vitruveo.xyz";
+const RPC_URL = 'https://rpc.vitruveo.xyz';
 const CHAIN_ID = null; // Set to specific chain ID if needed
-const NETWORK_NAME = "Vitruveo";
+const NETWORK_NAME = 'Vitruveo';
 
 // ALL storage keys used across the site
 const STORAGE_KEYS = {
@@ -38,15 +38,44 @@ const EVENTS = {
 /* ---------- 2. Utils --------------------------------------- */
 export const short = a => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
 
-function dispatchWalletEvent(eventName, detail = {}) {
-    // Dispatch the standard event
-    window.dispatchEvent(new CustomEvent(eventName, { detail }));
-
-    // ALWAYS dispatch legacy walletChanged event for marketplace.js compatibility
-    if (eventName === EVENTS.CONNECTED) {
-        window.dispatchEvent(new CustomEvent(EVENTS.LEGACY, { detail }));
+// Security utilities
+const validateAddress = (address) => {
+    if (!address || typeof address !== 'string') {
+        throw new Error('Invalid address: must be a non-empty string');
     }
-    console.log(`Event dispatched: ${eventName}`, detail);
+
+    // Basic Ethereum address validation
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        throw new Error('Invalid Ethereum address format');
+    }
+
+    return address.toLowerCase();
+};
+
+const secureLog = (message, data = null) => {
+    const timestamp = new Date().toISOString();
+    if (data) {
+        // Remove sensitive data before logging
+        const sanitizedData = JSON.stringify(data).replace(/0x[a-fA-F0-9]{40}/g, '[ADDRESS]');
+        console.log(`[${timestamp}] ${message}:`, sanitizedData);
+    } else {
+        console.log(`[${timestamp}] ${message}`);
+    }
+};
+
+function dispatchWalletEvent(eventName, detail = {}) {
+    try {
+        // Dispatch the standard event
+        window.dispatchEvent(new CustomEvent(eventName, { detail }));
+
+        // ALWAYS dispatch legacy walletChanged event for marketplace.js compatibility
+        if (eventName === EVENTS.CONNECTED) {
+            window.dispatchEvent(new CustomEvent(EVENTS.LEGACY, { detail }));
+        }
+        secureLog(`Event dispatched: ${eventName}`);
+    } catch (error) {
+        console.error('Error dispatching wallet event:', error);
+    }
 }
 
 /* ---------- 3. Wallet state and storage -------------------- */
@@ -77,7 +106,7 @@ function loadStoredState() {
                 address = parsed.address;
                 chainId = parsed.chainId;
             } catch (e) {
-                console.warn("Error parsing main storage:", e);
+                console.warn('Error parsing main storage:', e);
             }
         }
 
@@ -87,18 +116,25 @@ function loadStoredState() {
                 localStorage.getItem(STORAGE_KEYS.ALT_LEGACY);
         }
 
-        // Update state if we found an address
+        // Validate and update state if we found an address
         if (address) {
-            walletState.address = address;
-            walletState.chainId = chainId;
+            try {
+                address = validateAddress(address);
+                walletState.address = address;
+                walletState.chainId = chainId;
 
-            // Sync the address to all storage locations immediately
-            syncAddressToAllStorages(address, chainId);
+                // Sync the address to all storage locations immediately
+                syncAddressToAllStorages(address, chainId);
 
-            console.log("Loaded wallet state:", { address });
+                secureLog('Loaded wallet state', { address });
+            } catch (validationError) {
+                console.warn('Invalid stored address, clearing storage:', validationError);
+                clearAllStorage();
+            }
         }
     } catch (err) {
         console.warn('Failed to load wallet state:', err);
+        clearAllStorage();
     }
 }
 
@@ -110,10 +146,14 @@ function syncAddressToAllStorages(address, chainId = null) {
     }
 
     try {
+        // Validate address before storing
+        address = validateAddress(address);
+
         // Update main storage
         localStorage.setItem(STORAGE_KEYS.MAIN, JSON.stringify({
             address: address,
-            chainId: chainId
+            chainId: chainId,
+            timestamp: Date.now()
         }));
 
         // Update legacy storage keys
@@ -125,9 +165,10 @@ function syncAddressToAllStorages(address, chainId = null) {
         window.wallet.address = address;
         window.currentWalletAddress = address; // For some implementations
 
-        console.log("Synchronized wallet address across all storage:", address);
+        secureLog('Synchronized wallet address across all storage');
     } catch (err) {
-        console.error("Error syncing address to storage:", err);
+        console.error('Error syncing address to storage:', err);
+        clearAllStorage();
     }
 }
 
@@ -141,7 +182,7 @@ function clearAllStorage() {
     if (window.wallet) window.wallet.address = null;
     window.currentWalletAddress = null;
 
-    console.log("Cleared all wallet storage");
+    console.log('Cleared all wallet storage');
 }
 
 function saveState() {
@@ -225,7 +266,7 @@ export async function getAddress({ prompt = false } = {}) {
                 const network = await provider.getNetwork();
                 walletState.chainId = network.chainId.toString();
             } catch (e) {
-                console.warn("Error getting network:", e);
+                console.warn('Error getting network:', e);
             }
 
             // Save to all storage locations
@@ -285,7 +326,7 @@ export async function connectWallet(btn) {
         dispatchWalletEvent(EVENTS.CONNECTED, { address: addr, signer });
         return { address: addr, signer };
     } catch (error) {
-        console.error("Wallet connection error:", error);
+        console.error('Wallet connection error:', error);
         dispatchWalletEvent(EVENTS.ERROR, { message: error.message });
 
         if (btn) {
@@ -363,7 +404,7 @@ export async function getConnection() {
         const signer = await provider.getSigner(addr);
         return { address: addr, signer, provider };
     } catch (err) {
-        console.error("Failed to get signer:", err);
+        console.error('Failed to get signer:', err);
         return { address: addr };
     }
 }
@@ -401,7 +442,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const conn = await getConnection();
                         if (conn?.address) {
                             // Already connected - show disconnect option
-                            if (confirm("Disconnect wallet?")) {
+                            if (confirm('Disconnect wallet?')) {
                                 await disconnectWallet(btn);
                                 // Refresh the page to reset UI
                                 window.location.reload();
@@ -467,9 +508,9 @@ window.wallet = window.wallet || { address: walletState.address };
 loadStoredState();
 
 // Special log to confirm proper initialization
-console.log("%c🐱 Ninja Cat Wallet System Initialized",
-    "background: #8a65ff; color: white; padding: 8px; border-radius: 4px; font-weight: bold",
-    { address: walletState.address || "Not connected" });
+console.log('%c🐱 Ninja Cat Wallet System Initialized',
+    'background: #8a65ff; color: white; padding: 8px; border-radius: 4px; font-weight: bold',
+    { address: walletState.address || 'Not connected' });
 
 /* ---------- 10. Export events for app-wide usage ----------- */
 export { EVENTS };
