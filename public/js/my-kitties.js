@@ -2231,18 +2231,11 @@ async function handleRegenerateConfirm() {
         statusTextEl.innerHTML = '<div class="loading-spinner"></div>Confirming payment...';
         await tx.wait();
 
-        // 5. Call server API to create regeneration task
-        statusTextEl.innerHTML = `<div class="loading-spinner"></div>Creating regeneration task...`;
-
-        // Try multiple API endpoints to support different server configurations
-        let apiUrl;
-        let response;
-        let success = false;
-        
-        // Get breed parameter from the card if possible
+        // 5. Get the breed from UI
         const cardElement = document.querySelector(`.kitty-card[data-token-id="${regeneratingTokenId}"]`) || 
-                            document.querySelector(`.detailed-card[data-token-id="${regeneratingTokenId}"]`);
-        let breed = 'Tabby'; // Default
+                          document.querySelector(`.detailed-card[data-token-id="${regeneratingTokenId}"]`);
+        
+        let breed = 'Unknown';
         if (cardElement) {
             const breedEl = cardElement.querySelector('.kitty-breed span');
             if (breedEl && breedEl.textContent) {
@@ -2250,73 +2243,39 @@ async function handleRegenerateConfirm() {
             }
         }
 
-        // Create task payload
-        const taskPayload = {
-            tokenId: regeneratingTokenId,
-            imageProvider: imageProvider,
-            breed: breed,
-            isRegeneration: true,
-            forceProcess: true,
-            paymentTx: tx.hash,
-            payer: address
-        };
-        
-        // Add optional parameters
-        if (promptExtras) taskPayload.promptExtras = promptExtras;
-        if (negativePrompt) taskPayload.negativePrompt = negativePrompt;
-        
-        // Try API endpoints in sequence until one works
-        const endpoints = [
-            `/api/tasks/create`, 
-            `/api/regenerate/${regeneratingTokenId}`,
-            `/api/process/${regeneratingTokenId}`
-        ];
-        
-        for (const endpoint of endpoints) {
-            try {
-                console.log(`Trying endpoint: ${endpoint}`);
-                apiUrl = new URL(endpoint, window.location.origin);
-                
-                // For URL-based endpoints, add parameters as query params
-                if (endpoint.includes('regenerate/') || endpoint.includes('process/')) {
-                    Object.keys(taskPayload).forEach(key => {
-                        apiUrl.searchParams.append(key, taskPayload[key]);
-                    });
-                    response = await fetch(apiUrl.toString());
-                } else {
-                    // For JSON endpoints, send as POST with JSON body
-                    response = await fetch(apiUrl.toString(), {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(taskPayload)
-                    });
-                }
-                
-                if (response.ok) {
-                    success = true;
-                    break;
-                }
-            } catch (err) {
-                console.warn(`Failed with endpoint ${endpoint}:`, err);
-                // Continue to try next endpoint
-            }
-        }
-        
-        if (!success) {
-            throw new Error(`Failed to create regeneration task. Please try again or contact support.`);
+        statusTextEl.innerHTML = '<div class="loading-spinner"></div>Creating regeneration task...';
+
+        // 6. Create a new task via API
+        // Use fetch API with POST and proper content type
+        const response = await fetch('/api/regenerate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tokenId: regeneratingTokenId,
+                imageProvider: imageProvider,
+                breed: breed,
+                promptExtras: promptExtras || undefined,
+                negativePrompt: negativePrompt || undefined,
+                paymentTx: tx.hash,
+                payer: address
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
         }
 
-        const data = await response.json();
-        console.log('Regeneration task created:', data);
-
-        // 6. Start polling for task status
-        if (data.taskId) {
+        const result = await response.json();
+        
+        // 7. Poll for status if we have a task ID
+        if (result.taskId) {
             statusTextEl.innerHTML = '<div class="loading-spinner"></div>Monitoring regeneration progress...';
-            await pollTaskStatus(data.taskId, regeneratingTokenId);
+            await pollForTaskCompletion(result.taskId, regeneratingTokenId);
         } else {
-            statusTextEl.innerHTML = '<div class="success-icon">✓</div>Task created! Check back soon.';
+            statusTextEl.innerHTML = '<div class="success-icon">✓</div>Task created! Check back later for updates.';
             setTimeout(() => {
                 document.getElementById('regenerateModal').style.display = 'none';
             }, 3000);
@@ -2330,27 +2289,18 @@ async function handleRegenerateConfirm() {
     }
 }
 
-// Updated polling function to work with task system
-async function pollTaskStatus(taskId, tokenId) {
+// New polling function designed specifically for the Supabase task system
+async function pollForTaskCompletion(taskId, tokenId) {
     const statusTextEl = document.getElementById('regenerateStatusText');
     const statusEl = document.getElementById('regenerateStatus');
 
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes at 5-second intervals
+    const maxAttempts = 120; // 10 minutes at 5-second intervals
     
-    // Define task states to check against backend values
-    const TASK_STATES = {
-        PENDING: 'pending',
-        PROCESSING: 'processing',
-        COMPLETED: 'completed',
-        FAILED: 'failed'
-    };
-
     const checkStatus = async () => {
         attempts++;
-
         if (attempts > maxAttempts) {
-            statusTextEl.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. The regeneration will continue in the background.';
+            statusTextEl.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check back later.';
             setTimeout(() => {
                 document.getElementById('regenerateModal').style.display = 'none';
             }, 5000);
@@ -2358,61 +2308,50 @@ async function pollTaskStatus(taskId, tokenId) {
         }
 
         try {
-            // Try multiple status endpoints
-            let response;
-            const endpoints = [`/api/tasks/${taskId}`, `/api/status/${taskId}`];
+            // Check task status
+            const response = await fetch(`/api/task-status/${taskId}`);
             
-            for (const endpoint of endpoints) {
-                try {
-                    response = await fetch(endpoint);
-                    if (response.ok) break;
-                } catch (e) {
-                    console.warn(`Failed with endpoint ${endpoint}:`, e);
-                }
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}`);
             }
 
-            if (!response || !response.ok) {
-                throw new Error(`Failed to get status update`);
-            }
-
-            const data = await response.json();
-            console.log('Task status:', data);
-
-            // Check various status formats to be compatible with different APIs
-            const status = data.status || data.state;
+            const task = await response.json();
+            console.log('Task status update:', task);
             
-            if (status === TASK_STATES.COMPLETED || status === 'completed') {
-                statusTextEl.innerHTML = '<div class="success-icon">✓</div>Image regenerated successfully!';
+            // Handle different status values
+            if (task.status === 'completed') {
+                statusTextEl.innerHTML = '<div class="success-icon">✓</div>Regeneration completed successfully!';
                 statusEl.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
-
-                // Close modal and refresh display after a short delay
+                
+                // Close modal and refresh NFT display
                 setTimeout(() => {
                     document.getElementById('regenerateModal').style.display = 'none';
                     refreshNFTDisplay(tokenId);
                 }, 3000);
                 return;
-            } else if (status === TASK_STATES.FAILED || status === 'failed') {
-                statusTextEl.innerHTML = `<div class="error-icon">❌</div>Failed: ${data.error || data.message || 'Unknown error'}`;
+            } 
+            else if (task.status === 'failed') {
+                statusTextEl.innerHTML = `<div class="error-icon">❌</div>Failed: ${task.error || 'Unknown error'}`;
                 statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
                 return;
-            } else {
-                // Still processing
-                const progress = data.progress || 0;
-                const message = data.message || 'Processing...';
+            } 
+            else {
+                // Update progress information
+                const progress = task.progress || 0;
+                const message = task.message || 'Processing...';
                 statusTextEl.innerHTML = `<div class="loading-spinner"></div>${message} (${progress}%)`;
-
-                // Schedule next check
+                
+                // Continue polling
                 setTimeout(checkStatus, 5000);
             }
         } catch (error) {
             console.error('Error checking task status:', error);
-            // Show warning but don't fail - keep trying
             statusTextEl.innerHTML = `<div class="warning-icon">⚠️</div>Status check error. Retrying...`;
-            setTimeout(checkStatus, 8000); // Longer delay on error
+            setTimeout(checkStatus, 8000);
         }
     };
-
-    // Start the first check
+    
+    // Start the polling process
     await checkStatus();
 }
 
