@@ -24,6 +24,15 @@ export async function connectToMongoDB() {
             throw new Error('MONGODB_URI environment variable not set');
         }
 
+        // Validate MongoDB URI format
+        if (mongoUri.startsWith('mongodb+srv://')) {
+            if (mongoUri.includes(':27017') || mongoUri.includes(':27018') || mongoUri.includes(':27019')) {
+                throw new Error('mongodb+srv URI cannot have port number - port is automatically resolved via DNS SRV records');
+            }
+        } else if (!mongoUri.startsWith('mongodb://')) {
+            throw new Error('Invalid MongoDB URI format - must start with mongodb:// or mongodb+srv://');
+        }
+
         // Create MongoDB client with proper options
         client = new MongoClient(mongoUri, {
             maxPoolSize: 10,
@@ -34,10 +43,14 @@ export async function connectToMongoDB() {
         // Connect to MongoDB
         await client.connect();
 
-        // Test the connection
+        // Test the connection with both admin and target database
         await client.db('admin').command({ ping: 1 });
 
         db = client.db('pixelninjakitties');
+
+        // Test access to the actual database we'll be using
+        await db.command({ ping: 1 });
+
         isConnected = true;
 
         console.log('✅ Connected to MongoDB successfully');
@@ -50,6 +63,8 @@ export async function connectToMongoDB() {
     } catch (error) {
         console.error('❌ MongoDB connection failed:', error);
         isConnected = false;
+        client = null;
+        db = null;
         return false;
     }
 }
@@ -216,12 +231,15 @@ export async function ensureConnection() {
     }
 
     try {
-        // Test the connection
+        // Test the connection with both admin and target database
         await client.db('admin').command({ ping: 1 });
+        await db.command({ ping: 1 });
         return true;
     } catch (error) {
         console.error('❌ MongoDB connection test failed:', error);
         isConnected = false;
+        client = null;
+        db = null;
         return await connectToMongoDB();
     }
 }
@@ -234,7 +252,10 @@ export async function ensureConnection() {
  */
 export async function withDatabase(operation, operationName = 'Database operation') {
     try {
-        await ensureConnection();
+        const connected = await ensureConnection();
+        if (!connected) {
+            throw new Error('Failed to establish MongoDB connection');
+        }
         return await operation(db);
     } catch (error) {
         console.error(`❌ ${operationName} failed:`, error);
