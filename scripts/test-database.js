@@ -6,13 +6,13 @@
 
 async function testDatabaseConfiguration() {
     console.log('🔄 Testing database configuration detection...');
-    
+
     // Test 1: No configuration
     console.log('\n1. Testing no configuration:');
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_ANON_KEY;
     delete process.env.MONGODB_URI;
-    
+
     try {
         const { ensureConnection } = await import('./mongodb.js');
         await ensureConnection();
@@ -24,11 +24,11 @@ async function testDatabaseConfiguration() {
             console.log('❌ Unexpected error:', error.message);
         }
     }
-    
+
     // Test 2: MongoDB configuration
     console.log('\n2. Testing MongoDB configuration:');
     process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
-    
+
     try {
         // Need to re-import to get fresh module state
         const { ensureConnection } = await import('./mongodb.js?' + Date.now());
@@ -41,13 +41,13 @@ async function testDatabaseConfiguration() {
             console.log('❌ Unexpected MongoDB error:', error.message);
         }
     }
-    
+
     // Test 3: Supabase configuration
     console.log('\n3. Testing Supabase configuration:');
     delete process.env.MONGODB_URI;
     process.env.SUPABASE_URL = 'https://example.supabase.co';
     process.env.SUPABASE_ANON_KEY = 'mock_key';
-    
+
     try {
         // Need to re-import to get fresh module state
         const { ensureConnection } = await import('./mongodb.js?' + Date.now());
@@ -64,11 +64,11 @@ async function testDatabaseConfiguration() {
 
 async function testCodeSyntax() {
     console.log('🔄 Testing code syntax and imports...');
-    
+
     try {
         const mongoModule = await import('./mongodb.js');
         console.log('✅ mongodb.js imports successfully');
-        
+
         // Test that all expected functions are exported
         const expectedExports = ['ensureConnection', 'saveState', 'loadState', 'mongoHealthCheck'];
         for (const exportName of expectedExports) {
@@ -85,13 +85,13 @@ async function testCodeSyntax() {
 
 async function runTests() {
     console.log('🚀 Starting database configuration tests...\n');
-    
+
     await testCodeSyntax();
     console.log('');
-    
+
     await testDatabaseConfiguration();
     console.log('');
-    
+
     console.log('✅ All tests completed');
 }
 

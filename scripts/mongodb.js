@@ -24,7 +24,7 @@ export async function ensureConnection() {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_ANON_KEY;
     const mongoUri = process.env.MONGODB_URI;
-    
+
     if (supabaseUrl && supabaseKey) {
         useSupabase = true;
         if (!isConnected) {
@@ -36,14 +36,14 @@ export async function ensureConnection() {
                 .from('state')
                 .select('type')
                 .limit(1);
-            
+
             if (error && error.code === '42P01') {
                 // Table doesn't exist, create it
                 await createSupabaseStateTable();
             } else if (error) {
                 throw error;
             }
-            
+
             return true;
         } catch (error) {
             console.error('❌ Supabase connection test failed:', error);
@@ -78,22 +78,22 @@ async function connectToSupabase() {
         if (supabase && isConnected) {
             return true;
         }
-        
+
         const supabaseUrl = process.env.SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_ANON_KEY;
-        
+
         if (!supabaseUrl || !supabaseKey) {
             throw new Error('SUPABASE_URL or SUPABASE_ANON_KEY environment variables not set');
         }
-        
+
         supabase = createClient(supabaseUrl, supabaseKey);
-        
+
         // Test connection by trying to access the state table
         const { data, error } = await supabase
             .from('state')
             .select('type')
             .limit(1);
-        
+
         if (error && error.code === '42P01') {
             // Table doesn't exist, create it
             console.log('📋 Creating missing Supabase tables...');
@@ -102,13 +102,13 @@ async function connectToSupabase() {
         } else if (error) {
             throw error;
         }
-        
+
         isConnected = true;
         console.log('✅ Connected to Supabase successfully');
-        
+
         // Initialize database structure
         await initializeDatabaseStructure();
-        
+
         return true;
     } catch (error) {
         console.error('❌ Supabase connection failed:', error);
@@ -128,11 +128,11 @@ async function createSupabaseStateTable() {
             .from('state')
             .insert({ type: 'test_table_exists', state: {}, updated_at: new Date() })
             .select();
-        
+
         if (testError && testError.code === '42P01') {
             // Table doesn't exist, we need to create it
             console.log('📋 Table "state" does not exist, providing creation instructions...');
-            
+
             const createTableSQL = `
 -- Run this SQL in your Supabase SQL editor to create the missing table:
 
@@ -150,19 +150,19 @@ INSERT INTO public.state (type, state, updated_at)
 VALUES ('cron', '{"lastProcessedBlock": 0, "processedTokens": [], "pendingTasks": []}', NOW())
 ON CONFLICT (type) DO NOTHING;
             `;
-            
+
             console.log(createTableSQL);
-            
-            throw new Error(`Supabase table 'public.state' does not exist. Please run the SQL above in your Supabase dashboard's SQL editor to create it.`);
+
+            throw new Error('Supabase table \'public.state\' does not exist. Please run the SQL above in your Supabase dashboard\'s SQL editor to create it.');
         } else if (testError) {
             throw testError;
         }
-        
+
         // Clean up test record if successful
         if (testData && testData.length > 0) {
             await supabase.from('state').delete().eq('type', 'test_table_exists');
         }
-        
+
         console.log('✅ Supabase state table verified');
         return true;
     } catch (error) {
@@ -226,7 +226,7 @@ async function initializeDatabaseStructure() {
         console.log('✅ Database structure initialized');
         return;
     }
-    
+
     // MongoDB initialization (existing code)
     try {
         // List existing collections
@@ -314,7 +314,7 @@ async function createIndexes() {
         console.log('✅ Database indexes handled by Supabase');
         return;
     }
-    
+
     // MongoDB indexes (existing code)
     try {
         // Tasks collection indexes
@@ -419,12 +419,12 @@ export async function saveState(type, state) {
                     state,
                     updated_at: new Date()
                 });
-            
+
             if (error) {
                 console.error(`❌ Save state (${type}) failed:`, error);
                 throw error;
             }
-            
+
             return true;
         }, `Save state (${type})`);
     } else {
@@ -457,7 +457,7 @@ export async function loadState(type, defaultState = {}) {
                 .select('state')
                 .eq('type', type)
                 .single();
-            
+
             if (error) {
                 if (error.code === 'PGRST116') {
                     // No rows found, return default state
@@ -466,7 +466,7 @@ export async function loadState(type, defaultState = {}) {
                 console.error(`❌ Load state (${type}) failed:`, error);
                 throw error;
             }
-            
+
             return data?.state || defaultState;
         }, `Load state (${type})`);
     } else {
@@ -490,11 +490,11 @@ export async function mongoHealthCheck() {
                 .from('state')
                 .select('type')
                 .limit(1);
-            
+
             if (error && error.code !== 'PGRST116') {
                 throw error;
             }
-            
+
             return {
                 status: 'healthy',
                 connected: true,

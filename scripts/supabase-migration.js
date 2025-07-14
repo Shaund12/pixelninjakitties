@@ -11,11 +11,11 @@ import { createClient } from '@supabase/supabase-js';
 function initializeSupabase() {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_ANON_KEY;
-    
+
     if (!supabaseUrl || !supabaseKey) {
         throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables');
     }
-    
+
     return createClient(supabaseUrl, supabaseKey);
 }
 
@@ -24,9 +24,9 @@ function initializeSupabase() {
  */
 export async function createStateTable() {
     console.log('🔄 Creating Supabase state table...');
-    
+
     const supabase = initializeSupabase();
-    
+
     // Create state table if it doesn't exist
     const { data, error } = await supabase.rpc('create_state_table', {
         sql: `
@@ -40,12 +40,12 @@ export async function createStateTable() {
             CREATE INDEX IF NOT EXISTS idx_state_updated_at ON public.state(updated_at);
         `
     });
-    
+
     if (error) {
         console.error('❌ Failed to create state table:', error);
         throw error;
     }
-    
+
     console.log('✅ State table created successfully');
     return true;
 }
@@ -55,7 +55,7 @@ export async function createStateTable() {
  */
 export async function saveStateToSupabase(type, state) {
     const supabase = initializeSupabase();
-    
+
     const { data, error } = await supabase
         .from('state')
         .upsert({
@@ -63,12 +63,12 @@ export async function saveStateToSupabase(type, state) {
             state,
             updated_at: new Date()
         });
-    
+
     if (error) {
         console.error(`❌ Save state (${type}) failed:`, error);
         throw error;
     }
-    
+
     console.log(`✅ Saved state (${type}) to Supabase`);
     return data;
 }
@@ -78,13 +78,13 @@ export async function saveStateToSupabase(type, state) {
  */
 export async function loadStateFromSupabase(type, defaultState = {}) {
     const supabase = initializeSupabase();
-    
+
     const { data, error } = await supabase
         .from('state')
         .select('state')
         .eq('type', type)
         .single();
-    
+
     if (error) {
         if (error.code === 'PGRST116') {
             // No rows found, return default state
@@ -94,7 +94,7 @@ export async function loadStateFromSupabase(type, defaultState = {}) {
         console.error(`❌ Load state (${type}) failed:`, error);
         throw error;
     }
-    
+
     return data?.state || defaultState;
 }
 
@@ -104,24 +104,24 @@ export async function loadStateFromSupabase(type, defaultState = {}) {
 export async function testSupabaseConnection() {
     try {
         const supabase = initializeSupabase();
-        
+
         // Test connection by trying to fetch from state table
         const { data, error } = await supabase
             .from('state')
             .select('type')
             .limit(1);
-        
+
         if (error && error.code === '42P01') {
             // Table doesn't exist, create it
             await createStateTable();
             console.log('✅ Connected to Supabase and created missing tables');
             return true;
         }
-        
+
         if (error) {
             throw error;
         }
-        
+
         console.log('✅ Connected to Supabase successfully');
         return true;
     } catch (error) {
