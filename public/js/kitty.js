@@ -512,6 +512,7 @@ if (confirmRegenerateBtn) {
 }
 
 // Updated polling function for task status
+// Updated polling function for task status
 async function pollTaskStatus(taskId, statusElement) {
     let completed = false;
     let attempts = 0;
@@ -522,13 +523,29 @@ async function pollTaskStatus(taskId, statusElement) {
     let lastStatus = '';
     let lastImageUpdate = null;
 
-    while (!completed && attempts < maxAttempts) {
+    const checkTaskStatus = async () => {
+        if (attempts >= maxAttempts) {
+            console.warn(`⏰ Task polling timeout after ${maxAttempts} attempts`);
+            if (statusElement) {
+                statusElement.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check back later to see your regenerated NFT.';
+                
+                // Add refresh button
+                const refreshBtn = document.createElement('button');
+                refreshBtn.className = 'action-btn';
+                refreshBtn.textContent = 'Refresh Page';
+                refreshBtn.style.marginTop = '10px';
+                refreshBtn.onclick = () => window.location.reload();
+                
+                statusElement.appendChild(refreshBtn);
+            }
+            return;
+        }
+
+        attempts++;
+
         try {
             // Try multiple API endpoints for resilience
             let response = null;
-            let error = null;
-            
-            // Try different endpoint formats
             const endpoints = [
                 `/api/task-status?id=${taskId}`,
                 `/api/task-status/${taskId}`,
@@ -545,13 +562,12 @@ async function pollTaskStatus(taskId, statusElement) {
                         break;
                     }
                 } catch (err) {
-                    error = err;
                     console.warn(`Failed endpoint ${endpoint}:`, err);
                 }
             }
 
             if (!response) {
-                throw error || new Error('Failed to get task status from any endpoint');
+                throw new Error('Failed to get task status from any endpoint');
             }
 
             const taskData = await response.json();
@@ -683,12 +699,16 @@ async function pollTaskStatus(taskId, statusElement) {
                     }, 2000);
                 }
                 
-                break;
+                return;
             }
 
             // Wait before next poll
             await new Promise(resolve => setTimeout(resolve, 1000));
-            attempts++;
+            
+            // Continue polling
+            if (!completed) {
+                setTimeout(checkTaskStatus, 1000);
+            }
 
         } catch (error) {
             console.error('Error polling task status:', error);
@@ -699,25 +719,16 @@ async function pollTaskStatus(taskId, statusElement) {
 
             // Wait a bit longer if there's an error
             await new Promise(resolve => setTimeout(resolve, 3000));
-            attempts++;
+            
+            // Continue polling despite errors
+            if (!completed) {
+                setTimeout(checkTaskStatus, 1000);
+            }
         }
-    }
+    };
 
-    // If we reached max attempts without completion
-    if (!completed) {
-        if (statusElement) {
-            statusElement.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check back later to see your regenerated NFT.';
-            
-            // Add refresh button
-            const refreshBtn = document.createElement('button');
-            refreshBtn.className = 'action-btn';
-            refreshBtn.textContent = 'Refresh Page';
-            refreshBtn.style.marginTop = '10px';
-            refreshBtn.onclick = () => window.location.reload();
-            
-            statusElement.appendChild(refreshBtn);
-        }
-    }
+    // Start polling immediately
+    checkTaskStatus();
 }
 
 // Animate skill bars with improved transitions
