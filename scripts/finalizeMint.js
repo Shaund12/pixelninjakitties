@@ -981,6 +981,19 @@ function generateTraits(breed, tokenId) {
 
     let breedTrait = traitCategories.breeds.find(b => b.value === breed);
     console.log('🔍 DEBUG: Found breed trait:', breedTrait);
+    
+    // Additional debugging for the exact comparison
+    console.log(`🔍 DEBUG: Searching for breed "${breed}" with strict comparison`);
+    traitCategories.breeds.forEach((b, index) => {
+        console.log(`🔍 DEBUG: Available breed ${index}: "${b.value}" (${b.value === breed ? 'MATCH' : 'NO MATCH'})`);
+    });
+    
+    // If the breed is not found, try a more flexible comparison
+    if (!breedTrait) {
+        console.log(`⚠️ Exact match failed, trying case-insensitive match`);
+        breedTrait = traitCategories.breeds.find(b => b.value.toLowerCase() === breed.toLowerCase());
+        console.log('🔍 DEBUG: Case-insensitive match result:', breedTrait);
+    }
 
     if (!breedTrait) {
         console.log(`⚠️ Breed "${breed}" not found in available breeds, using random selection`);
