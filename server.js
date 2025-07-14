@@ -125,10 +125,10 @@ app.get('/api/task/:taskId', (req, res) => {
 app.get('/api/health', async (req, res) => {
     try {
         uptimeTracker.recordRequest();
-        
+
         const healthCheck = await performHealthCheck();
         const uptimeStats = uptimeTracker.getStats();
-        
+
         const response = {
             status: healthCheck.status,
             timestamp: healthCheck.timestamp,
@@ -148,7 +148,7 @@ app.get('/api/health', async (req, res) => {
                 errorRate: uptimeStats.errorRate
             }
         };
-        
+
         res.json(response);
     } catch (error) {
         uptimeTracker.recordError();
@@ -161,10 +161,10 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/health/detailed', async (req, res) => {
     try {
         uptimeTracker.recordRequest();
-        
+
         const healthCheck = await performHealthCheck();
         const uptimeStats = uptimeTracker.getStats();
-        
+
         res.json({
             ...healthCheck,
             uptime: uptimeStats,
@@ -187,7 +187,7 @@ app.get('/api/metrics', (req, res) => {
     try {
         const uptimeStats = uptimeTracker.getStats();
         const memoryUsage = process.memoryUsage();
-        
+
         res.json({
             uptime: uptimeStats,
             memory: {
@@ -219,7 +219,7 @@ app.get('/api/metrics', (req, res) => {
 // Debug information API endpoint
 app.get('/api/debug', async (req, res) => {
     try {
-        const stateData = await fs.readFile(STATE_FILE, 'utf8').catch(() => '{}');
+        // const stateData = await fs.readFile(STATE_FILE, 'utf8').catch(() => '{}'); // Currently unused
         const currentBlock = await provider.getBlockNumber();
         const contractAddr = CONTRACT_ADDRESS;
 
@@ -620,7 +620,8 @@ async function getBlockchainInfo() {
  * @returns {Promise<void>}
  */
 async function processMintTask(task) {
-    const { tokenId, breed, buyer, imageProvider, promptExtras, negativePrompt, taskId: existingTaskId, forceProcess, isRegeneration } = task;
+    const { tokenId, breed, buyer, imageProvider, promptExtras, negativePrompt, taskId: existingTaskId, forceProcess } = task;
+    // const { isRegeneration } = task; // Currently unused
     const id = Number(tokenId);
 
     // CHECK IF TOKEN WAS ALREADY PROCESSED WHILE WAITING IN QUEUE
@@ -801,7 +802,7 @@ async function loadState() {
         lastBlock = state.lastBlock || 0;
         processedTokens = new Set(state.processedTokens || []);
         console.log(`📂 Loaded state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
-    } catch (err) {
+    } catch {
         // If file doesn't exist, start from a few blocks back for safety
         const currentBlock = await provider.getBlockNumber();
         lastBlock = Math.max(0, currentBlock - 1000);
@@ -880,7 +881,7 @@ async function checkForEvents() {
                 try {
                     parsedLog = nft.interface.parseLog(log);
                     if (!parsedLog || parsedLog.name !== 'MintRequested') continue;
-                } catch (e) {
+                } catch {
                     // Skip logs we can't parse
                     continue;
                 }

@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { ethers } from 'ethers';
-import { finalizeMint } from '../scripts/finalizeMint.js';
+// import { finalizeMint } from '../scripts/finalizeMint.js'; // Currently unused
 
 const app = express();
 app.use(cors());
@@ -12,7 +12,7 @@ const {
     RPC_URL,
     CONTRACT_ADDRESS,
     PRIVATE_KEY,
-    PLACEHOLDER_URI,
+    // PLACEHOLDER_URI, // Currently unused
     MARKETPLACE_ADDRESS
 } = process.env;
 
@@ -79,8 +79,8 @@ app.get('/api/kitties/total', async (req, res) => {
 // Get a page of kitties with pagination
 app.get('/api/kitties', async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 12;
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 12;
         const skip = (page - 1) * limit;
 
         const totalSupply = Number(await nft.totalSupply());
@@ -140,7 +140,7 @@ app.get('/api/kitties/:id', async (req, res) => {
         let owner;
         try {
             owner = await nft.ownerOf(id);
-        } catch (error) {
+        } catch {
             return res.status(404).json({ error: 'Token not found' });
         }
 
@@ -168,7 +168,7 @@ app.get('/api/kitties/:id', async (req, res) => {
                         active: listingData.active
                     };
                 }
-            } catch (error) {
+            } catch {
                 // Listing not found or error, continue without listing data
             }
         }
@@ -327,7 +327,7 @@ function getRarity(id, metadata) {
     }
 
     // Fallback to the previous ID-based calculation for backward compatibility
-    const numId = parseInt(id);
+    const numId = parseInt(id, 10);
     if (numId % 100 === 0) return 'legendary';
     if (numId % 10 === 0) return 'epic';
     if (numId % 2 === 0) return 'rare';

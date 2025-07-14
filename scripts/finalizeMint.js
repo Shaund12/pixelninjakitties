@@ -68,9 +68,9 @@ const {
     // DALL-E model options (dall-e-3 or dall-e-2)
     DALLE_MODEL = 'dall-e-3',
     // Stability models
-    STABILITY_MODEL = 'stable-diffusion-xl-1024-v1-0',
-    // IPFS gateway for compatibility
-    IPFS_GATEWAY = 'https://ipfs.io/ipfs/'
+    STABILITY_MODEL = 'stable-diffusion-xl-1024-v1-0'
+    // IPFS gateway for compatibility - currently unused but kept for future use
+    // IPFS_GATEWAY = 'https://ipfs.io/ipfs/'
 } = process.env;
 
 // Enhanced provider configuration with expanded background options and storytelling
@@ -507,7 +507,7 @@ if (OPENAI_API_KEY) {
 /* ─── trait generation ─────────────────────────────────────────── */
 function generateTraits(breed, tokenId) {
     // Use tokenId as a seed for deterministic but "random" traits
-    const seed = parseInt(tokenId);
+    const seed = parseInt(tokenId, 10);
 
     // Create a proper hash for better distribution
     function getTraitHash(traitType, tokenSeed) {
@@ -953,10 +953,13 @@ function generateTraits(breed, tokenId) {
 
     /* ─── Generate core traits ─────────────────────────────────── */
     // Generate core traits - use the specified breed instead of random selection
+    console.log(`🔍 DEBUG: Looking for breed "${breed}" in available breeds`);
+    console.log(`🔍 DEBUG: Available breeds: ${traitCategories.breeds.map(b => b.value).join(', ')}`);
     let breedTrait = traitCategories.breeds.find(b => b.value === breed);
     if (!breedTrait) {
         console.log(`⚠️ Breed "${breed}" not found in available breeds, using random selection`);
         breedTrait = getWeightedTrait(weightedCategories.breeds, 'breed');
+        console.log(`TokenId ${tokenId} - Selected breed: ${breedTrait.value} (${breedTrait.rarity}) [${breedTrait.rarityScore}] - RANDOM FALLBACK`);
     } else {
         console.log(`TokenId ${tokenId} - Selected breed: ${breedTrait.value} (${breedTrait.rarity}) [${breedTrait.rarityScore}] - USER SPECIFIED`);
     }
@@ -1066,7 +1069,7 @@ function generateTraits(breed, tokenId) {
 
 // Generate ninja cat backstory and description with enhanced background integration
 function generateNinjaCatDescription(tokenId, breed, attributes) {
-    const seed = parseInt(tokenId);
+    const seed = parseInt(tokenId, 10);
     const hash = createHash('sha256').update(`${seed}-description`).digest('hex');
 
     // Extract trait values with fallbacks
@@ -1387,8 +1390,8 @@ async function generateDallEImage(prompt, options = {}) {
                 contentHash,
                 metadata: {
                     generationTime: parseFloat(generationTime),
-                    width: parseInt(settings.size.split('x')[0]),
-                    height: parseInt(settings.size.split('x')[1]),
+                    width: parseInt(settings.size.split('x')[0], 10),
+                    height: parseInt(settings.size.split('x')[1], 10),
                     quality: settings.quality,
                     attempts: attempt
                 }
@@ -1760,7 +1763,7 @@ export async function finalizeMint({
         // Only proceed if we have backgrounds defined for this provider
         if (provider?.pixelSettings?.backgrounds?.length > 0) {
             // Create a deterministic but "random" selection based on tokenId
-            const seed = parseInt(tokenId);
+            const seed = parseInt(tokenId, 10);
             const backgroundHash = createHash('sha256')
                 .update(`${seed}-${normalizedBreed}-background`)
                 .digest('hex');
@@ -1968,7 +1971,7 @@ export async function finalizeMint({
         console.log(`✅ Image processed in ${processTime}s`);
 
         // Add pixel art enhancements (optional - only if sharp is available)
-        const enhancedImage = await enhancePixelArt(processedImage);
+        await enhancePixelArt(processedImage);
 
         // Update task status for IPFS upload
         if (taskManager) {
@@ -2190,9 +2193,9 @@ async function processImage(imageResult) {
             // Only process if it's big enough (some models return tiny images)
             if (width > 100 && height > 100) {
                 // Analyze the image to look for palette bars (horizontal or vertical)
-                const { data } = await image
-                    .raw()
-                    .toBuffer({ resolveWithObject: true });
+                // const { data: imageData } = await image
+                //     .raw()
+                //     .toBuffer({ resolveWithObject: true });
 
                 // Look for horizontal palette bars at top or bottom
                 const cropTop = 0;
