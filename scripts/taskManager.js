@@ -5,7 +5,7 @@
  */
 
 import crypto from 'crypto';
-import { withDatabase, ensureConnection } from './mongodb.js';
+import { withDatabase } from './mongodb.js';
 
 // Task metrics (loaded from MongoDB)
 let metrics = {
@@ -53,7 +53,7 @@ async function saveMetrics() {
         return await withDatabase(async (db) => {
             const result = await db.collection('metrics').replaceOne(
                 { type: 'task_metrics' },
-                { 
+                {
                     type: 'task_metrics',
                     data: metrics,
                     updatedAt: new Date()
@@ -201,7 +201,7 @@ export async function updateTask(taskId, update) {
 
             // Save updated task to MongoDB
             await db.collection('tasks').replaceOne({ _id: taskId }, updatedTask);
-            
+
             // Save updated metrics
             await saveMetrics();
 
@@ -223,7 +223,7 @@ export async function getTaskStatus(taskId, options = {}) {
     try {
         return await withDatabase(async (db) => {
             const task = await db.collection('tasks').findOne({ _id: taskId });
-            
+
             // Check if task exists
             if (!task) {
                 return {
@@ -343,10 +343,10 @@ export async function getTasks(filters = {}) {
         return await withDatabase(async (db) => {
             // Build MongoDB query from filters
             const query = {};
-            
+
             if (filters.status) query.status = filters.status;
             if (filters.provider) query.provider = filters.provider;
-            if (filters.tokenId) query.tokenId = parseInt(filters.tokenId);
+            if (filters.tokenId) query.tokenId = Number(filters.tokenId);
             if (filters.minProgress) query.progress = { $gte: filters.minProgress };
 
             // Add date range filters if provided
@@ -375,12 +375,12 @@ export async function getTasks(filters = {}) {
 export async function getTaskMetrics() {
     try {
         await loadMetrics();
-        
+
         return await withDatabase(async (db) => {
             const pendingCount = await db.collection('tasks').countDocuments({ status: TASK_STATES.PENDING });
             const processingCount = await db.collection('tasks').countDocuments({ status: TASK_STATES.PROCESSING });
             const totalCount = await db.collection('tasks').countDocuments();
-            
+
             return {
                 ...metrics,
                 totalTasks: totalCount,
@@ -414,14 +414,14 @@ export async function cleanupTasks(maxAge = 24 * 60 * 60 * 1000) {
     try {
         return await withDatabase(async (db) => {
             const cutoffDate = new Date(Date.now() - maxAge);
-            
+
             const result = await db.collection('tasks').deleteMany({
-                status: { 
-                    $in: [TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED, TASK_STATES.TIMEOUT] 
+                status: {
+                    $in: [TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED, TASK_STATES.TIMEOUT]
                 },
                 updatedAt: { $lt: cutoffDate }
             });
-            
+
             return result.deletedCount;
         }, 'Cleanup tasks');
     } catch (error) {

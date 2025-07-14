@@ -532,11 +532,11 @@ async function startServer() {
         // Connect to MongoDB
         await connectToMongoDB();
         console.log('✅ MongoDB connection established');
-        
+
         // Start Express server
         app.listen(PORT, () => {
             console.log(`🌐 Ninja Kitty server running on port ${PORT}`);
-            console.log(`📊 MongoDB integrated for task persistence`);
+            console.log('📊 MongoDB integrated for task persistence');
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);

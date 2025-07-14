@@ -44,7 +44,8 @@ export async function connectToMongoDB() {
 
         console.log('✅ Connected to MongoDB successfully');
 
-        // Create indexes for better performance
+        // Initialize database structure and create indexes
+        await initializeDatabaseStructure();
         await createIndexes();
 
         return true;
@@ -52,6 +53,87 @@ export async function connectToMongoDB() {
         console.error('❌ MongoDB connection failed:', error);
         isConnected = false;
         return false;
+    }
+}
+
+/**
+ * Initialize database structure and create collections if they don't exist
+ */
+async function initializeDatabaseStructure() {
+    try {
+        // List existing collections
+        const collections = await db.listCollections().toArray();
+        const existingCollections = collections.map(col => col.name);
+
+        // Define required collections with their initial structure
+        const requiredCollections = [
+            {
+                name: 'tasks',
+                validator: {
+                    $jsonSchema: {
+                        bsonType: 'object',
+                        required: ['_id', 'taskId', 'tokenId', 'status', 'createdAt'],
+                        properties: {
+                            _id: { bsonType: 'string' },
+                            taskId: { bsonType: 'string' },
+                            tokenId: { bsonType: 'number' },
+                            status: {
+                                bsonType: 'string',
+                                enum: ['pending', 'processing', 'completed', 'failed', 'canceled', 'timeout']
+                            },
+                            progress: { bsonType: 'number', minimum: 0, maximum: 100 },
+                            createdAt: { bsonType: 'date' },
+                            updatedAt: { bsonType: 'date' }
+                        }
+                    }
+                }
+            },
+            {
+                name: 'state',
+                validator: {
+                    $jsonSchema: {
+                        bsonType: 'object',
+                        required: ['type', 'updatedAt'],
+                        properties: {
+                            type: { bsonType: 'string' },
+                            state: { bsonType: 'object' },
+                            updatedAt: { bsonType: 'date' }
+                        }
+                    }
+                }
+            },
+            {
+                name: 'metrics',
+                validator: {
+                    $jsonSchema: {
+                        bsonType: 'object',
+                        required: ['type', 'updatedAt'],
+                        properties: {
+                            type: { bsonType: 'string' },
+                            data: { bsonType: 'object' },
+                            updatedAt: { bsonType: 'date' }
+                        }
+                    }
+                }
+            }
+        ];
+
+        // Create collections if they don't exist
+        for (const collection of requiredCollections) {
+            if (!existingCollections.includes(collection.name)) {
+                await db.createCollection(collection.name, {
+                    validator: collection.validator
+                });
+                console.log(`✅ Created collection: ${collection.name}`);
+            } else {
+                console.log(`✓ Collection already exists: ${collection.name}`);
+            }
+        }
+
+        console.log('✅ Database structure initialized successfully');
+    } catch (error) {
+        console.error('⚠️ Database structure initialization failed:', error);
+        throw error;
     }
 }
 
@@ -65,9 +147,13 @@ async function createIndexes() {
         await db.collection('tasks').createIndex({ status: 1 });
         await db.collection('tasks').createIndex({ createdAt: 1 });
         await db.collection('tasks').createIndex({ updatedAt: 1 });
+        await db.collection('tasks').createIndex({ taskId: 1 }, { unique: true });
 
         // State collection indexes
         await db.collection('state').createIndex({ type: 1 }, { unique: true });
+
+        // Metrics collection indexes
+        await db.collection('metrics').createIndex({ type: 1 }, { unique: true });
 
         console.log('✅ Database indexes created successfully');
     } catch (error) {
