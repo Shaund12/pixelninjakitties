@@ -122,6 +122,44 @@ app.get('/api/task/:taskId', async (req, res) => {
     }
 });
 
+// API endpoint to find task by token ID
+app.get('/api/task/token/:tokenId', async (req, res) => {
+    try {
+        const { tokenId } = req.params;
+
+        // Basic validation
+        if (!tokenId || isNaN(tokenId)) {
+            return res.status(400).json({ error: 'Invalid token ID' });
+        }
+
+        const tokenIdNum = parseInt(tokenId, 10);
+
+        // Import getTasks function from taskManager
+        const { getTasks } = await import('./scripts/taskManager.js');
+        
+        // Find the most recent task for this token ID
+        const tasks = await getTasks({ 
+            tokenId: tokenIdNum,
+            limit: 1
+        });
+
+        if (tasks.length === 0) {
+            return res.status(404).json({ error: 'No task found for this token ID' });
+        }
+
+        const task = tasks[0];
+        res.json({ 
+            taskId: task.task_id,
+            status: task.status,
+            progress: task.progress,
+            message: task.message
+        });
+    } catch (error) {
+        console.error('Error in /api/task/token/:tokenId:', sanitizeForLogging(error.message));
+        res.status(500).json(createSafeErrorResponse(error, process.env.NODE_ENV === 'development'));
+    }
+});
+
 // API endpoint for health check
 app.get('/api/health', async (req, res) => {
     try {
@@ -468,6 +506,11 @@ app.get('/api/docs', (req, res) => {
                 path: '/api/task/:taskId',
                 method: 'GET',
                 description: 'Check status of a specific generation task'
+            },
+            {
+                path: '/api/task/token/:tokenId',
+                method: 'GET',
+                description: 'Find task by token ID'
             },
             {
                 path: '/api/debug',

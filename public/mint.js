@@ -157,17 +157,128 @@ mintBtn.onclick = async () => {
         /* 2️⃣ Buy */
         busy('Paying & minting…');
         const tx2 = await nft.buy(breed);
-        await tx2.wait();
+        const receipt = await tx2.wait();
 
         secureLog('Mint transaction completed', { hash: tx2.hash });
 
+        // Try to get the token ID from the transaction receipt
+        let tokenId = null;
+        try {
+            // Look for Transfer event or MintRequested event in the receipt
+            const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'; // Transfer event
+            const mintRequestedTopic = nft.interface.getEvent('MintRequested').topicHash;
+            
+            for (const log of receipt.logs) {
+                if (log.topics[0] === transferTopic || log.topics[0] === mintRequestedTopic) {
+                    try {
+                        const parsed = nft.interface.parseLog(log);
+                        if (parsed.name === 'Transfer' || parsed.name === 'MintRequested') {
+                            tokenId = parsed.args.tokenId ? Number(parsed.args.tokenId) : null;
+                            break;
+                        }
+                    } catch (e) {
+                        // Continue to next log
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing transaction logs:', error);
+        }
+
         const link = `https://explorer.vitruveo.xyz/tx/${tx2.hash}`;
-        idle(`✅ Mint tx sent – <a href="${link}" target="_blank" rel="noopener noreferrer">view</a>. 
-            Your ninja cat appears once the AI finishes rendering.`);
+        
+        if (tokenId) {
+            busy(`✅ Mint successful! Your ninja cat #${tokenId} is being generated...`);
+            
+            // Poll for task status
+            await pollForTaskStatus(tokenId, breed);
+        } else {
+            idle(`✅ Mint tx sent – <a href="${link}" target="_blank" rel="noopener noreferrer">view</a>. 
+                Your ninja cat appears once the AI finishes rendering.`);
+        }
     } catch (error) {
         handleError(error, 'Mint error');
     }
 };
+
+/* ─── Task Status Polling ─────────────────────────────────────── */
+async function pollForTaskStatus(tokenId, breed) {
+    let attempts = 0;
+    const maxAttempts = 240; // 4 minutes at 1-second intervals
+    let taskId = null;
+    
+    // First, wait for the cron job to create the task
+    busy(`⏳ Waiting for image generation to start...`);
+    
+    while (attempts < maxAttempts && !taskId) {
+        try {
+            // Try to find a task for this token ID
+            const response = await fetch(`/api/task/token/${tokenId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.taskId) {
+                    taskId = data.taskId;
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for task:', error);
+        }
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    if (!taskId) {
+        idle(`⚠️ Could not track generation progress for token #${tokenId}. Your ninja cat will appear once generation is complete.`);
+        return;
+    }
+    
+    // Now poll the task status
+    attempts = 0;
+    const maxTaskAttempts = 300; // 5 minutes at 1-second intervals
+    
+    while (attempts < maxTaskAttempts) {
+        try {
+            const response = await fetch(`/api/status/${taskId}`);
+            if (!response.ok) {
+                throw new Error('Failed to get task status');
+            }
+            
+            const taskData = await response.json();
+            const { status, progress, message } = taskData;
+            
+            if (status === 'completed') {
+                ready(`✅ Your ninja cat #${tokenId} is ready! Check your collection.`);
+                return;
+            }
+            
+            if (status === 'failed') {
+                idle(`❌ Generation failed for token #${tokenId}. Please try again later.`);
+                return;
+            }
+            
+            if (status === 'processing') {
+                const progressPercent = progress || 0;
+                busy(`🎨 Generating your ${breed} ninja cat #${tokenId}... ${progressPercent}% complete`);
+                if (message) {
+                    busy(`🎨 ${message}... ${progressPercent}% complete`);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error polling task status:', error);
+            idle(`⚠️ Could not track generation progress. Your ninja cat will appear once generation is complete.`);
+            return;
+        }
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Timeout reached
+    idle(`⏱️ Generation is taking longer than expected. Your ninja cat will appear once complete.`);
+}
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {

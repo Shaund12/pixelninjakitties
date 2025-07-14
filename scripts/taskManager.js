@@ -122,7 +122,8 @@ export async function createTask(tokenId, provider, options = {}) {
     try {
         // Store the task in Supabase
         await withDatabase(async (db) => {
-            const taskForSupabase = {
+            // Define supported fields to prevent schema errors
+            const supportedFields = {
                 id: taskId,
                 task_id: taskId,
                 token_id: tokenId,
@@ -140,9 +141,18 @@ export async function createTask(tokenId, provider, options = {}) {
                 timeout_at: options.timeout ? new Date(Date.now() + options.timeout).toISOString() : null,
                 priority: options.priority || 'normal',
                 provider_options: options.providerOptions || {},
-                estimated_completion_time: null,
-                ...options
+                estimated_completion_time: null
             };
+
+            // Add only supported optional fields
+            const allowedOptionalFields = ['breed', 'buyer', 'createdFrom', 'transactionHash'];
+            for (const field of allowedOptionalFields) {
+                if (options[field] !== undefined) {
+                    supportedFields[field] = options[field];
+                }
+            }
+
+            const taskForSupabase = supportedFields;
 
             const { error } = await db
                 .from('tasks')

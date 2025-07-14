@@ -260,7 +260,6 @@ export default async function handler(req, res) {
                     breed,
                     buyer,
                     createdFrom: 'cron',
-                    blockNumber: log.blockNumber,
                     transactionHash: log.transactionHash,
                     priority: 'high'
                 });
