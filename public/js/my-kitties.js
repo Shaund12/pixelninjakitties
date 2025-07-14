@@ -2190,7 +2190,7 @@ async function handleRegenerateConfirm() {
     const statusEl = document.getElementById('regenerateStatus');
     const statusTextEl = document.getElementById('regenerateStatusText');
     statusEl.style.display = 'block';
-    statusTextEl.textContent = 'Connecting to wallet...';
+    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Connecting to wallet...';
 
     const confirmBtn = document.getElementById('confirmRegenerateBtn');
     confirmBtn.disabled = true;
@@ -2202,7 +2202,7 @@ async function handleRegenerateConfirm() {
         const address = await signer.getAddress();
         if (!address) throw new Error('Failed to connect wallet');
 
-        statusTextEl.textContent = 'Checking USDC balance...';
+        statusTextEl.innerHTML = '<div class="loading-spinner"></div>Checking USDC balance...';
 
         // 2. Create USDC contract instance
         const usdcContract = new ethers.Contract(
@@ -2225,52 +2225,83 @@ async function handleRegenerateConfirm() {
         }
 
         // 4. Transfer USDC directly to fee recipient
-        statusTextEl.textContent = `Sending ${REGENERATION_FEE_AMOUNT} USDC fee...`;
+        statusTextEl.innerHTML = '<div class="loading-spinner"></div>Sending USDC fee...';
         const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, regenerationFee);
 
-        statusTextEl.textContent = 'Confirming payment...';
+        statusTextEl.innerHTML = '<div class="loading-spinner"></div>Confirming payment...';
         await tx.wait();
 
         // 5. Call server API to start regeneration process
-        statusTextEl.textContent = `Starting image regeneration with ${imageProvider}...`;
+        statusTextEl.innerHTML = `<div class="loading-spinner"></div>Starting image regeneration with ${imageProvider}...`;
 
-        // FIXED: Changed endpoint from /api/regenerate/ to /api/process/
+        // Construct API URL with all the required parameters
         const apiUrl = new URL(`/api/process/${regeneratingTokenId}`, window.location.origin);
-
-        // ADD THIS: Force parameter to allow regenerating already processed tokens
+        
+        // Add required parameters
         apiUrl.searchParams.append('force', 'true');
-
-        // ADD THIS: Explicitly flag this as a regeneration request
         apiUrl.searchParams.append('regenerate', 'true');
-
         apiUrl.searchParams.append('imageProvider', imageProvider);
-        apiUrl.searchParams.append('paid', 'true');
-        apiUrl.searchParams.append('paymentTx', tx.hash);
-
+        
+        // Add breed parameter - get from the card if possible
+        const cardElement = document.querySelector(`.kitty-card[data-token-id="${regeneratingTokenId}"]`);
+        let breed = 'Tabby'; // Default
+        if (cardElement) {
+            const breedEl = cardElement.querySelector('.kitty-breed span');
+            if (breedEl && breedEl.textContent) {
+                breed = breedEl.textContent.trim();
+            }
+        }
+        apiUrl.searchParams.append('breed', breed);
+        
+        // Add optional parameters
         if (promptExtras) apiUrl.searchParams.append('promptExtras', promptExtras);
         if (negativePrompt) apiUrl.searchParams.append('negativePrompt', negativePrompt);
+        
+        // Record payment details
+        apiUrl.searchParams.append('paymentTx', tx.hash);
+        apiUrl.searchParams.append('payer', address);
 
-        const response = await fetch(apiUrl);
+        console.log('Calling regeneration API:', apiUrl.toString());
+        statusTextEl.innerHTML = '<div class="loading-spinner"></div>Submitting to server...';
+
+        const response = await fetch(apiUrl.toString());
+        
         if (!response.ok) {
-            throw new Error(`Server responded with status: ${response.status}`);
+            // Handle specific status codes
+            if (response.status === 404) {
+                throw new Error('Regeneration API endpoint not found. Please contact support.');
+            }
+            
+            // Try to get error details from response
+            let errorText = 'Server error';
+            try {
+                const errorData = await response.json();
+                errorText = errorData.error || `Server error (${response.status})`;
+            } catch (e) {
+                errorText = `HTTP error ${response.status}`;
+            }
+            
+            throw new Error(errorText);
         }
 
         const data = await response.json();
+        console.log('Regeneration API response:', data);
 
         // 6. Start polling for status if we have a task ID
         if (data.taskId) {
+            statusTextEl.innerHTML = '<div class="loading-spinner"></div>Monitoring regeneration progress...';
             await pollRegenerationStatus(data.taskId, regeneratingTokenId);
         } else {
-            statusTextEl.textContent = 'Regeneration request sent! The new image will appear soon.';
+            statusTextEl.innerHTML = '<div class="success-icon">✓</div>Regeneration request sent! Check back soon.';
             setTimeout(() => {
                 document.getElementById('regenerateModal').style.display = 'none';
-                // Refresh the NFT display
-                refreshNFTDisplay(regeneratingTokenId);
+                // Refresh the NFT display after a delay
+                setTimeout(() => refreshNFTDisplay(regeneratingTokenId), 5000);
             }, 2000);
         }
     } catch (error) {
         console.error('Regeneration failed:', error);
-        statusTextEl.textContent = `Failed: ${error.message}`;
+        statusTextEl.innerHTML = `<div class="error-icon">❌</div>Error: ${error.message}`;
         statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
     } finally {
         confirmBtn.disabled = false;
@@ -2288,45 +2319,61 @@ async function pollRegenerationStatus(taskId, tokenId) {
         attempts++;
 
         if (attempts > maxAttempts) {
-            statusTextEl.textContent = 'Timed out. Please check back later.';
+            statusTextEl.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. The regeneration will continue in the background.';
+            setTimeout(() => {
+                document.getElementById('regenerateModal').style.display = 'none';
+            }, 5000);
             return;
         }
 
         try {
-            const response = await fetch(`/api/task/${taskId}`);
-            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+            // Try both endpoint formats to maximize compatibility
+            let response;
+            try {
+                response = await fetch(`/api/task/${taskId}`);
+                if (!response.ok) {
+                    response = await fetch(`/api/status/${taskId}`);
+                }
+            } catch (e) {
+                // If first endpoint fails, try the alternative
+                response = await fetch(`/api/status/${taskId}`);
+            }
+
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}`);
+            }
 
             const data = await response.json();
             console.log('Task status:', data);
 
-            if (data.status === 'completed') {
-                statusTextEl.textContent = 'Image regenerated successfully!';
+            if (data.status === 'completed' || data.status === TASK_STATES?.COMPLETED) {
+                statusTextEl.innerHTML = '<div class="success-icon">✓</div>Image regenerated successfully!';
                 statusEl.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
 
                 // Close modal and refresh display after a short delay
                 setTimeout(() => {
                     document.getElementById('regenerateModal').style.display = 'none';
                     refreshNFTDisplay(tokenId);
-                }, 2000);
-
+                }, 3000);
                 return;
-            } else if (data.status === 'failed') {
-                statusTextEl.textContent = `Failed: ${data.error || 'Unknown error'}`;
+            } else if (data.status === 'failed' || data.status === TASK_STATES?.FAILED) {
+                statusTextEl.innerHTML = `<div class="error-icon">❌</div>Failed: ${data.error || data.message || 'Unknown error'}`;
                 statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
                 return;
             } else {
                 // Still processing
                 const progress = data.progress || 0;
                 const message = data.message || 'Processing...';
-                statusTextEl.textContent = `${message} (${progress}%)`;
+                statusTextEl.innerHTML = `<div class="loading-spinner"></div>${message} (${progress}%)`;
 
                 // Schedule next check
                 setTimeout(checkStatus, 5000);
             }
         } catch (error) {
             console.error('Error checking task status:', error);
-            statusTextEl.textContent = `Error checking status: ${error.message}`;
-            statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
+            // Don't fail on error, keep trying
+            statusTextEl.innerHTML = `<div class="warning-icon">⚠️</div>Status check error: ${error.message}. Retrying...`;
+            setTimeout(checkStatus, 8000); // Longer delay on error
         }
     };
 
