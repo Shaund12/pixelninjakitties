@@ -40,6 +40,17 @@ export async function createTask(tokenId, provider, options = {}) {
     const randomPart = crypto.randomBytes(8).toString('hex');
     const taskId = `task_${timestamp}_${randomPart}`;
 
+    // Extract blockchain-specific data to store in metadata
+    const blockNumber = options.blockNumber;
+    const transactionHash = options.transactionHash;
+    
+    // Create metadata object if needed
+    const metadata = {
+        ...(blockNumber && { blockNumber }),
+        ...(transactionHash && { transactionHash }),
+        ...(options.metadata || {})
+    };
+
     // Create the task with extended properties
     const task = {
         id: taskId,
@@ -47,18 +58,18 @@ export async function createTask(tokenId, provider, options = {}) {
         status: TASK_STATES.PENDING,
         progress: 0,
         message: 'Task created',
-        metadata: null,
+        metadata: Object.keys(metadata).length > 0 ? metadata : null,
         token_uri: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         provider: provider,
         provider_options: options.providerOptions || {},
         breed: options.breed || null,
-        owner: options.owner || null,
+        owner: options.buyer || options.owner || null,  // Support both buyer and owner
         timeout_at: options.timeout ? new Date(Date.now() + options.timeout).toISOString() : null,
         priority: options.priority || 'normal',
-        estimated_completion_time: null,
-        ...options
+        estimated_completion_time: null
+        // Removed spreading options to prevent unknown column errors
     };
 
     try {
