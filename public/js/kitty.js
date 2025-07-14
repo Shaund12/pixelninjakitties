@@ -377,106 +377,103 @@ function setupRegenerationInterface(tokenId) {
     }
 
     // Confirm regeneration button - FULLY IMPLEMENTED
-    // Confirm regeneration button - FULLY IMPLEMENTED
-    if (confirmRegenerateBtn) {
-        confirmRegenerateBtn.addEventListener('click', async () => {
+if (confirmRegenerateBtn) {
+    confirmRegenerateBtn.addEventListener('click', async () => {
+        try {
+            // Get form values
+            const provider = document.getElementById('regenerateProvider').value;
+            const promptExtras = document.getElementById('regeneratePrompt').value || '';
+            const negativePrompt = document.getElementById('regenerateNegativePrompt').value || '';
+
+            // Update UI to show processing
+            const statusEl = document.getElementById('regenerateStatus');
+            const statusTextEl = document.getElementById('regenerateStatusText');
+            confirmRegenerateBtn.disabled = true;
+            confirmRegenerateBtn.textContent = 'Processing...';
+
+            if (statusEl && statusTextEl) {
+                statusEl.style.display = 'block';
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Initiating payment transaction...';
+            }
+
+            // Validate inputs
+            if (!provider) {
+                throw new Error('Please select an art style');
+            }
+
+            // First handle the USDC payment
             try {
-                // Get form values
-                const provider = document.getElementById('regenerateProvider').value;
-                const promptExtras = document.getElementById('regeneratePrompt').value || '';
-                const negativePrompt = document.getElementById('regenerateNegativePrompt').value || '';
-
-                // Update UI to show processing
-                const statusEl = document.getElementById('regenerateStatus');
-                const statusTextEl = document.getElementById('regenerateStatusText');
-                confirmRegenerateBtn.disabled = true;
-                confirmRegenerateBtn.textContent = 'Processing...';
-
-                if (statusEl && statusTextEl) {
-                    statusEl.style.display = 'block';
-                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Initiating payment transaction...';
+                // Check if MetaMask is installed
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error('MetaMask or compatible wallet not found. Please install it to continue.');
                 }
 
-                // Validate inputs
-                if (!provider) {
-                    throw new Error('Please select an art style');
+                // Import config values
+                const { USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT } = await import('./config.js');
+
+                // Calculate the amount in wei (USDC has 6 decimals)
+                const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6);
+
+                // Request account access
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Connecting to wallet...';
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length === 0) {
+                    throw new Error('No accounts found. Please connect your wallet.');
+                }
+                const userAddress = accounts[0];
+
+                // Get the web3 provider - using ethers v6 syntax
+                const web3Provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await web3Provider.getSigner();
+
+                // USDC ABI for the transfer function
+                const usdcAbi = [
+                    'function transfer(address to, uint256 value) returns (bool)',
+                    'function balanceOf(address owner) view returns (uint256)'
+                ];
+
+                const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
+
+                // Check USDC balance
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Checking USDC balance...';
+                const balance = await usdcContract.balanceOf(userAddress);
+                if (balance < AMOUNT) {
+                    throw new Error(`Insufficient USDC balance. You need at least ${REGENERATION_FEE_AMOUNT} USDC.`);
                 }
 
-                // First handle the USDC payment
-                try {
-                    // Check if MetaMask is installed
-                    if (typeof window.ethereum === 'undefined') {
-                        throw new Error('MetaMask or compatible wallet not found. Please install it to continue.');
-                    }
+                // Send the transaction
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Sending payment transaction...';
+                const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, AMOUNT);
 
-                    // Import config values
-                    const { USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT } = await import('./config.js');
+                // Wait for confirmation
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Confirming payment transaction...';
+                await tx.wait();
 
-                    // Calculate the amount in wei (USDC has 6 decimals)
-                    const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6); // Use config value instead of hardcoded "10"
-
-                    // Request account access
-                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Connecting to wallet...';
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    if (accounts.length === 0) {
-                        throw new Error('No accounts found. Please connect your wallet.');
-                    }
-                    const userAddress = accounts[0];
-
-                    // Get the web3 provider - using ethers v6 syntax
-                    const web3Provider = new ethers.BrowserProvider(window.ethereum);
-                    const signer = await web3Provider.getSigner();
-
-                    // USDC ABI for the transfer function
-                    const usdcAbi = [
-                        'function transfer(address to, uint256 value) returns (bool)',
-                        'function balanceOf(address owner) view returns (uint256)'
-                    ];
-
-                    const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
-
-                    // Check USDC balance
-                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Checking USDC balance...';
-                    const balance = await usdcContract.balanceOf(userAddress);
-                    if (balance < AMOUNT) {
-                        throw new Error('Insufficient USDC balance. You need at least 10 USDC.');
-                    }
-
-                    // Send the transaction
-                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Sending payment transaction...';
-                    const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, AMOUNT);
-
-                    // Wait for confirmation
-                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Confirming payment transaction...';
-                    await tx.wait();
-
-                    // Payment successful, now proceed with regeneration
-                    statusTextEl.innerHTML = '<div class="success-icon">✓</div>Payment successful! Initiating regeneration...';
-
-                } catch (paymentError) {
-                    console.error('Payment failed:', paymentError);
-                    throw new Error(`Payment failed: ${paymentError.message || 'Unknown error'}`);
-                }
-
-                // Construct API URL with query parameters
-                const apiUrl = new URL(`/api/process/${tokenId}`, window.location.origin);
-                apiUrl.searchParams.append('force', 'true');
-                apiUrl.searchParams.append('regenerate', 'true');
-                apiUrl.searchParams.append('imageProvider', provider);
-
-                // Only add these if they have values
-                if (promptExtras) apiUrl.searchParams.append('promptExtras', promptExtras);
-                if (negativePrompt) apiUrl.searchParams.append('negativePrompt', negativePrompt);
+                // Payment successful, now proceed with regeneration
+                statusTextEl.innerHTML = '<div class="success-icon">✓</div>Payment successful! Initiating regeneration...';
 
                 // Get breed from page if available
                 const breedEl = document.getElementById('catBreed');
                 const breed = breedEl ? breedEl.textContent : 'Tabby';
-                apiUrl.searchParams.append('breed', breed);
-
-                // Make the API call
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Submitting regeneration request...';
-
-                const response = await fetch(apiUrl.toString());
+                
+                // Create task through the new API endpoint
+                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Creating regeneration task...';
+                
+                const response = await fetch('/api/regenerate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tokenId: id,
+                        imageProvider: provider,
+                        breed: breed,
+                        promptExtras: promptExtras || undefined,
+                        negativePrompt: negativePrompt || undefined,
+                        paymentTx: tx.hash,
+                        payer: userAddress
+                    })
+                });
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -492,115 +489,229 @@ function setupRegenerationInterface(tokenId) {
 
                 statusTextEl.innerHTML = '<div class="loading-spinner"></div>Request accepted! Monitoring progress...';
 
-                // Start polling for status
+                // Start polling for status with the new task system
                 await pollTaskStatus(taskId, statusTextEl);
 
-            } catch (error) {
-                console.error('Regeneration failed:', error);
-                const statusTextEl = document.getElementById('regenerateStatusText');
-                if (statusTextEl) {
-                    statusTextEl.innerHTML = `<div class="error-icon">❌</div> Error: ${error.message}`;
-                }
-                showToast(error.message, 'error');
-            } finally {
-                // Re-enable button
-                confirmRegenerateBtn.disabled = false;
-                confirmRegenerateBtn.textContent = 'Pay 10 USDC & Regenerate';
+            } catch (paymentError) {
+                console.error('Payment failed:', paymentError);
+                throw new Error(`Payment failed: ${paymentError.message || 'Unknown error'}`);
             }
-        });
+        } catch (error) {
+            console.error('Regeneration failed:', error);
+            const statusTextEl = document.getElementById('regenerateStatusText');
+            if (statusTextEl) {
+                statusTextEl.innerHTML = `<div class="error-icon">❌</div> Error: ${error.message}`;
+            }
+            showToast(error.message, 'error');
+        } finally {
+            // Re-enable button
+            confirmRegenerateBtn.disabled = false;
+            confirmRegenerateBtn.textContent = `Pay ${REGENERATION_FEE_AMOUNT} USDC & Regenerate`;
+        }
+    });
+}
+
+// Updated polling function for task status
+async function pollTaskStatus(taskId, statusElement) {
+    let completed = false;
+    let attempts = 0;
+    const maxAttempts = 300; // 5 minutes at 1-second intervals
+
+    // Add status tracking variables
+    let lastProgress = 0;
+    let lastStatus = '';
+    let lastImageUpdate = null;
+
+    while (!completed && attempts < maxAttempts) {
+        try {
+            // Try multiple API endpoints for resilience
+            let response = null;
+            const endpoints = [
+                `/api/task-status?id=${taskId}`,
+                `/api/task-status/${taskId}`,
+                `/api/tasks/${taskId}`,
+                `/api/status/${taskId}`
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`Trying endpoint: ${endpoint}`);
+                    const resp = await fetch(endpoint);
+                    if (resp.ok) {
+                        response = resp;
+                        break;
+                    }
+                } catch (err) {
+                    // Continue to next endpoint
+                    console.warn(`Failed endpoint ${endpoint}:`, err);
+                }
+            }
+
+            if (!response) {
+                throw new Error('Failed to get task status from any endpoint');
+            }
+
+            const taskData = await response.json();
+            console.log('Task status update:', taskData);
+            
+            // Make status check case-insensitive
+            const status = (taskData.status || taskData.state || '').toUpperCase();
+            const progress = taskData.progress || 0;
+            const message = taskData.message || 'Processing...';
+
+            // Only update if something changed
+            if (status !== lastStatus || progress !== lastProgress) {
+                lastStatus = status;
+                lastProgress = progress;
+
+                // Update status message with progress
+                let statusMsg = '';
+
+                switch (status) {
+                    case 'PROCESSING':
+                        statusMsg = `<div class="loading-spinner"></div>${message} - ${progress}%`;
+                        break;
+                    case 'COMPLETED':
+                        statusMsg = '<div class="success-icon">✓</div>Image regenerated successfully!';
+                        completed = true;
+                        
+                        // If we have a token_uri in the response, show the new image
+                        if (taskData.token_uri) {
+                            try {
+                                // Show loading state for image
+                                statusElement.innerHTML = '<div class="loading-spinner"></div>Fetching new image...';
+                                
+                                // Extract CID from IPFS URI
+                                const cid = taskData.token_uri.replace('ipfs://', '');
+                                const ipfsUrl = `https://ipfs.io/ipfs/${cid}`;
+                                
+                                // Fetch metadata to get the image URL
+                                const metadataResponse = await fetch(ipfsUrl);
+                                const metadata = await metadataResponse.json();
+                                
+                                if (metadata && metadata.image) {
+                                    // Convert IPFS image URL
+                                    let imageUrl = metadata.image;
+                                    if (imageUrl.startsWith('ipfs://')) {
+                                        const imageCid = imageUrl.replace('ipfs://', '');
+                                        imageUrl = `https://ipfs.io/ipfs/${imageCid}`;
+                                    }
+                                    
+                                    // Create image preview in status area
+                                    lastImageUpdate = imageUrl;
+                                    statusElement.innerHTML = `
+                                        <div class="success-icon">✓</div>Regeneration successful!
+                                        <div class="regeneration-result">
+                                            <img src="${imageUrl}" alt="Regenerated image" 
+                                                 style="max-width: 100%; border-radius: 8px; margin-top: 10px;">
+                                        </div>
+                                    `;
+                                }
+                            } catch (imageError) {
+                                console.error('Error fetching new image:', imageError);
+                            }
+                        }
+                        break;
+                    case 'FAILED':
+                        statusMsg = `<div class="error-icon">❌</div>Failed: ${message || 'Unknown error'}`;
+                        completed = true;
+                        break;
+                    default:
+                        statusMsg = `<div class="loading-spinner"></div>${message} - ${progress}%`;
+                }
+
+                if (statusElement && !lastImageUpdate) {
+                    statusElement.innerHTML = statusMsg;
+                }
+                
+                // Update progress visually
+                if (progress > 0) {
+                    const progressBarContainer = document.createElement('div');
+                    progressBarContainer.className = 'progress-bar-container';
+                    progressBarContainer.style.width = '100%';
+                    progressBarContainer.style.height = '6px';
+                    progressBarContainer.style.backgroundColor = 'rgba(0,0,0,0.1)';
+                    progressBarContainer.style.borderRadius = '3px';
+                    progressBarContainer.style.margin = '10px 0';
+                    
+                    const progressBar = document.createElement('div');
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.style.height = '100%';
+                    progressBar.style.backgroundColor = '#8a65ff';
+                    progressBar.style.borderRadius = '3px';
+                    progressBar.style.transition = 'width 0.3s ease';
+                    
+                    progressBarContainer.appendChild(progressBar);
+                    
+                    // Add after status text if not already present
+                    if (!document.querySelector('.progress-bar-container')) {
+                        statusElement.appendChild(progressBarContainer);
+                    } else {
+                        document.querySelector('.progress-bar-container div').style.width = `${progress}%`;
+                    }
+                }
+            }
+
+            // If completed or failed, break the loop
+            if (status === 'COMPLETED' || status === 'FAILED') {
+                completed = true;
+
+                // If completed successfully and no custom image displayed yet, reload the page
+                if (status === 'COMPLETED' && !lastImageUpdate) {
+                    setTimeout(() => {
+                        statusElement.innerHTML += '<div>Reloading page to show your new image...</div>';
+
+                        // Reload the page after a brief delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    }, 1000);
+                } else if (lastImageUpdate) {
+                    // If we have the new image, add a reload button
+                    setTimeout(() => {
+                        const reloadBtn = document.createElement('button');
+                        reloadBtn.className = 'action-btn';
+                        reloadBtn.textContent = 'Refresh Page';
+                        reloadBtn.style.marginTop = '10px';
+                        reloadBtn.onclick = () => window.location.reload();
+                        
+                        statusElement.appendChild(reloadBtn);
+                    }, 2000);
+                }
+                
+                break;
+            }
+
+            // Wait before next poll
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            attempts++;
+
+        } catch (error) {
+            console.error('Error polling task status:', error);
+
+            if (statusElement) {
+                statusElement.innerHTML = `<div class="warning-icon">⚠️</div>Error checking status: ${error.message}. Retrying...`;
+            }
+
+            // Wait a bit longer if there's an error
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            attempts++;
+        }
     }
 
-    // Poll for task status and update UI
-    async function pollTaskStatus(taskId, statusElement) {
-        let completed = false;
-        let attempts = 0;
-        const maxAttempts = 300; // 5 minutes at 1-second intervals
-
-        // Add status tracking variables
-        let lastProgress = 0;
-        let lastStatus = '';
-
-        while (!completed && attempts < maxAttempts) {
-            try {
-                const response = await fetch(`/api/status/${taskId}`);
-
-                if (!response.ok) {
-                    throw new Error('Failed to get task status');
-                }
-
-                const taskData = await response.json();
-                const { status, progress, message } = taskData;
-
-                // Only update if something changed
-                if (status !== lastStatus || progress !== lastProgress) {
-                    lastStatus = status;
-                    lastProgress = progress || 0;
-
-                    // Update status message with progress
-                    let statusMsg = '';
-
-                    switch (status) {
-                        case 'processing':
-                            statusMsg = `<div class="loading-spinner"></div>${message || 'Processing'} - ${progress || 0}%`;
-                            break;
-                        case 'completed':
-                            statusMsg = '<div class="success-icon">✓</div>Image regenerated successfully!';
-                            completed = true;
-                            break;
-                        case 'failed':
-                            statusMsg = `<div class="error-icon">❌</div>Failed: ${message || 'Unknown error'}`;
-                            completed = true;
-                            break;
-                        default:
-                            statusMsg = `<div class="loading-spinner"></div>${message || status} - ${progress || 0}%`;
-                    }
-
-                    if (statusElement) {
-                        statusElement.innerHTML = statusMsg;
-                    }
-                }
-
-                // If completed or failed, break the loop
-                if (status === 'completed' || status === 'failed') {
-                    completed = true;
-
-                    // If completed successfully, reload the page to show the new image
-                    if (status === 'completed') {
-                        setTimeout(() => {
-                            statusElement.innerHTML = '<div class="success-icon">✓</div>Reloading page to show your new image...';
-
-                            // Reload the page after a brief delay
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1500);
-                        }, 1000);
-                    }
-
-                    break;
-                }
-
-                // Wait 1 second before next poll
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                attempts++;
-
-            } catch (error) {
-                console.error('Error polling task status:', error);
-
-                if (statusElement) {
-                    statusElement.innerHTML = `<div class="warning-icon">⚠️</div>Error checking status: ${error.message}`;
-                }
-
-                // Wait a bit longer if there's an error
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                attempts++;
-            }
-        }
-
-        // If we reached max attempts without completion
-        if (!completed) {
-            if (statusElement) {
-                statusElement.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check "My Kitties" page later.';
-            }
+    // If we reached max attempts without completion
+    if (!completed) {
+        if (statusElement) {
+            statusElement.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check back later to see your regenerated NFT.';
+            
+            // Add refresh button
+            const refreshBtn = document.createElement('button');
+            refreshBtn.className = 'action-btn';
+            refreshBtn.textContent = 'Refresh Page';
+            refreshBtn.style.marginTop = '10px';
+            refreshBtn.onclick = () => window.location.reload();
+            
+            statusElement.appendChild(refreshBtn);
         }
     }
 }
