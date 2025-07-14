@@ -182,7 +182,7 @@ async function supabaseHealthCheck() {
         }
 
         const supabase = createClient(supabaseUrl, supabaseKey);
-        
+
         // Test basic connectivity by checking the tasks table
         const { data, error } = await supabase
             .from('tasks')

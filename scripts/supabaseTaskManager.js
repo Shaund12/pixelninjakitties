@@ -91,7 +91,7 @@ export async function createTask(tokenId, provider, options = {}) {
 export async function updateTask(taskId, update) {
     try {
         const now = new Date().toISOString();
-        
+
         // Prepare update object with proper column names
         const updateData = {
             updated_at: now,
@@ -308,10 +308,10 @@ export async function getTaskMetrics() {
         const failedTasks = allTasks.filter(t => t.status === TASK_STATES.FAILED).length;
 
         // Calculate average completion time
-        const completedTasksWithTimes = allTasks.filter(t => 
+        const completedTasksWithTimes = allTasks.filter(t =>
             t.status === TASK_STATES.COMPLETED && t.created_at && t.updated_at
         );
-        
+
         let averageCompletionTime = 0;
         if (completedTasksWithTimes.length > 0) {
             const totalCompletionTime = completedTasksWithTimes.reduce((sum, task) => {

@@ -26,7 +26,7 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from file (fallback from MongoDB)
+// Load state from file (fallback storage)
 async function loadCronState() {
     try {
         const stateData = await fs.readFile(STATE_FILE, 'utf8');
@@ -105,7 +105,7 @@ async function processSingleTask(nft, taskInfo, state) {
         });
 
         console.log(`🔍 CRON DEBUG: About to call finalizeMint with breed: "${breed}"`);
-        console.log(`🔍 CRON DEBUG: finalizeMint parameters:`, {
+        console.log('🔍 CRON DEBUG: finalizeMint parameters:', {
             breed,
             tokenId: id,
             imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
@@ -120,14 +120,14 @@ async function processSingleTask(nft, taskInfo, state) {
                 imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
                 taskId
             });
-            console.log(`🔍 CRON DEBUG: finalizeMint completed successfully`);
+            console.log('🔍 CRON DEBUG: finalizeMint completed successfully');
         } catch (finalizeMintError) {
-            console.error(`❌ CRON DEBUG: finalizeMint failed:`, finalizeMintError);
-            console.error(`❌ CRON DEBUG: finalizeMint error stack:`, finalizeMintError.stack);
+            console.error('❌ CRON DEBUG: finalizeMint failed:', finalizeMintError);
+            console.error('❌ CRON DEBUG: finalizeMint error stack:', finalizeMintError.stack);
             throw finalizeMintError;
         }
 
-        console.log(`🔍 CRON DEBUG: finalizeMint result:`, {
+        console.log('🔍 CRON DEBUG: finalizeMint result:', {
             tokenURI: result.tokenURI,
             provider: result.provider,
             breed: result.metadata?.attributes?.find(a => a.trait_type === 'Breed')?.value
@@ -179,8 +179,7 @@ export default async function handler(req, res) {
             CONTRACT_ADDRESS,
             PRIVATE_KEY,
             PLACEHOLDER_URI,
-            IMAGE_PROVIDER = 'dall-e',
-            MONGODB_URI
+            IMAGE_PROVIDER = 'dall-e'
         } = process.env;
 
         // Validate all required environment variables
@@ -195,14 +194,6 @@ export default async function handler(req, res) {
             return res.status(500).json({
                 error: 'Missing environment variables',
                 missing: missingVars,
-                timestamp: new Date().toISOString()
-            });
-        }
-
-        if (!MONGODB_URI) {
-            console.error('❌ MONGODB_URI not configured');
-            return res.status(500).json({
-                error: 'MONGODB_URI not configured',
                 timestamp: new Date().toISOString()
             });
         }

@@ -778,7 +778,7 @@ mintBtn.onclick = async () => {
                     if (!response.ok) {
                         throw new Error(`Server responded with status: ${response.status}`);
                     }
-                    
+
                     const data = await response.json();
                     console.log('Server processing response:', data);
                     updateProgress(85);
@@ -1308,7 +1308,7 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
             // CRITICAL: Only show success when task is COMPLETED AND has token_uri
             if (data.status === 'COMPLETED' && data.token_uri) {
                 console.log('🎉 Task completed successfully with token URI:', data.token_uri);
-                
+
                 // Final stage - all complete
                 updateGenerationStage('metadata');
 
@@ -1346,12 +1346,12 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
             } else if (data.status === 'IN_PROGRESS' || data.status === 'PENDING') {
                 // Still processing - continue polling
                 console.log(`⏳ Task still in progress (${data.status}): ${data.message}`);
-                
+
                 // Update progress if available
                 if (data.progress && data.progress > 0) {
                     updateProgress(Math.min(data.progress, 99));
                 }
-                
+
                 // Continue polling
                 setTimeout(checkTaskStatus, pollInterval);
             } else {
