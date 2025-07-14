@@ -23,11 +23,11 @@ function initializeBlockchainConnections() {
     if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY) {
         throw new Error('Missing required environment variables: RPC_URL, CONTRACT_ADDRESS, PRIVATE_KEY');
     }
-    
+
     if (!provider) {
         provider = new ethers.JsonRpcProvider(RPC_URL);
         signer = new ethers.Wallet(PRIVATE_KEY, provider);
-        
+
         // NFT contract setup
         const nftAbi = [
             'event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)',
@@ -40,7 +40,7 @@ function initializeBlockchainConnections() {
             'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)'
         ];
         nft = new ethers.Contract(CONTRACT_ADDRESS, nftAbi, signer);
-        
+
         // Marketplace contract setup
         if (MARKETPLACE_ADDRESS) {
             const marketplaceAbi = [
@@ -54,7 +54,7 @@ function initializeBlockchainConnections() {
             marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, marketplaceAbi, signer);
         }
     }
-    
+
     return { provider, signer, nft, marketplace };
 }
 
@@ -63,7 +63,7 @@ app.get('/api/health', (req, res) => {
     try {
         // Try to initialize connections to check if env vars are set
         initializeBlockchainConnections();
-        
+
         res.json({
             status: 'ok',
             timestamp: new Date().toISOString(),
@@ -98,11 +98,11 @@ app.get('/api/kitties/total', async (req, res) => {
     }
 });
 
-// Get a page of kitties with pagination  
+// Get a page of kitties with pagination
 app.get('/api/kitties', async (req, res) => {
     try {
         const { nft } = initializeBlockchainConnections();
-        
+
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 12;
         const skip = (page - 1) * limit;
@@ -255,7 +255,7 @@ app.get('/api/kitties/owner/:address', async (req, res) => {
 app.get('/api/marketplace/listings', async (req, res) => {
     try {
         const { nft, marketplace } = initializeBlockchainConnections();
-        
+
         if (!marketplace) {
             return res.status(404).json({ error: 'Marketplace not configured' });
         }
@@ -304,7 +304,7 @@ app.get('/api/marketplace/listings', async (req, res) => {
 app.get('/api/marketplace/listings/:tokenId', async (req, res) => {
     try {
         const { nft, marketplace } = initializeBlockchainConnections();
-        
+
         if (!marketplace) {
             return res.status(404).json({ error: 'Marketplace not configured' });
         }

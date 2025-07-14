@@ -1742,12 +1742,12 @@ export async function finalizeMint({
     // Verify configuration when function is actually called
     const config = verifyConfiguration();
     const { selectedProvider, baseUrl, projectName, isPinataConfigured } = config;
-    
+
     // Initialize OpenAI client if needed
     if (OPENAI_API_KEY && !openai) {
         openai = new OpenAI({ apiKey: OPENAI_API_KEY });
     }
-    
+
     // CRITICAL: Capture the provider value immediately and make it immutable
     const LOCKED_PROVIDER = imageProvider?.toLowerCase()?.trim();
     console.log(`🔒 PROVIDER LOCKED: "${LOCKED_PROVIDER || 'default'}" will be used exclusively`);

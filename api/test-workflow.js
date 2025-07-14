@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         console.log('🧪 Test 1: Environment Configuration');
         const requiredEnvVars = ['RPC_URL', 'CONTRACT_ADDRESS', 'PRIVATE_KEY', 'MONGODB_URI', 'PLACEHOLDER_URI'];
         const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
-        
+
         results.workflow_tests.environment = {
             required: requiredEnvVars,
             missing: missingEnvVars,
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
         // Test 2: Core Dependencies
         console.log('🧪 Test 2: Core Dependencies');
         const dependencies = [];
-        
+
         try {
             const { ethers } = await import('ethers');
             dependencies.push({ name: 'ethers', status: '✅ Available' });
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
         // Test 3: Serverless Function Structure
         console.log('🧪 Test 3: Serverless Function Structure');
         const functions = [];
-        
+
         try {
             const cronModule = await import('./cron.js');
             functions.push({ name: 'cron', status: '✅ Available', type: typeof cronModule.default });
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
             try {
                 const { ethers } = await import('ethers');
                 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-                
+
                 // We won't actually connect, just test the structure
                 results.workflow_tests.blockchain = {
                     status: '✅ Configuration valid',
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
         if (process.env.MONGODB_URI) {
             try {
                 const { MongoClient } = await import('mongodb');
-                
+
                 // We won't actually connect, just test the structure
                 results.workflow_tests.mongodb = {
                     status: '✅ Configuration valid',
@@ -146,11 +146,11 @@ export default async function handler(req, res) {
         // Test 7: Overall Assessment
         console.log('🧪 Test 7: Overall Assessment');
         const allTests = Object.values(results.workflow_tests);
-        const failedTests = allTests.filter(test => 
+        const failedTests = allTests.filter(test =>
             (test.status && test.status.includes('❌')) ||
             (Array.isArray(test) && test.some(item => item.status && item.status.includes('❌')))
         );
-        
+
         results.workflow_tests.overall = {
             status: failedTests.length === 0 ? '✅ All tests passed' : `⚠️ ${failedTests.length} tests failed`,
             ready_for_deployment: failedTests.length === 0 && missingEnvVars.length === 0,

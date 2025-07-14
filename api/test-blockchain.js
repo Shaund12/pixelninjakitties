@@ -44,14 +44,14 @@ export default async function handler(req, res) {
             const provider = new ethers.JsonRpcProvider(RPC_URL);
             const blockNumber = await provider.getBlockNumber();
             const network = await provider.getNetwork();
-            
+
             result.tests.blockchain = {
                 status: '✅ Connected',
                 blockNumber,
                 chainId: network.chainId.toString(),
                 networkName: network.name || 'unknown'
             };
-            
+
             console.log(`✅ Connected to blockchain (Block: ${blockNumber}, Chain: ${network.chainId})`);
         } catch (blockchainError) {
             result.tests.blockchain = {
@@ -66,23 +66,23 @@ export default async function handler(req, res) {
         try {
             const provider = new ethers.JsonRpcProvider(RPC_URL);
             const signer = new ethers.Wallet(PRIVATE_KEY, provider);
-            
+
             const abi = [
                 'event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)',
                 'function tokenURI(uint256) view returns (string)',
                 'function setTokenURI(uint256,string)'
             ];
-            
+
             const nft = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
             const eventSig = nft.interface.getEvent('MintRequested').topicHash;
-            
+
             result.tests.contract = {
                 status: '✅ Connected',
                 address: CONTRACT_ADDRESS,
                 eventSignature: eventSig,
                 signerAddress: signer.address
             };
-            
+
             console.log(`✅ Contract connected (${CONTRACT_ADDRESS})`);
             console.log(`✅ Event signature: ${eventSig}`);
         } catch (contractError) {
@@ -100,11 +100,11 @@ export default async function handler(req, res) {
             const nft = new ethers.Contract(CONTRACT_ADDRESS, [
                 'event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)'
             ], provider);
-            
+
             const eventSig = nft.interface.getEvent('MintRequested').topicHash;
             const currentBlock = await provider.getBlockNumber();
             const fromBlock = Math.max(0, currentBlock - 100);
-            
+
             // Try to get events from last 100 blocks
             const logs = await provider.getLogs({
                 address: CONTRACT_ADDRESS,
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
                 toBlock: currentBlock,
                 topics: [eventSig]
             });
-            
+
             const events = [];
             for (const log of logs) {
                 try {
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
                     console.warn('Failed to parse log:', parseError);
                 }
             }
-            
+
             result.tests.eventScanning = {
                 status: '✅ Working',
                 blocksScanned: currentBlock - fromBlock,
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
                 eventsFound: events.length,
                 events: events.slice(0, 5) // Show first 5 events
             };
-            
+
             console.log(`✅ Event scanning working (${events.length} events found)`);
         } catch (scanError) {
             result.tests.eventScanning = {

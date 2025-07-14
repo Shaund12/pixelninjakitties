@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         // Test environment variables (without exposing values)
         const envVars = [
             'RPC_URL',
-            'CONTRACT_ADDRESS', 
+            'CONTRACT_ADDRESS',
             'PRIVATE_KEY',
             'MONGODB_URI',
             'PLACEHOLDER_URI',
