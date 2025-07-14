@@ -412,6 +412,26 @@ CREATE INDEX idx_tasks_token_id ON tasks(token_id);
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_created_at ON tasks(created_at);
 CREATE INDEX idx_tasks_updated_at ON tasks(updated_at);
+
+-- System state table for tracking processed tokens and last block
+CREATE TABLE system_state (
+    id TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Provider preferences table
+CREATE TABLE provider_preferences (
+    token_id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    options JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_provider_preferences_token_id ON provider_preferences(token_id);
+CREATE INDEX idx_provider_preferences_provider ON provider_preferences(provider);
             `);
             return false;
         }
@@ -421,5 +441,118 @@ CREATE INDEX idx_tasks_updated_at ON tasks(updated_at);
     } catch (error) {
         console.error('Failed to initialize Supabase tables:', error);
         return false;
+    }
+}
+
+/**
+ * Get system state from Supabase
+ * @param {string} key - The state key to retrieve
+ * @param {any} defaultValue - Default value if key doesn't exist
+ * @returns {Promise<any>} - The state value
+ */
+export async function getSystemState(key, defaultValue = null) {
+    try {
+        const { data, error } = await supabase
+            .from('system_state')
+            .select('value')
+            .eq('id', key)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                // Row not found, return default value
+                return defaultValue;
+            }
+            throw error;
+        }
+
+        return data?.value || defaultValue;
+    } catch (error) {
+        console.error(`Failed to get system state for key ${key}:`, error);
+        return defaultValue;
+    }
+}
+
+/**
+ * Set system state in Supabase
+ * @param {string} key - The state key to set
+ * @param {any} value - The value to store
+ * @returns {Promise<void>}
+ */
+export async function setSystemState(key, value) {
+    try {
+        const { error } = await supabase
+            .from('system_state')
+            .upsert({
+                id: key,
+                value: value,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        console.log(`✅ System state updated for key: ${key}`);
+    } catch (error) {
+        console.error(`Failed to set system state for key ${key}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Get provider preference for a token
+ * @param {string} tokenId - The token ID
+ * @returns {Promise<Object|null>} - The provider preference or null
+ */
+export async function getProviderPreference(tokenId) {
+    try {
+        const { data, error } = await supabase
+            .from('provider_preferences')
+            .select('*')
+            .eq('token_id', tokenId.toString())
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                // Row not found
+                return null;
+            }
+            throw error;
+        }
+
+        return data;
+    } catch (error) {
+        console.error(`Failed to get provider preference for token ${tokenId}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Set provider preference for a token
+ * @param {string} tokenId - The token ID
+ * @param {string} provider - The provider name
+ * @param {Object} options - Provider options
+ * @returns {Promise<void>}
+ */
+export async function setProviderPreference(tokenId, provider, options = {}) {
+    try {
+        const { error } = await supabase
+            .from('provider_preferences')
+            .upsert({
+                token_id: tokenId.toString(),
+                provider,
+                options,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        console.log(`✅ Provider preference set for token ${tokenId}: ${provider}`);
+    } catch (error) {
+        console.error(`Failed to set provider preference for token ${tokenId}:`, error);
+        throw error;
     }
 }

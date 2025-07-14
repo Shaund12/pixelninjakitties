@@ -72,22 +72,8 @@ export default async function handler(req, res) {
             result.tests.blockchain = `❌ Failed: ${blockchainError.message}`;
         }
 
-        // ✅ Temporary directory access
-        console.log('🧪 Test 4: Temporary Directory');
-        try {
-            const os = await import('os');
-            const fs = await import('fs/promises');
-            const path = await import('path');
-
-            const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test-'));
-            await fs.rmdir(tmpDir);
-            result.tests.tempDir = '✅ Accessible';
-        } catch (tempError) {
-            result.tests.tempDir = `❌ Failed: ${tempError.message}`;
-        }
-
         // ✅ finalizeMint import check
-        console.log('🧪 Test 5: finalizeMint import');
+        console.log('🧪 Test 4: finalizeMint import');
         try {
             const { finalizeMint } = await import('../scripts/finalizeMint.js');
             result.tests.finalizeMintImport = typeof finalizeMint === 'function' ? '✅ Imported' : '❌ Not a function';

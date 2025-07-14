@@ -1,9 +1,7 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
-import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/supabaseTaskManager.js';
+import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES, getSystemState, setSystemState } from '../scripts/supabaseTaskManager.js';
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs/promises';
-import path from 'path';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -16,9 +14,6 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// State file for fallback storage
-const STATE_FILE = path.join(process.cwd(), 'cron-state.json');
-
 // Default state structure for cron system
 const DEFAULT_STATE = {
     lastProcessedBlock: 0,
@@ -26,32 +21,33 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from file (fallback storage)
+// Load state from Supabase
 async function loadCronState() {
     try {
-        const stateData = await fs.readFile(STATE_FILE, 'utf8');
-        const state = JSON.parse(stateData);
-        // Convert array back to Set for processedTokens
-        state.processedTokens = new Set(state.processedTokens);
-        return state;
+        const lastProcessedBlock = await getSystemState('cronLastProcessedBlock', 0);
+        const processedTokens = await getSystemState('cronProcessedTokens', []);
+        const pendingTasks = await getSystemState('cronPendingTasks', []);
+
+        return {
+            lastProcessedBlock,
+            processedTokens: new Set(processedTokens),
+            pendingTasks
+        };
     } catch (error) {
-        console.error('Failed to load cron state from file:', error);
+        console.error('Failed to load cron state from Supabase:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to file
+// Save state to Supabase
 async function saveCronState(state) {
     try {
-        // Convert Set to array for storage
-        const stateToSave = {
-            ...state,
-            processedTokens: Array.from(state.processedTokens)
-        };
-        await fs.writeFile(STATE_FILE, JSON.stringify(stateToSave, null, 2));
-        console.log('💾 Cron state saved to file');
+        await setSystemState('cronLastProcessedBlock', state.lastProcessedBlock);
+        await setSystemState('cronProcessedTokens', Array.from(state.processedTokens));
+        await setSystemState('cronPendingTasks', state.pendingTasks);
+        console.log('💾 Cron state saved to Supabase');
     } catch (error) {
-        console.error('Failed to save cron state to file:', error);
+        console.error('Failed to save cron state to Supabase:', error);
     }
 }
 

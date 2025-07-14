@@ -3,8 +3,6 @@
  */
 
 import { ethers } from 'ethers';
-import fs from 'fs/promises';
-import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
 /**
@@ -30,9 +28,6 @@ export async function performHealthCheck() {
 
         // Check blockchain connectivity
         results.checks.blockchain = await checkBlockchain();
-
-        // Check file system
-        results.checks.filesystem = await checkFileSystem();
 
         // Check memory usage
         results.checks.memory = checkMemoryUsage();
@@ -90,31 +85,6 @@ async function checkBlockchain() {
         return {
             status: 'unhealthy',
             message: 'Blockchain connection failed',
-            error: error.message
-        };
-    }
-}
-
-/**
- * Check file system access
- * @returns {Promise<Object>} File system check results
- */
-async function checkFileSystem() {
-    try {
-        const testFile = path.join(process.cwd(), 'test-write.tmp');
-        await fs.writeFile(testFile, 'test', 'utf8');
-        await fs.readFile(testFile, 'utf8');
-        await fs.unlink(testFile);
-
-        return {
-            status: 'healthy',
-            message: 'File system read/write successful',
-            workingDirectory: process.cwd()
-        };
-    } catch (error) {
-        return {
-            status: 'unhealthy',
-            message: 'File system access failed',
             error: error.message
         };
     }

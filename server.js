@@ -20,8 +20,7 @@ import cors from 'cors';
 import compression from 'compression';
 import { ethers } from 'ethers';
 import { finalizeMint } from './scripts/finalizeMint.js';
-import { createStorage } from './scripts/storageHelpers.js'; // You'll need to create this file
-import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks, initializeSupabaseTables } from './scripts/supabaseTaskManager.js';
+import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks, initializeSupabaseTables, getSystemState, setSystemState, getProviderPreference, setProviderPreference } from './scripts/supabaseTaskManager.js';
 import {
     validateTokenId,
     validateBreed,
@@ -41,8 +40,6 @@ import {
     errorHandler
 } from './scripts/middleware.js';
 import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
-import fs from 'fs/promises';
-import path from 'path';
 
 // Initialize uptime tracker
 const uptimeTracker = new UptimeTracker();
@@ -228,7 +225,6 @@ app.get('/api/metrics', (req, res) => {
 // Debug information API endpoint
 app.get('/api/debug', async (req, res) => {
     try {
-        // const stateData = await fs.readFile(STATE_FILE, 'utf8').catch(() => '{}'); // Currently unused
         const currentBlock = await provider.getBlockNumber();
         const contractAddr = CONTRACT_ADDRESS;
 
@@ -360,11 +356,7 @@ app.get('/api/process/:tokenId', async (req, res) => {
         console.log(`🎯 Processing token #${tokenId} with provider: ${imageProvider}`);
 
         // Store the user's provider preference for this token
-        await providerPreferences.set(tokenId.toString(), {
-            provider: imageProvider,
-            timestamp: Date.now(),
-            options: providerOptions
-        });
+        await setProviderPreference(tokenId.toString(), imageProvider, providerOptions);
 
         let current = 'unknown';
         let owner = 'unknown';
@@ -588,7 +580,6 @@ const eventSig = nft.interface.getEvent('MintRequested').topicHash;
 const RATE_LIMIT = 5;
 const RATE_WINDOW = 60000; // 1 minute in milliseconds
 const mintQueue = [];
-const providerPreferences = createStorage('provider-preferences.json');
 let processingQueue = false;
 let lastMinuteRequests = [];
 
@@ -829,24 +820,28 @@ async function processQueue() {
     }
 }
 
-/* ───── Process state tracking - persist between restarts ────── */
-const STATE_FILE = path.join(process.cwd(), 'event-state.json');
+/* ───── Process state tracking - persist in Supabase ────── */
 let processedTokens = new Set();
 let lastBlock = 0;
 
 /**
- * Load state from persistent storage
+ * Load state from Supabase
  * @returns {Promise<void>}
  */
 async function loadState() {
     try {
-        const stateData = await fs.readFile(STATE_FILE, 'utf8');
-        const state = JSON.parse(stateData);
-        lastBlock = state.lastBlock || 0;
-        processedTokens = new Set(state.processedTokens || []);
-        console.log(`📂 Loaded state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
-    } catch {
-        // If file doesn't exist, start from a few blocks back for safety
+        // Load last processed block
+        const lastBlockData = await getSystemState('lastBlock', 0);
+        lastBlock = lastBlockData;
+
+        // Load processed tokens
+        const processedTokensData = await getSystemState('processedTokens', []);
+        processedTokens = new Set(processedTokensData);
+
+        console.log(`📂 Loaded state from Supabase: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
+    } catch (error) {
+        console.error('Failed to load state from Supabase:', error);
+        // If failed, start from a few blocks back for safety
         const currentBlock = await provider.getBlockNumber();
         lastBlock = Math.max(0, currentBlock - 1000);
         processedTokens = new Set();
@@ -856,16 +851,17 @@ async function loadState() {
 }
 
 /**
- * Save current state to persistent storage
+ * Save current state to Supabase
  * @returns {Promise<void>}
  */
 async function saveState() {
-    const state = {
-        lastBlock,
-        processedTokens: Array.from(processedTokens)
-    };
-    await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
-    console.log(`💾 Saved state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
+    try {
+        await setSystemState('lastBlock', lastBlock);
+        await setSystemState('processedTokens', Array.from(processedTokens));
+        console.log(`💾 Saved state to Supabase: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
+    } catch (error) {
+        console.error('Failed to save state to Supabase:', error);
+    }
 }
 
 /* ───── Enhanced log-polling with rate-limited processing ────── */
