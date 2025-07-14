@@ -2,8 +2,6 @@ import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/supabaseTaskManager.js';
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs/promises';
-import path from 'path';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -16,42 +14,171 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// State file for fallback storage
-const STATE_FILE = path.join(process.cwd(), 'cron-state.json');
-
 // Default state structure for cron system
 const DEFAULT_STATE = {
     lastProcessedBlock: 0,
-    processedTokens: [],
+    processedTokens: new Set(),
     pendingTasks: []
 };
 
-// Load state from file (fallback storage)
-async function loadCronState() {
+// Supabase state keys
+const STATE_KEYS = {
+    LAST_BLOCK: 'lastProcessedBlock',
+    PROCESSED_TOKENS: 'processedTokens',
+    PENDING_TASKS: 'pendingTasks'
+};
+
+// Create system_state table if it doesn't exist
+async function ensureSystemStateTable() {
     try {
-        const stateData = await fs.readFile(STATE_FILE, 'utf8');
-        const state = JSON.parse(stateData);
-        // Convert array back to Set for processedTokens
-        state.processedTokens = new Set(state.processedTokens);
-        return state;
-    } catch (error) {
-        console.error('Failed to load cron state from file:', error);
-        return { ...DEFAULT_STATE, processedTokens: new Set() };
+        console.log('🔧 Checking for system_state table...');
+
+        // Check if table exists
+        const { data, error } = await supabase
+            .from('system_state')
+            .select('count(*)', { count: 'exact', head: true });
+
+        if (error && error.code === '42P01') {  // Table doesn't exist
+            console.log('🔧 Creating system_state table...');
+
+            const createTableQuery = `
+                CREATE TABLE public.system_state (
+                    key TEXT PRIMARY KEY,
+                    value JSONB NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT now(),
+                    updated_at TIMESTAMPTZ DEFAULT now()
+                );
+                
+                ALTER TABLE public.system_state ENABLE ROW LEVEL SECURITY;
+            `;
+
+            // Create table using raw SQL via server function or REST API
+            const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`
+                },
+                body: JSON.stringify({
+                    query: createTableQuery
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to create table: ${await response.text()}`);
+            }
+
+            console.log('✅ system_state table created successfully');
+            return true;
+        } else if (error) {
+            console.error('❌ Error checking for system_state table:', error);
+            return false;
+        }
+
+        console.log('✅ system_state table exists');
+        return true;
+    } catch (err) {
+        console.error('❌ Failed to ensure system_state table:', err);
+        return false;
     }
 }
 
-// Save state to file
+// Get a value from system state
+async function getStateValue(key) {
+    try {
+        const { data, error } = await supabase
+            .from('system_state')
+            .select('value')
+            .eq('key', key)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                console.log(`📊 No existing value for ${key}, using default`);
+                return null; // Not found is ok
+            }
+            console.error(`❌ Error fetching ${key}:`, error);
+            return null;
+        }
+
+        return data?.value;
+    } catch (err) {
+        console.error(`❌ Failed to get state for ${key}:`, err);
+        return null;
+    }
+}
+
+// Save a value to system state
+async function saveStateValue(key, value) {
+    try {
+        const { error } = await supabase
+            .from('system_state')
+            .upsert({
+                key,
+                value,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'key'
+            });
+
+        if (error) {
+            console.error(`❌ Error saving ${key}:`, error);
+            return false;
+        }
+
+        return true;
+    } catch (err) {
+        console.error(`❌ Failed to save state for ${key}:`, err);
+        return false;
+    }
+}
+
+// Load cron state from Supabase
+async function loadCronState() {
+    try {
+        // Ensure the system_state table exists
+        await ensureSystemStateTable();
+
+        // Load each part of the state
+        const lastBlock = await getStateValue(STATE_KEYS.LAST_BLOCK) || 0;
+        const processedTokensArray = await getStateValue(STATE_KEYS.PROCESSED_TOKENS) || [];
+        const pendingTasks = await getStateValue(STATE_KEYS.PENDING_TASKS) || [];
+
+        const state = {
+            lastProcessedBlock: lastBlock,
+            processedTokens: new Set(processedTokensArray),
+            pendingTasks
+        };
+
+        console.log(`📊 Loaded state: lastBlock=${state.lastProcessedBlock}, processedTokens=${state.processedTokens.size}, pendingTasks=${state.pendingTasks.length}`);
+        return state;
+    } catch (error) {
+        console.error('❌ Failed to load state from Supabase:', error);
+        return { ...DEFAULT_STATE };
+    }
+}
+
+// Save cron state to Supabase
 async function saveCronState(state) {
     try {
-        // Convert Set to array for storage
-        const stateToSave = {
-            ...state,
-            processedTokens: Array.from(state.processedTokens)
-        };
-        await fs.writeFile(STATE_FILE, JSON.stringify(stateToSave, null, 2));
-        console.log('💾 Cron state saved to file');
+        // Ensure the system_state table exists
+        await ensureSystemStateTable();
+
+        // Save each part of the state
+        const processedTokensArray = Array.from(state.processedTokens);
+
+        await Promise.all([
+            saveStateValue(STATE_KEYS.LAST_BLOCK, state.lastProcessedBlock),
+            saveStateValue(STATE_KEYS.PROCESSED_TOKENS, processedTokensArray),
+            saveStateValue(STATE_KEYS.PENDING_TASKS, state.pendingTasks)
+        ]);
+
+        console.log(`💾 State saved: lastBlock=${state.lastProcessedBlock}, processedTokens=${state.processedTokens.size}, pendingTasks=${state.pendingTasks.length}`);
+        return true;
     } catch (error) {
-        console.error('Failed to save cron state to file:', error);
+        console.error('❌ Failed to save state to Supabase:', error);
+        return false;
     }
 }
 
@@ -211,7 +338,6 @@ export default async function handler(req, res) {
         // Load persistent state with error handling
         console.log('📂 Loading cron state...');
         const state = await loadCronState();
-        console.log(`📊 Loaded state: lastBlock=${state.lastProcessedBlock}, processedTokens=${state.processedTokens.size}, pendingTasks=${state.pendingTasks.length}`);
 
         // Initialize blockchain connection
         console.log('🔗 Connecting to blockchain...');
@@ -296,8 +422,8 @@ export default async function handler(req, res) {
         console.log(`🔄 Processing up to ${maxTasksPerRun} pending tasks...`);
 
         while (taskIndex < state.pendingTasks.length &&
-               tasksProcessed < maxTasksPerRun &&
-               (Date.now() - startTime) < MAX_EXECUTION_TIME) {
+            tasksProcessed < maxTasksPerRun &&
+            (Date.now() - startTime) < MAX_EXECUTION_TIME) {
 
             const taskInfo = state.pendingTasks[taskIndex];
             console.log(`⚙️ Processing task ${taskInfo.taskId} for token #${taskInfo.tokenId}...`);
@@ -349,7 +475,6 @@ export default async function handler(req, res) {
         console.log('💾 Saving cron state...');
         state.lastProcessedBlock = latest;
         await saveCronState(state);
-        console.log(`💾 State saved: lastBlock=${latest}, processedTokens=${state.processedTokens.size}, pendingTasks=${state.pendingTasks.length}`);
 
         const executionTime = Date.now() - startTime;
         const summary = {
