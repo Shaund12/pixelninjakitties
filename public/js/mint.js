@@ -788,39 +788,38 @@ mintBtn.onclick = async () => {
                             // Update generation stage
                             updateGenerationStage('traits');
 
-                            // Start polling for image status if server supports it
+                            // CRITICAL: Always require a task ID for proper polling
                             if (data.taskId) {
+                                console.log('🎯 Starting proper polling for task:', data.taskId);
+                                showStatus('⏳ Minting in progress... Generating your NFT...', true);
                                 pollImageStatus(data.taskId, tokenId);
                             } else {
-                                // No task ID, just show completion after a delay
-                                setTimeout(() => {
-                                    updateProgress(100);
-                                    showMintSuccess(tokenId, tx.hash, imageProvider);
-                                }, 3000);
+                                // No task ID - this is an error, show failed message
+                                console.error('❌ No task ID returned from server');
+                                showFailedMessage(tokenId);
                             }
                         })
                         .catch(error => {
-                            console.warn('Server notification issue:', error);
-                            // Still show success even if server notification fails
-                            updateProgress(100);
-                            showMintSuccess(tokenId, tx.hash, imageProvider);
+                            console.error('❌ Server processing request failed:', error);
+                            // Server request failed - show failed message instead of success
+                            showFailedMessage(tokenId);
                         });
                 } catch (apiError) {
-                    console.warn('Could not notify server about provider choice:', apiError);
-                    // Still show success
-                    updateProgress(100);
-                    showMintSuccess(tokenId, tx.hash, imageProvider);
+                    console.error('❌ Could not start AI generation process:', apiError);
+                    // API error - show failed message instead of success
+                    showFailedMessage(tokenId);
                 }
             } else {
-                // No token ID found, but transaction succeeded
+                // No token ID found - this means the mint transaction didn't emit proper events
+                console.warn('⚠️ No token ID found in transaction events');
                 updateProgress(100);
-                showMintSuccess(null, tx.hash, imageProvider);
+                showTimeoutMessage(null); // Show timeout message instead of success
             }
         } catch (eventErr) {
-            console.warn('Could not determine token ID:', eventErr);
-            // Still show success
+            console.error('❌ Could not determine token ID from transaction:', eventErr);
+            // Don't show success if we can't determine the token ID
             updateProgress(100);
-            showMintSuccess(null, tx.hash, imageProvider);
+            showTimeoutMessage(null); // Show timeout message instead of success
         }
     } catch (err) {
         console.error(err);
@@ -1266,21 +1265,28 @@ function showToast(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-// Poll for image generation status
+// Poll for image generation status with proper timeout and error handling
 function pollImageStatus(taskId, tokenId) {
     let pollAttempts = 0;
-    const maxPolls = 30; // Maximum number of polling attempts
-    const pollInterval = 2000; // Poll every 2 seconds
+    const maxPolls = 9; // Maximum number of polling attempts (9 * 10 seconds = 90 seconds)
+    const pollInterval = 10000; // Poll every 10 seconds as per requirements
+    const startTime = Date.now();
+    const maxWaitTime = 90000; // 90 seconds timeout as per requirements
 
     const checkStatus = async () => {
-        if (pollAttempts >= maxPolls) {
-            // Stop polling after max attempts
+        const elapsedTime = Date.now() - startTime;
+        
+        // Check for timeout
+        if (pollAttempts >= maxPolls || elapsedTime >= maxWaitTime) {
+            // Stop polling after max attempts or timeout
+            console.log('⏱️ NFT generation timeout reached, stopping polling');
             updateProgress(100);
-            showMintSuccess(tokenId, null, 'AI service');
+            showTimeoutMessage(tokenId);
             return;
         }
 
         pollAttempts++;
+        console.log(`🔄 Polling attempt ${pollAttempts}/${maxPolls} for task ${taskId} (${Math.round(elapsedTime/1000)}s elapsed)`);
 
         try {
             const response = await fetch(`/api/status/${taskId}`);
@@ -1289,13 +1295,14 @@ function pollImageStatus(taskId, tokenId) {
             }
 
             const data = await response.json();
-            console.log('Image generation status:', data);
+            console.log('Task status:', data);
 
-            // Update progress based on status
-            if (data.status === 'completed') {
-                // Final stage - all complete
+            // Handle different status values
+            if (data.status === 'completed' || data.status === 'COMPLETED') {
+                // Task completed successfully
+                console.log('✅ Task completed successfully');
                 updateGenerationStage('metadata');
-
+                
                 // Show completion animation
                 if (window.gsap) {
                     const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
@@ -1315,18 +1322,26 @@ function pollImageStatus(taskId, tokenId) {
                     showMintSuccess(tokenId, null, data.provider || 'AI service');
                 }, 1000);
                 return;
-            } else if (data.status === 'failed') {
-                // Image failed but NFT is still minted
+            } 
+            else if (data.status === 'failed' || data.status === 'FAILED') {
+                // Task failed
+                console.log('❌ Task failed');
                 updateProgress(100);
-                showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
-                showMintSuccess(tokenId, null, data.provider || 'AI service');
+                showFailedMessage(tokenId);
                 return;
-            } else if (data.status === 'processing') {
-                // Still processing - update the stage based on progress
-                const progressPercent = data.progress || Math.min(80 + (pollAttempts * 1), 95);
+            } 
+            else if (data.status === 'processing' || data.status === 'PROCESSING' || 
+                     data.status === 'pending' || data.status === 'PENDING' ||
+                     data.status === 'queued') {
+                // Still processing - update progress based on task data
+                const progressPercent = data.progress || Math.min(70 + (pollAttempts * 3), 95);
                 updateProgress(progressPercent);
 
-                // Update generation stage based on message
+                // Update status message
+                const statusMessage = data.message || `🎨 Generating your NFT... (${Math.round(elapsedTime/1000)}s)`;
+                showStatus(statusMessage, true);
+
+                // Update generation stage based on message or progress
                 if (data.stage) {
                     updateGenerationStage(data.stage);
                 } else if (data.message) {
@@ -1341,21 +1356,118 @@ function pollImageStatus(taskId, tokenId) {
 
                 // Continue polling
                 setTimeout(checkStatus, pollInterval);
-            } else {
-                // Unknown status - just continue polling
-                updateProgress(Math.min(80 + (pollAttempts * 1), 95));
+            } 
+            else {
+                // Unknown status - continue polling but warn
+                console.warn('Unknown task status:', data.status);
+                const progressPercent = Math.min(70 + (pollAttempts * 3), 95);
+                updateProgress(progressPercent);
+                showStatus(`⏳ Processing... (${Math.round(elapsedTime/1000)}s)`, true);
                 setTimeout(checkStatus, pollInterval);
             }
         } catch (error) {
-            console.warn('Error polling for image status:', error);
-            // Continue polling despite error
-            updateProgress(Math.min(80 + (pollAttempts * 1), 95));
-            setTimeout(checkStatus, pollInterval * 1.5);  // Slightly longer wait on error
+            console.warn('Error polling for task status:', error);
+            
+            // On error, continue polling but show warning
+            const progressPercent = Math.min(70 + (pollAttempts * 2), 95);
+            updateProgress(progressPercent);
+            showStatus(`⏳ Processing... (${Math.round(elapsedTime/1000)}s, retrying...)`, true);
+            
+            // Continue polling with slightly longer wait on error
+            setTimeout(checkStatus, pollInterval * 1.5);
         }
     };
 
     // Start polling
     checkStatus();
+}
+
+// Show timeout message when polling exceeds 90 seconds
+function showTimeoutMessage(tokenId) {
+    const timeoutUI = document.createElement('div');
+    timeoutUI.className = 'timeout-ui';
+    timeoutUI.innerHTML = `
+        <div class="timeout-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+                <path fill="#f39c12" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17h2v-2h-2v2zm0-4h2V7h-2v8z"></path>
+            </svg>
+        </div>
+        <div class="timeout-content">
+            <h4>⏱️ NFT is still being processed</h4>
+            <p>Your NFT has been minted successfully, but the AI generation is taking longer than expected. You will be able to view it from your collection shortly.</p>
+            ${tokenId ? `<a href="my-kitties.html" class="view-collection-btn">View Your Collection</a>` : ''}
+        </div>
+    `;
+
+    // Add to status with animation
+    statusEl.innerHTML = '';
+    statusEl.appendChild(timeoutUI);
+
+    // Animate timeout appearance if GSAP is available
+    if (window.gsap) {
+        gsap.from('.timeout-icon', {
+            scale: 0.5,
+            opacity: 0,
+            duration: 0.5,
+            ease: 'back.out(1.7)'
+        });
+
+        gsap.from('.timeout-content', {
+            y: 20,
+            opacity: 0,
+            duration: 0.5,
+            delay: 0.2
+        });
+    }
+}
+
+// Show failed message when task fails
+function showFailedMessage(tokenId) {
+    const failedUI = document.createElement('div');
+    failedUI.className = 'failed-ui';
+    failedUI.innerHTML = `
+        <div class="failed-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
+            </svg>
+        </div>
+        <div class="failed-content">
+            <h4>❌ NFT mint failed</h4>
+            <p>The NFT generation process encountered an issue. Please try again later.</p>
+            <button class="retry-mint-btn">Try Again</button>
+        </div>
+    `;
+
+    // Add retry functionality
+    const retryBtn = failedUI.querySelector('.retry-mint-btn');
+    retryBtn.addEventListener('click', () => {
+        // Clear failed status and re-enable mint button
+        statusEl.innerHTML = '';
+        statusEl.style.display = 'none';
+        progressContainer.style.display = 'none';
+        mintBtn.disabled = false;
+    });
+
+    // Add to status with animation
+    statusEl.innerHTML = '';
+    statusEl.appendChild(failedUI);
+
+    // Animate failed appearance if GSAP is available
+    if (window.gsap) {
+        gsap.from('.failed-icon', {
+            scale: 0.5,
+            opacity: 0,
+            duration: 0.5,
+            ease: 'back.out(1.7)'
+        });
+
+        gsap.from('.failed-content', {
+            y: 20,
+            opacity: 0,
+            duration: 0.5,
+            delay: 0.2
+        });
+    }
 }
 
 // Initialize the page

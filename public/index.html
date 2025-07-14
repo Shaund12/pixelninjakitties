@@ -883,6 +883,91 @@
             transition: all 0.3s ease;
         }
 
+        /* Timeout UI styles */
+        .timeout-ui {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            background: linear-gradient(120deg, rgba(243,156,18,0.1) 0%, rgba(230,126,34,0.07) 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(243, 156, 18, 0.3);
+        }
+
+        .timeout-icon {
+            margin-bottom: 15px;
+        }
+
+        .timeout-content h4 {
+            margin: 0 0 10px 0;
+            color: #f39c12;
+        }
+
+        .timeout-content p {
+            margin: 0 0 15px 0;
+            color: #e0e0e0;
+        }
+
+        .view-collection-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .view-collection-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(243,156,18,0.3);
+        }
+
+        /* Failed UI styles */
+        .failed-ui {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            background: linear-gradient(120deg, rgba(239,68,68,0.1) 0%, rgba(127,29,29,0.07) 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(220, 38, 38, 0.3);
+        }
+
+        .failed-icon {
+            margin-bottom: 15px;
+        }
+
+        .failed-content h4 {
+            margin: 0 0 10px 0;
+            color: #ef4444;
+        }
+
+        .failed-content p {
+            margin: 0 0 15px 0;
+            color: #e0e0e0;
+        }
+
+        .retry-mint-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .retry-mint-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
         /* Transaction animation */
         .tx-confirmation {
             display: flex;
