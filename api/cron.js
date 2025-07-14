@@ -1,42 +1,39 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, getTasks, TASK_STATES } from '../scripts/taskManager.js';
-import fs from 'fs/promises';
-import path from 'path';
+import { connectToMongoDB, saveState, loadState, ensureConnection } from '../scripts/mongodb.js';
 
-// Persistent state management for serverless environment
-const STATE_FILE = '/tmp/cron-state.json';
+// Default state structure for cron system
 const DEFAULT_STATE = {
     lastProcessedBlock: 0,
-    processedTokens: new Set(),
+    processedTokens: [],
     pendingTasks: []
 };
 
-// Load state from persistent storage
-async function loadState() {
+// Load state from MongoDB
+async function loadCronState() {
     try {
-        const stateData = await fs.readFile(STATE_FILE, 'utf8');
-        const state = JSON.parse(stateData);
+        const state = await loadState('cron', DEFAULT_STATE);
         // Convert array back to Set for processedTokens
         state.processedTokens = new Set(state.processedTokens);
         return state;
     } catch (error) {
-        console.log('No previous state found, starting fresh');
-        return { ...DEFAULT_STATE };
+        console.error('Failed to load cron state from MongoDB:', error);
+        return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to persistent storage
-async function saveState(state) {
+// Save state to MongoDB
+async function saveCronState(state) {
     try {
-        // Convert Set to array for JSON serialization
+        // Convert Set to array for storage
         const stateToSave = {
             ...state,
             processedTokens: Array.from(state.processedTokens)
         };
-        await fs.writeFile(STATE_FILE, JSON.stringify(stateToSave, null, 2));
+        await saveState('cron', stateToSave);
     } catch (error) {
-        console.error('Failed to save state:', error);
+        console.error('Failed to save cron state to MongoDB:', error);
     }
 }
 
@@ -46,10 +43,10 @@ async function processSingleTask(nft, taskInfo, state) {
     const id = Number(tokenId);
 
     console.log(`⚙️ Processing task ${taskId} for token #${id} (${breed}) by ${buyer}`);
-    
+
     try {
         // Update task status
-        updateTask(taskId, {
+        await updateTask(taskId, {
             status: TASK_STATES.PROCESSING,
             progress: 10,
             message: 'Starting NFT generation'
@@ -58,12 +55,12 @@ async function processSingleTask(nft, taskInfo, state) {
         // Check if already processed
         if (state.processedTokens.has(id)) {
             console.log(`⏭️ Token #${id} already processed, marking task complete`);
-            completeTask(taskId, { tokenURI: 'already-processed', skipped: true });
+            await completeTask(taskId, { tokenURI: 'already-processed', skipped: true });
             return { success: true, skipped: true };
         }
 
         // Set placeholder if needed
-        updateTask(taskId, {
+        await updateTask(taskId, {
             progress: 20,
             message: 'Setting placeholder image'
         });
@@ -77,14 +74,14 @@ async function processSingleTask(nft, taskInfo, state) {
             }
         } catch (err) {
             console.error(`• Placeholder failed for token #${id}:`, err);
-            updateTask(taskId, {
+            await updateTask(taskId, {
                 progress: 25,
                 message: `Warning: Placeholder set failed - ${err.message.substring(0, 100)}`
             });
         }
 
         // Generate final art and metadata
-        updateTask(taskId, {
+        await updateTask(taskId, {
             progress: 40,
             message: 'Generating artwork and metadata'
         });
@@ -96,7 +93,7 @@ async function processSingleTask(nft, taskInfo, state) {
             taskId
         });
 
-        updateTask(taskId, {
+        await updateTask(taskId, {
             progress: 80,
             message: 'Setting token URI on blockchain'
         });
@@ -110,7 +107,7 @@ async function processSingleTask(nft, taskInfo, state) {
         console.log(`✅ Finalized #${id} → ${result.tokenURI}`);
 
         // Complete the task
-        completeTask(taskId, {
+        await completeTask(taskId, {
             tokenURI: result.tokenURI,
             breed,
             tokenId: id,
@@ -122,7 +119,7 @@ async function processSingleTask(nft, taskInfo, state) {
 
     } catch (error) {
         console.error(`❌ Task ${taskId} failed:`, error);
-        failTask(taskId, error);
+        await failTask(taskId, error);
         return { success: false, error: error.message };
     }
 }
@@ -131,7 +128,7 @@ async function processSingleTask(nft, taskInfo, state) {
 export default async function handler(req, res) {
     const startTime = Date.now();
     const MAX_EXECUTION_TIME = 25000; // 25 seconds limit for safety
-    
+
     try {
         const {
             RPC_URL,
@@ -145,9 +142,12 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'Missing environment variables' });
         }
 
+        // Ensure MongoDB connection
+        await ensureConnection();
+
         // Load persistent state
-        const state = await loadState();
-        
+        const state = await loadCronState();
+
         const provider = new ethers.JsonRpcProvider(RPC_URL);
         const signer = new ethers.Wallet(PRIVATE_KEY, provider);
 
@@ -188,9 +188,9 @@ export default async function handler(req, res) {
             }
 
             console.log(`📝 Creating task for token #${id} (${breed}) from buyer ${buyer}`);
-            
+
             // Create a new task
-            const taskId = createTask(id, IMAGE_PROVIDER, {
+            const taskId = await createTask(id, IMAGE_PROVIDER, {
                 breed,
                 buyer,
                 createdFrom: 'cron',
@@ -216,9 +216,9 @@ export default async function handler(req, res) {
 
         while (taskIndex < state.pendingTasks.length && (Date.now() - startTime) < MAX_EXECUTION_TIME) {
             const taskInfo = state.pendingTasks[taskIndex];
-            
+
             // Check if task is still valid
-            const taskStatus = getTaskStatus(taskInfo.taskId);
+            const taskStatus = await getTaskStatus(taskInfo.taskId);
             if (!taskStatus || taskStatus.status === TASK_STATES.COMPLETED) {
                 // Remove completed task from pending list
                 state.pendingTasks.splice(taskIndex, 1);
@@ -234,7 +234,7 @@ export default async function handler(req, res) {
 
             // Process the task
             const result = await processSingleTask(nft, taskInfo, state);
-            
+
             if (result.success) {
                 // Remove from pending list
                 state.pendingTasks.splice(taskIndex, 1);
@@ -248,14 +248,14 @@ export default async function handler(req, res) {
 
             // Check time limit
             if ((Date.now() - startTime) >= MAX_EXECUTION_TIME) {
-                results.push(`⏱️ Execution time limit reached, stopping processing`);
+                results.push('⏱️ Execution time limit reached, stopping processing');
                 break;
             }
         }
 
         // Update state
         state.lastProcessedBlock = latest;
-        await saveState(state);
+        await saveCronState(state);
 
         const executionTime = Date.now() - startTime;
         const summary = {
@@ -271,13 +271,13 @@ export default async function handler(req, res) {
             results
         };
 
-        console.log(`📊 Cron execution summary:`, summary);
+        console.log('📊 Cron execution summary:', summary);
 
         return res.status(200).json(summary);
 
     } catch (error) {
         console.error('❌ Cron execution failed:', error);
-        return res.status(500).json({ 
+        return res.status(500).json({
             error: error.message,
             timestamp: new Date().toISOString(),
             executionTimeMs: Date.now() - startTime

@@ -41,6 +41,7 @@ import {
     errorHandler
 } from './scripts/middleware.js';
 import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
+import { connectToMongoDB } from './scripts/mongodb.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -104,7 +105,7 @@ app.use(secureLogging);
 app.use(express.static('public'));                // index.html, mint.js …
 
 // API endpoint for task status
-app.get('/api/task/:taskId', (req, res) => {
+app.get('/api/task/:taskId', async (req, res) => {
     try {
         const { taskId } = req.params;
 
@@ -113,7 +114,7 @@ app.get('/api/task/:taskId', (req, res) => {
             return res.status(400).json({ error: 'Invalid task ID' });
         }
 
-        const status = getTaskStatus(taskId);
+        const status = await getTaskStatus(taskId);
         res.json(status);
     } catch (error) {
         console.error('Error in /api/task/:taskId:', sanitizeForLogging(error.message));
@@ -377,8 +378,8 @@ app.get('/api/process/:tokenId', async (req, res) => {
         console.log(`   Owner: ${sanitizeForLogging(owner)}`);
 
         // Create a task for tracking
-        const taskId = createTask(tokenId, imageProvider);
-        updateTask(taskId, {
+        const taskId = await createTask(tokenId, imageProvider);
+        await updateTask(taskId, {
             status: 'queued',
             message: 'Waiting in processing queue',
             breed,
@@ -423,7 +424,7 @@ app.get('/api/process/:tokenId', async (req, res) => {
 
 
 // Add this new API endpoint to get current provider status
-app.get('/api/status/:taskId', (req, res) => {
+app.get('/api/status/:taskId', async (req, res) => {
     try {
         const { taskId } = req.params;
 
@@ -432,7 +433,7 @@ app.get('/api/status/:taskId', (req, res) => {
             return res.status(400).json({ error: 'Invalid task ID' });
         }
 
-        const status = getTaskStatus(taskId);
+        const status = await getTaskStatus(taskId);
 
         // If no status found, return 404
         if (!status) {
@@ -525,7 +526,26 @@ app.get('/api/docs', (req, res) => {
     });
 });
 
-app.listen(PORT, () => console.log(`🌐 Ninja Kitty server running on port ${PORT}`));
+// Initialize MongoDB connection and start server
+async function startServer() {
+    try {
+        // Connect to MongoDB
+        await connectToMongoDB();
+        console.log('✅ MongoDB connection established');
+        
+        // Start Express server
+        app.listen(PORT, () => {
+            console.log(`🌐 Ninja Kitty server running on port ${PORT}`);
+            console.log(`📊 MongoDB integrated for task persistence`);
+        });
+    } catch (error) {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+// Start the server
+startServer();
 
 // Add error handling middleware with tracking
 app.use((err, req, res, next) => {
@@ -640,8 +660,8 @@ async function processMintTask(task) {
     const providerToUse = imageProvider || IMAGE_PROVIDER;
 
     // Create or use existing task ID
-    const mintTaskId = existingTaskId || createTask(id, providerToUse);
-    updateTask(mintTaskId, {
+    const mintTaskId = existingTaskId || await createTask(id, providerToUse);
+    await updateTask(mintTaskId, {
         status: 'processing',
         progress: 5,
         message: 'Starting mint process',
@@ -663,7 +683,7 @@ async function processMintTask(task) {
             const oldestRequest = lastMinuteRequests[0];
             const waitTime = RATE_WINDOW - (now - oldestRequest) + 100; // Add 100ms buffer
 
-            updateTask(mintTaskId, {
+            await updateTask(mintTaskId, {
                 progress: 10,
                 message: `Rate limit reached, waiting ${Math.ceil(waitTime / 1000)} seconds`
             });
@@ -673,7 +693,7 @@ async function processMintTask(task) {
         }
 
         /* 1️⃣ Set placeholder URI if needed */
-        updateTask(mintTaskId, {
+        await updateTask(mintTaskId, {
             progress: 20,
             message: 'Setting placeholder image'
         });
@@ -687,14 +707,14 @@ async function processMintTask(task) {
             }
         } catch (err) {
             console.error(`  • Placeholder failed for token #${id}:`, err);
-            updateTask(mintTaskId, {
+            await updateTask(mintTaskId, {
                 progress: 25,
                 message: `Warning: Placeholder set failed - ${err.message.substring(0, 100)}`
             });
         }
 
         /* 2️⃣ Generate final art and metadata */
-        updateTask(mintTaskId, {
+        await updateTask(mintTaskId, {
             progress: 30,
             message: `Generating artwork using ${providerToUse}`,
             details: {
@@ -719,7 +739,7 @@ async function processMintTask(task) {
             taskId: mintTaskId
         });
 
-        updateTask(mintTaskId, {
+        await updateTask(mintTaskId, {
             progress: 80,
             message: 'Setting token URI on blockchain',
             metadata: result.metadata
@@ -734,7 +754,7 @@ async function processMintTask(task) {
         await saveState();
 
         // Complete the task
-        completeTask(mintTaskId, {
+        await completeTask(mintTaskId, {
             tokenURI: result.tokenURI,
             breed,
             tokenId: id,
@@ -747,7 +767,7 @@ async function processMintTask(task) {
         console.error(`❌ Finalizing #${id} failed:`, err);
 
         // Mark task as failed
-        failTask(mintTaskId, err);
+        await failTask(mintTaskId, err);
 
         // If generation failed, add back to queue with a delay (up to 3 retries)
         const retryCount = task.retryCount || 0;
@@ -963,7 +983,9 @@ async function initialize() {
     validateEventSignatures();
 
     // Set up task cleanup
-    setInterval(cleanupTasks, 3600000); // Run every hour
+    setInterval(async () => {
+        await cleanupTasks();
+    }, 3600000); // Run every hour
 
     // Set up regular polling
     console.log(`🚀 Starting event polling (every 15s from block ${lastBlock})...`);
