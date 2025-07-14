@@ -304,8 +304,64 @@ function setupRegenerationInterface(tokenId) {
     const closeRegenerateModal = document.getElementById('closeRegenerateModal');
     const confirmRegenerateBtn = document.getElementById('confirmRegenerateBtn');
     const cancelBtn = document.getElementById('cancelRegenerateBtn');
+    const CONTRACT = '0x2D732b0Bb33566A13E586aE83fB21d2feE34e906';
 
     if (!regenerateBtn || !regenerateModal) return;
+
+    // First check if current user is the owner and show/hide regenerate button accordingly
+    async function checkOwnershipAndUpdateUI() {
+        try {
+            // Default to hiding the button until ownership is confirmed
+            regenerateBtn.style.display = 'none';
+            
+            // Check if wallet is connected
+            if (typeof window.ethereum === 'undefined') {
+                console.log("No wallet detected");
+                return;
+            }
+            
+            // Get current user address
+            let accounts = [];
+            try {
+                accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) {
+                    console.log("No connected accounts");
+                    return;
+                }
+            } catch (err) {
+                console.log("Error getting accounts:", err);
+                return;
+            }
+            
+            const userAddress = accounts[0].toLowerCase();
+            
+            // Get NFT owner from contract
+            try {
+                const provider = new ethers.JsonRpcProvider('https://rpc.vitruveo.xyz');
+                const nftContract = new ethers.Contract(CONTRACT, ['function ownerOf(uint256) view returns (address)'], provider);
+                const ownerAddress = (await nftContract.ownerOf(tokenId)).toLowerCase();
+                
+                console.log(`Current user: ${userAddress}`);
+                console.log(`NFT owner: ${ownerAddress}`);
+                
+                // Only show regenerate button if user is the owner
+                regenerateBtn.style.display = userAddress === ownerAddress ? 'inline-flex' : 'none';
+            } catch (err) {
+                console.error("Error checking NFT ownership:", err);
+            }
+        } catch (err) {
+            console.error("Error in ownership check:", err);
+        }
+    }
+    
+    // Run the ownership check when setting up the interface
+    checkOwnershipAndUpdateUI();
+    
+    // Check again if account changes
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', checkOwnershipAndUpdateUI);
+        window.ethereum.on('chainChanged', checkOwnershipAndUpdateUI);
+    }
 
     // Open regeneration modal
     regenerateBtn.addEventListener('click', () => {
@@ -376,7 +432,7 @@ function setupRegenerationInterface(tokenId) {
         });
     }
 
-    // Confirm regeneration button - FULLY IMPLEMENTED
+    // Confirm regeneration button
     if (confirmRegenerateBtn) {
         confirmRegenerateBtn.addEventListener('click', async () => {
             try {
@@ -408,12 +464,6 @@ function setupRegenerationInterface(tokenId) {
                         throw new Error('MetaMask or compatible wallet not found. Please install it to continue.');
                     }
 
-                    // Import config values
-                    const { USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT } = await import('./config.js');
-
-                    // Calculate the amount in wei (USDC has 6 decimals)
-                    const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6);
-
                     // Request account access
                     statusTextEl.innerHTML = '<div class="loading-spinner"></div>Connecting to wallet...';
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -425,6 +475,28 @@ function setupRegenerationInterface(tokenId) {
                     // Get the web3 provider - using ethers v6 syntax
                     const web3Provider = new ethers.BrowserProvider(window.ethereum);
                     const signer = await web3Provider.getSigner();
+
+                    // VERIFY OWNERSHIP - Critical security check
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Verifying ownership...';
+                    try {
+                        const nftContract = new ethers.Contract(CONTRACT, ['function ownerOf(uint256) view returns (address)'], web3Provider);
+                        const ownerAddress = (await nftContract.ownerOf(tokenId)).toLowerCase();
+                        
+                        if (userAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+                            throw new Error('You are not the owner of this NFT. Only the owner can regenerate this NFT.');
+                        }
+                        
+                        console.log("Ownership verified:", userAddress.toLowerCase() === ownerAddress.toLowerCase());
+                    } catch (ownerError) {
+                        console.error("Ownership verification failed:", ownerError);
+                        throw new Error('Ownership verification failed. Only the owner can regenerate this NFT.');
+                    }
+
+                    // Import config values
+                    const { USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT } = await import('./config.js');
+
+                    // Calculate the amount in wei (USDC has 6 decimals)
+                    const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6);
 
                     // USDC ABI for the transfer function
                     const usdcAbi = [
@@ -465,7 +537,7 @@ function setupRegenerationInterface(tokenId) {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            tokenId: tokenId,  // Use tokenId parameter instead of id global variable
+                            tokenId: tokenId,
                             imageProvider: provider,
                             breed: breed,
                             promptExtras: promptExtras || undefined,
