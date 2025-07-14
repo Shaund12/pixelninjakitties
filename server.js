@@ -41,7 +41,7 @@ import {
     errorHandler
 } from './scripts/middleware.js';
 import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
-import { connectToMongoDB } from './scripts/mongodb.js';
+import { connectToSupabase } from './scripts/supabase.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -70,6 +70,8 @@ console.log(`- DEFAULT_IMAGE_PROVIDER: ${IMAGE_PROVIDER}`);
 console.log(`- OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✓ Set' : '❌ Missing'}`);
 console.log(`- HUGGING_FACE_TOKEN: ${process.env.HUGGING_FACE_TOKEN ? '✓ Set' : '❌ Missing'}`);
 console.log(`- STABILITY_API_KEY: ${process.env.STABILITY_API_KEY ? '✓ Set' : '❌ Missing'}`);
+console.log(`- SUPABASE_URL: ${process.env.SUPABASE_URL ? '✓ Set' : '❌ Missing'}`);
+console.log(`- SUPABASE_ANON_KEY: ${process.env.SUPABASE_ANON_KEY ? '✓ Set' : '❌ Missing'}`);
 
 if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY || !PLACEHOLDER_URI) {
     console.error('❌  Missing env vars – check .env');
@@ -526,17 +528,17 @@ app.get('/api/docs', (req, res) => {
     });
 });
 
-// Initialize MongoDB connection and start server
+// Initialize Supabase connection and start server
 async function startServer() {
     try {
-        // Connect to MongoDB
-        await connectToMongoDB();
-        console.log('✅ MongoDB connection established');
+        // Connect to Supabase
+        await connectToSupabase();
+        console.log('✅ Supabase connection established');
 
         // Start Express server
         app.listen(PORT, () => {
             console.log(`🌐 Ninja Kitty server running on port ${PORT}`);
-            console.log('📊 MongoDB integrated for task persistence');
+            console.log('📊 Supabase integrated for task persistence');
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
