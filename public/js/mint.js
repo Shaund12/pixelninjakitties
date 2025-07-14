@@ -947,7 +947,6 @@ async function fetchNFTDetails(tokenId) {
         console.log(`Token URI for #${tokenId}:`, tokenURI);
 
         // Fetch metadata
-        let metadata;
         let metadataUrl = tokenURI;
 
         if (tokenURI.startsWith('ipfs://')) {
@@ -955,7 +954,7 @@ async function fetchNFTDetails(tokenId) {
         }
 
         const response = await fetch(metadataUrl);
-        metadata = await response.json();
+        const metadata = await response.json();
 
         // Get the image URL
         const imageUrl = metadata.image;
