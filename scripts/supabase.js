@@ -29,7 +29,7 @@ export async function connectToSupabase() {
         supabase = createClient(supabaseUrl, supabaseKey);
 
         // Test the connection
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('tasks')
             .select('count', { count: 'exact', head: true });
 
@@ -58,15 +58,15 @@ async function initializeDatabaseStructure() {
     try {
         // Note: In a real application, you would create these tables through Supabase dashboard
         // or migration scripts. This is a simplified approach for demonstration.
-        
+
         // Check if tables exist by trying to query them
         const tables = ['tasks', 'state', 'metrics'];
-        
+
         for (const table of tables) {
             const { error } = await supabase
                 .from(table)
                 .select('*', { count: 'exact', head: true });
-            
+
             if (error && error.code === 'PGRST116') {
                 console.log(`⚠️ Table '${table}' does not exist. Please create it in Supabase dashboard.`);
                 // In a real application, you would create tables here or through migrations
@@ -117,11 +117,11 @@ export async function ensureConnection() {
         const { error } = await supabase
             .from('tasks')
             .select('count', { count: 'exact', head: true });
-        
+
         if (error && error.code !== 'PGRST116') {
             throw new Error(`Connection test failed: ${error.message}`);
         }
-        
+
         return true;
     } catch (error) {
         console.error('❌ Supabase connection test failed:', error);
@@ -165,7 +165,7 @@ export async function saveState(type, state) {
         if (error) {
             throw new Error(`Failed to save state: ${error.message}`);
         }
-        
+
         return true;
     }, `Save state (${type})`);
 }

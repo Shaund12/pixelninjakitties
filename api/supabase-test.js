@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
         // Test basic operations
         const supabase = getSupabase();
-        
+
         // Test state operations
         const testState = {
             test: true,
@@ -51,6 +51,8 @@ export default async function handler(req, res) {
             .eq('type', 'test_state')
             .single();
 
+        const stateReadSuccess = loadedState && loadedState.state.test === true;
+
         // Clean up test state
         const { error: deleteError } = await supabase
             .from('state')
@@ -68,7 +70,7 @@ export default async function handler(req, res) {
             },
             tests: {
                 stateWrite: saveError ? `❌ Failed: ${saveError.message}` : '✅ Success',
-                stateRead: loadError ? `❌ Failed: ${loadError.message}` : '✅ Success',
+                stateRead: loadError ? `❌ Failed: ${loadError.message}` : (stateReadSuccess ? '✅ Success' : '❌ Data mismatch'),
                 stateDelete: deleteError ? `❌ Failed: ${deleteError.message}` : '✅ Success'
             },
             environment: {

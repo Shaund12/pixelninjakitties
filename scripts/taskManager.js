@@ -38,7 +38,7 @@ async function loadMetrics() {
                 .select('data')
                 .eq('type', 'task_metrics')
                 .single();
-            
+
             if (error) {
                 if (error.code === 'PGRST116' || error.code === 'PGRST105') {
                     // Table doesn't exist or no data found, use defaults
@@ -46,7 +46,7 @@ async function loadMetrics() {
                 }
                 throw error;
             }
-            
+
             if (data) {
                 metrics = { ...metrics, ...data.data };
             }
@@ -71,7 +71,7 @@ async function saveMetrics() {
                     data: metrics,
                     updated_at: new Date().toISOString()
                 });
-            
+
             if (error) {
                 throw error;
             }
@@ -97,7 +97,7 @@ export async function createTask(tokenId, provider, options = {}) {
     const taskId = `task_${timestamp}_${randomPart}`;
 
     // Create the task with extended properties
-    const task = {
+    const taskData = {
         _id: taskId,
         taskId,
         tokenId,
@@ -143,11 +143,11 @@ export async function createTask(tokenId, provider, options = {}) {
                 estimated_completion_time: null,
                 ...options
             };
-            
+
             const { error } = await db
                 .from('tasks')
                 .insert(taskForSupabase);
-            
+
             if (error) {
                 throw error;
             }
@@ -181,20 +181,20 @@ export async function updateTask(taskId, update) {
                 .select('*')
                 .eq('task_id', taskId)
                 .single();
-            
+
             if (fetchError) {
                 if (fetchError.code === 'PGRST116') {
                     throw new Error(`Task ${taskId} not found`);
                 }
                 throw fetchError;
             }
-            
+
             if (!task) {
                 throw new Error(`Task ${taskId} not found`);
             }
 
             const now = new Date().toISOString();
-            let history = task.history || [];
+            const history = task.history || [];
 
             // Track status changes in history
             if (update.status && update.status !== task.status) {
@@ -267,7 +267,7 @@ export async function updateTask(taskId, update) {
                 .eq('task_id', taskId)
                 .select()
                 .single();
-            
+
             if (updateError) {
                 throw updateError;
             }
@@ -397,11 +397,11 @@ export async function cancelTask(taskId, reason = 'User canceled') {
                 .select('*')
                 .eq('task_id', taskId)
                 .single();
-            
+
             if (error) {
                 throw new Error(`Task ${taskId} not found`);
             }
-            
+
             if (!task) {
                 throw new Error(`Task ${taskId} not found`);
             }
@@ -451,11 +451,11 @@ export async function getTasks(filters = {}) {
             query = query.order('created_at', { ascending: false });
 
             const { data: tasks, error } = await query;
-            
+
             if (error) {
                 throw error;
             }
-            
+
             return tasks || [];
         }, 'Get tasks');
     } catch (error) {
