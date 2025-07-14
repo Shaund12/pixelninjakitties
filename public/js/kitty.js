@@ -455,10 +455,10 @@ function setupRegenerationInterface(tokenId) {
                     // Get breed from page if available
                     const breedEl = document.getElementById('catBreed');
                     const breed = breedEl ? breedEl.textContent : 'Tabby';
-                    
+
                     // Create task through the new API endpoint
                     statusTextEl.innerHTML = '<div class="loading-spinner"></div>Creating regeneration task...';
-                    
+
                     const response = await fetch('/api/regenerate', {
                         method: 'POST',
                         headers: {
@@ -530,14 +530,14 @@ async function pollTaskStatus(taskId, statusElement) {
             console.warn(`⏰ Task polling timeout after ${maxAttempts} attempts`);
             if (statusElement) {
                 statusElement.innerHTML = '<div class="warning-icon">⚠️</div>Process is taking longer than expected. Check back later to see your regenerated NFT.';
-                
+
                 // Add refresh button
                 const refreshBtn = document.createElement('button');
                 refreshBtn.className = 'action-btn';
                 refreshBtn.textContent = 'Refresh Page';
                 refreshBtn.style.marginTop = '10px';
                 refreshBtn.onclick = () => window.location.reload();
-                
+
                 statusElement.appendChild(refreshBtn);
             }
             return;
@@ -554,7 +554,7 @@ async function pollTaskStatus(taskId, statusElement) {
                 `/api/tasks/${taskId}`,
                 `/api/status/${taskId}`
             ];
-            
+
             for (const endpoint of endpoints) {
                 try {
                     console.log(`Trying endpoint: ${endpoint}`);
@@ -574,7 +574,7 @@ async function pollTaskStatus(taskId, statusElement) {
 
             const taskData = await response.json();
             console.log('Task status update:', taskData);
-            
+
             // Make status check case-insensitive
             const status = (taskData.status || taskData.state || '').toUpperCase();
             const progress = taskData.progress || 0;
@@ -596,21 +596,21 @@ async function pollTaskStatus(taskId, statusElement) {
                     case 'COMPLETED':
                         statusMsg = '<div class="success-icon">✓</div>Image regenerated successfully!';
                         completed = true;
-                        
+
                         // If we have a token_uri in the response, show the new image
                         if (taskData.token_uri) {
                             try {
                                 // Show loading state for image
                                 statusElement.innerHTML = '<div class="loading-spinner"></div>Fetching new image...';
-                                
+
                                 // Extract CID from IPFS URI
                                 const cid = taskData.token_uri.replace('ipfs://', '');
                                 const ipfsUrl = `https://ipfs.io/ipfs/${cid}`;
-                                
+
                                 // Fetch metadata to get the image URL
                                 const metadataResponse = await fetch(ipfsUrl);
                                 const metadata = await metadataResponse.json();
-                                
+
                                 if (metadata && metadata.image) {
                                     // Convert IPFS image URL
                                     let imageUrl = metadata.image;
@@ -618,7 +618,7 @@ async function pollTaskStatus(taskId, statusElement) {
                                         const imageCid = imageUrl.replace('ipfs://', '');
                                         imageUrl = `https://ipfs.io/ipfs/${imageCid}`;
                                     }
-                                    
+
                                     // Create image preview in status area
                                     lastImageUpdate = imageUrl;
                                     statusElement.innerHTML = `
@@ -645,7 +645,7 @@ async function pollTaskStatus(taskId, statusElement) {
                 if (statusElement && !lastImageUpdate) {
                     statusElement.innerHTML = statusMsg;
                 }
-                
+
                 // Update progress visually
                 if (progress > 0) {
                     const progressBarContainer = document.createElement('div');
@@ -655,16 +655,16 @@ async function pollTaskStatus(taskId, statusElement) {
                     progressBarContainer.style.backgroundColor = 'rgba(0,0,0,0.1)';
                     progressBarContainer.style.borderRadius = '3px';
                     progressBarContainer.style.margin = '10px 0';
-                    
+
                     const progressBar = document.createElement('div');
                     progressBar.style.width = `${progress}%`;
                     progressBar.style.height = '100%';
                     progressBar.style.backgroundColor = '#8a65ff';
                     progressBar.style.borderRadius = '3px';
                     progressBar.style.transition = 'width 0.3s ease';
-                    
+
                     progressBarContainer.appendChild(progressBar);
-                    
+
                     // Add after status text if not already present
                     if (!document.querySelector('.progress-bar-container')) {
                         statusElement.appendChild(progressBarContainer);
@@ -696,17 +696,17 @@ async function pollTaskStatus(taskId, statusElement) {
                         reloadBtn.textContent = 'Refresh Page';
                         reloadBtn.style.marginTop = '10px';
                         reloadBtn.onclick = () => window.location.reload();
-                        
+
                         statusElement.appendChild(reloadBtn);
                     }, 2000);
                 }
-                
+
                 return;
             }
 
             // Wait before next poll
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             // Continue polling
             if (!completed) {
                 setTimeout(checkTaskStatus, 1000);
@@ -721,7 +721,7 @@ async function pollTaskStatus(taskId, statusElement) {
 
             // Wait a bit longer if there's an error
             await new Promise(resolve => setTimeout(resolve, 3000));
-            
+
             // Continue polling despite errors
             if (!completed) {
                 setTimeout(checkTaskStatus, 1000);

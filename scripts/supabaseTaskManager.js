@@ -43,7 +43,7 @@ export async function createTask(tokenId, provider, options = {}) {
     // Extract blockchain-specific data to store in metadata
     const blockNumber = options.blockNumber;
     const transactionHash = options.transactionHash;
-    
+
     // Create metadata object if needed
     const metadata = {
         ...(blockNumber && { blockNumber }),
