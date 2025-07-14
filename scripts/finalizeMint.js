@@ -989,6 +989,9 @@ function generateTraits(breed, tokenId) {
     } else {
         console.log(`TokenId ${tokenId} - Selected breed: ${breedTrait.value} (${breedTrait.rarity}) [${breedTrait.rarityScore}] - USER SPECIFIED`);
     }
+    
+    // Additional debugging for breed trait content
+    console.log(`🔍 DEBUG: Final breedTrait object:`, JSON.stringify(breedTrait, null, 2));
     const weaponTrait = getWeightedTrait(weightedCategories.weapons, 'weapon');
     const stanceTrait = getWeightedTrait(weightedCategories.stances, 'stance');
     const elementTrait = getWeightedTrait(weightedCategories.elements, 'element');
@@ -1760,6 +1763,7 @@ export async function finalizeMint({
 
         // Generate traits based on breed and tokenId
         console.log(`💫 Generating traits for #${tokenId}...`);
+        console.log(`🔍 FINALIZE DEBUG: Original breed: "${breed}", Normalized breed: "${normalizedBreed}"`);
         if (taskManager) {
             taskManager.updateTask(taskId, {
                 progress: 20,
@@ -1768,6 +1772,7 @@ export async function finalizeMint({
         }
 
         const traits = generateTraits(normalizedBreed, tokenId);
+        console.log(`🔍 FINALIZE DEBUG: Generated traits breed: "${traits.rawTraits.find(t => t.trait_type === 'Breed')?.value}"`);
 
         // Build prompt from traits
         const weapon = traits.rawTraits.find(t => t.trait_type === 'Weapon')?.value || 'Katana';

@@ -21,6 +21,11 @@
       "dest": "/public/$1"
     }
   ],
+  "functions": {
+    "api/cron.js": {
+      "maxDuration": 300
+    }
+  },
   "crons": [
     {
       "path": "/api/cron",
