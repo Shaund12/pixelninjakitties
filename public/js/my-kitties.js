@@ -2341,19 +2341,115 @@ async function pollForTaskCompletion(taskId, tokenId) {
             const task = await response.json();
             console.log('Task status update:', task);
             
-            // Handle different status values
-            if (task.status === 'completed' || task.state === 'completed') {
+            // Make status check case-insensitive
+            const taskStatus = (task.status || task.state || '').toUpperCase();
+            
+            // Handle different status values with case-insensitive comparison
+            if (taskStatus === 'COMPLETED') {
+                console.log('✅ Regeneration task completed successfully, updating UI...');
                 statusTextEl.innerHTML = '<div class="success-icon">✓</div>Regeneration completed successfully!';
                 statusEl.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
                 
-                // Close modal and refresh NFT display
+                // If we have a token_uri in the response, fetch the new metadata
+                if (task.token_uri) {
+                    try {
+                        // Get the updated IPFS metadata
+                        const tokenUri = task.token_uri;
+                        console.log(`New token URI: ${tokenUri}`);
+                        
+                        // Extract CID from IPFS URI
+                        const cid = tokenUri.replace('ipfs://', '');
+                        
+                        // Try fetching from multiple IPFS gateways
+                        const gateways = [
+                            'https://ipfs.io/ipfs/',
+                            'https://gateway.pinata.cloud/ipfs/',
+                            'https://cloudflare-ipfs.com/ipfs/'
+                        ];
+                        
+                        let metadata = null;
+                        for (const gateway of gateways) {
+                            try {
+                                const url = `${gateway}${cid}`;
+                                console.log(`Fetching new metadata from ${url}`);
+                                const metadataResponse = await fetch(url);
+                                if (metadataResponse.ok) {
+                                    metadata = await metadataResponse.json();
+                                    break;
+                                }
+                            } catch (err) {
+                                console.warn(`Failed to fetch from ${gateway}:`, err);
+                            }
+                        }
+                        
+                        if (metadata && metadata.image) {
+                            // Get the new image URL
+                            let newImageUrl = metadata.image;
+                            if (newImageUrl.startsWith('ipfs://')) {
+                                const imageCid = newImageUrl.replace('ipfs://', '');
+                                newImageUrl = `https://ipfs.io/ipfs/${imageCid}`;
+                            }
+                            
+                            console.log(`New image URL: ${newImageUrl}`);
+                            
+                            // Show the new image in the modal
+                            const previewImage = document.createElement('div');
+                            previewImage.innerHTML = `
+                                <div class="regeneration-result">
+                                    <h4>New Image:</h4>
+                                    <img src="${newImageUrl}" alt="Regenerated image" 
+                                         style="max-width: 100%; border-radius: 8px; margin-top: 10px;">
+                                </div>
+                            `;
+                            statusEl.appendChild(previewImage);
+                            
+                            // Update the NFT cards with new image
+                            setTimeout(() => {
+                                const modal = document.getElementById('regenerateModal');
+                                if (modal) {
+                                    console.log('Closing regenerate modal...');
+                                    modal.style.display = 'none';
+                                }
+                                
+                                // Update both grid and detailed view with new image
+                                const gridCard = document.querySelector(`.kitty-card[data-token-id="${tokenId}"]`);
+                                const detailedCard = document.querySelector(`.detailed-card[data-token-id="${tokenId}"]`);
+                                
+                                if (gridCard) {
+                                    const img = gridCard.querySelector('.kitty-image');
+                                    if (img) img.src = newImageUrl;
+                                }
+                                
+                                if (detailedCard) {
+                                    const img = detailedCard.querySelector('.detailed-image');
+                                    if (img) img.src = newImageUrl;
+                                }
+                                
+                                showToast('NFT image updated successfully!', 'success');
+                            }, 5000); // Give user time to see the new image
+                            
+                            return;
+                        }
+                    } catch (metadataError) {
+                        console.error('Error fetching new metadata:', metadataError);
+                        // Fall back to regular refresh
+                    }
+                }
+                
+                // Fallback if we can't get the new image directly
                 setTimeout(() => {
-                    document.getElementById('regenerateModal').style.display = 'none';
+                    const modal = document.getElementById('regenerateModal');
+                    if (modal) {
+                        console.log('Closing regenerate modal...');
+                        modal.style.display = 'none';
+                    }
+                    console.log(`Refreshing display for token #${tokenId}...`);
                     refreshNFTDisplay(tokenId);
                 }, 3000);
                 return;
             } 
-            else if (task.status === 'failed' || task.state === 'failed') {
+            else if (taskStatus === 'FAILED') {
+                console.log('❌ Regeneration task failed');
                 statusTextEl.innerHTML = `<div class="error-icon">❌</div>Failed: ${task.error || task.message || 'Unknown error'}`;
                 statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
                 return;
@@ -2363,6 +2459,11 @@ async function pollForTaskCompletion(taskId, tokenId) {
                 const progress = task.progress || 0;
                 const message = task.message || 'Processing...';
                 statusTextEl.innerHTML = `<div class="loading-spinner"></div>${message} (${progress}%)`;
+                
+                if (progress > 0) {
+                    // Update status background to show progress
+                    statusEl.style.background = `linear-gradient(to right, rgba(76, 175, 80, 0.1) ${progress}%, transparent ${progress}%)`;
+                }
                 
                 // Continue polling
                 setTimeout(checkStatus, 5000);
