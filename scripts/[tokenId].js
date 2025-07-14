@@ -1,4 +1,4 @@
-import { getTaskStatus, TASK_STATES } from '../../../scripts/taskManager.js';
+import { getTaskStatus, TASK_STATES } from '../../../scripts/supabaseTaskManager.js';
 
 /**
  * API endpoint to retrieve NFT generation task status
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     const { taskId } = req.query;
 
-    // Basic request validation
+    // Validate required query param
     if (!taskId) {
         return res.status(400).json({
             error: 'Missing taskId parameter',
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         });
     }
 
-    // Task ID format validation with regex
+    // Validate task ID format
     const taskIdPattern = /^task_\d+_[a-z0-9]+$/i;
     if (!taskIdPattern.test(taskId)) {
         return res.status(400).json({
@@ -42,46 +42,42 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Get options from query parameters
+        // Optional query params
         const options = {
             minimal: req.query.minimal === 'true',
             includeHistory: req.query.history === 'true'
         };
 
-        // Retrieve task status
+        // Supabase-backed task status
         const taskData = await getTaskStatus(taskId, options);
 
-        // Return appropriate HTTP status based on task status
-        if (taskData.status === TASK_STATES.UNKNOWN) {
+        if (!taskData || taskData.status === TASK_STATES.UNKNOWN) {
             return res.status(404).json({
-                ...taskData,
+                error: 'Task not found',
+                taskId,
                 requestedAt: new Date().toISOString()
             });
         }
 
-        // Format history if included (and present)
-        if (options.includeHistory && taskData.history) {
+        // Optional timestamp formatting
+        if (options.includeHistory && Array.isArray(taskData.history)) {
             taskData.history = taskData.history.map(entry => ({
                 ...entry,
-                time: entry.time.toISOString()
+                time: new Date(entry.time).toISOString()
             }));
         }
 
-        // Add request timestamp to response
-        const response = {
+        return res.status(200).json({
             ...taskData,
             requestedAt: new Date().toISOString()
-        };
+        });
 
-        // Return with appropriate status code
-        return res.status(200).json(response);
-
-    } catch (error) {
-        console.error(`Error retrieving task ${taskId}:`, error);
+    } catch (err) {
+        console.error(`❌ Failed to retrieve task ${taskId}:`, err);
 
         return res.status(500).json({
             error: 'Server error while retrieving task status',
-            message: error.message,
+            message: err.message,
             status: 'error',
             taskId
         });
