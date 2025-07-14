@@ -1,7 +1,23 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
-import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/taskManager.js';
-import { saveState, loadState, ensureConnection } from '../scripts/mongodb.js';
+import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/supabaseTaskManager.js';
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs/promises';
+import path from 'path';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required');
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// State file for fallback storage
+const STATE_FILE = path.join(process.cwd(), 'cron-state.json');
 
 // Default state structure for cron system
 const DEFAULT_STATE = {
@@ -10,20 +26,21 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from MongoDB
+// Load state from file (fallback from MongoDB)
 async function loadCronState() {
     try {
-        const state = await loadState('cron', DEFAULT_STATE);
+        const stateData = await fs.readFile(STATE_FILE, 'utf8');
+        const state = JSON.parse(stateData);
         // Convert array back to Set for processedTokens
         state.processedTokens = new Set(state.processedTokens);
         return state;
     } catch (error) {
-        console.error('Failed to load cron state from MongoDB:', error);
+        console.error('Failed to load cron state from file:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to MongoDB
+// Save state to file
 async function saveCronState(state) {
     try {
         // Convert Set to array for storage
@@ -31,9 +48,10 @@ async function saveCronState(state) {
             ...state,
             processedTokens: Array.from(state.processedTokens)
         };
-        await saveState('cron', stateToSave);
+        await fs.writeFile(STATE_FILE, JSON.stringify(stateToSave, null, 2));
+        console.log('💾 Cron state saved to file');
     } catch (error) {
-        console.error('Failed to save cron state to MongoDB:', error);
+        console.error('Failed to save cron state to file:', error);
     }
 }
 
@@ -189,10 +207,15 @@ export default async function handler(req, res) {
             });
         }
 
-        // Ensure MongoDB connection with detailed logging
-        console.log('🔗 Connecting to MongoDB...');
-        await ensureConnection();
-        console.log('✅ MongoDB connection established');
+        // Ensure Supabase connection with detailed logging
+        console.log('🔗 Connecting to Supabase...');
+        // Test Supabase connection
+        const { data, error } = await supabase.from('tasks').select('id').limit(1);
+        if (error) {
+            console.error('❌ Supabase connection failed:', error.message);
+            throw error;
+        }
+        console.log('✅ Supabase connection established');
 
         // Load persistent state with error handling
         console.log('📂 Loading cron state...');
@@ -351,7 +374,7 @@ export default async function handler(req, res) {
             totalProcessedTokens: state.processedTokens.size,
             environment: {
                 imageProvider: IMAGE_PROVIDER,
-                mongoConnected: true,
+                supabaseConnected: true,
                 blockchainConnected: true
             },
             results

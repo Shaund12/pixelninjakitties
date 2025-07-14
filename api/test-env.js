@@ -4,7 +4,7 @@
  */
 
 import { ethers } from 'ethers';
-import { ensureConnection } from '../scripts/mongodb.js';
+import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -33,13 +33,26 @@ export default async function handler(req, res) {
         result.environment.IMAGE_PROVIDER = process.env.IMAGE_PROVIDER || 'dall-e (default)';
         result.environment.OPENAI_API_KEY = process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing';
         
-        // Test 2: MongoDB Connection
-        console.log('🧪 Test 2: MongoDB Connection');
+        // Test 2: Supabase Connection
+        console.log('🧪 Test 2: Supabase Connection');
         try {
-            await ensureConnection();
-            result.tests.mongodb = '✅ Connected';
-        } catch (mongoError) {
-            result.tests.mongodb = `❌ Failed: ${mongoError.message}`;
+            const supabaseUrl = process.env.SUPABASE_URL;
+            const supabaseKey = process.env.SUPABASE_ANON_KEY;
+            
+            if (!supabaseUrl || !supabaseKey) {
+                throw new Error('Supabase environment variables not configured');
+            }
+            
+            const supabase = createClient(supabaseUrl, supabaseKey);
+            const { data, error } = await supabase.from('tasks').select('id').limit(1);
+            
+            if (error) {
+                throw error;
+            }
+            
+            result.tests.supabase = '✅ Connected';
+        } catch (supabaseError) {
+            result.tests.supabase = `❌ Failed: ${supabaseError.message}`;
         }
 
         // Test 3: Blockchain Connection

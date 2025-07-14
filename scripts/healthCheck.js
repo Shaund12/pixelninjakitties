@@ -5,7 +5,7 @@
 import { ethers } from 'ethers';
 import fs from 'fs/promises';
 import path from 'path';
-import { mongoHealthCheck } from './mongodb.js';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Comprehensive health check for the NFT minting system
@@ -25,8 +25,8 @@ export async function performHealthCheck() {
         // Check environment variables
         results.checks.environment = await checkEnvironment();
 
-        // Check MongoDB connectivity
-        results.checks.mongodb = await mongoHealthCheck();
+        // Check Supabase connectivity
+        results.checks.supabase = await supabaseHealthCheck();
 
         // Check blockchain connectivity
         results.checks.blockchain = await checkBlockchain();
@@ -150,7 +150,8 @@ function checkApiKeys() {
         openai: !!process.env.OPENAI_API_KEY,
         huggingface: !!process.env.HUGGING_FACE_TOKEN,
         stability: !!process.env.STABILITY_API_KEY,
-        pinata: !!(process.env.PINATA_API_KEY && process.env.PINATA_SECRET_KEY)
+        pinata: !!(process.env.PINATA_API_KEY && process.env.PINATA_SECRET_KEY),
+        supabase: !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY)
     };
 
     const availableKeys = Object.values(apiKeys).filter(Boolean).length;
@@ -161,6 +162,53 @@ function checkApiKeys() {
         providers: apiKeys,
         availableCount: availableKeys
     };
+}
+
+/**
+ * Check Supabase connectivity
+ * @returns {Object} Supabase health check results
+ */
+async function supabaseHealthCheck() {
+    try {
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+            return {
+                status: 'error',
+                message: 'Supabase environment variables not configured',
+                error: 'SUPABASE_URL and SUPABASE_ANON_KEY are required'
+            };
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Test basic connectivity by checking the tasks table
+        const { data, error } = await supabase
+            .from('tasks')
+            .select('id')
+            .limit(1);
+
+        if (error) {
+            return {
+                status: 'error',
+                message: 'Supabase connection failed',
+                error: error.message
+            };
+        }
+
+        return {
+            status: 'healthy',
+            message: 'Supabase connection successful',
+            url: supabaseUrl
+        };
+    } catch (error) {
+        return {
+            status: 'error',
+            message: 'Supabase health check failed',
+            error: error.message
+        };
+    }
 }
 
 /**
