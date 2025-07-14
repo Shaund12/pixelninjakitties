@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/taskManager.js';
-import { saveState, loadState, ensureConnection } from '../scripts/mongodb.js';
+import { saveState, loadState, ensureConnection } from '../scripts/supabase.js';
 
 // Default state structure for cron system
 const DEFAULT_STATE = {
@@ -10,7 +10,7 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from MongoDB
+// Load state from Supabase
 async function loadCronState() {
     try {
         const state = await loadState('cron', DEFAULT_STATE);
@@ -18,12 +18,12 @@ async function loadCronState() {
         state.processedTokens = new Set(state.processedTokens);
         return state;
     } catch (error) {
-        console.error('Failed to load cron state from MongoDB:', error);
+        console.error('Failed to load cron state from Supabase:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to MongoDB
+// Save state to Supabase
 async function saveCronState(state) {
     try {
         // Convert Set to array for storage
@@ -33,7 +33,7 @@ async function saveCronState(state) {
         };
         await saveState('cron', stateToSave);
     } catch (error) {
-        console.error('Failed to save cron state to MongoDB:', error);
+        console.error('Failed to save cron state to Supabase:', error);
     }
 }
 

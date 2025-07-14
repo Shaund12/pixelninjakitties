@@ -4,7 +4,7 @@
  */
 
 import { ethers } from 'ethers';
-import { ensureConnection } from '../scripts/mongodb.js';
+import { ensureConnection } from '../scripts/supabase.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -33,13 +33,13 @@ export default async function handler(req, res) {
         result.environment.IMAGE_PROVIDER = process.env.IMAGE_PROVIDER || 'dall-e (default)';
         result.environment.OPENAI_API_KEY = process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing';
 
-        // Test 2: MongoDB Connection
-        console.log('🧪 Test 2: MongoDB Connection');
+        // Test 2: Supabase Connection
+        console.log('🧪 Test 2: Supabase Connection');
         try {
             await ensureConnection();
-            result.tests.mongodb = '✅ Connected';
-        } catch (mongoError) {
-            result.tests.mongodb = `❌ Failed: ${mongoError.message}`;
+            result.tests.supabase = '✅ Connected';
+        } catch (supabaseError) {
+            result.tests.supabase = `❌ Failed: ${supabaseError.message}`;
         }
 
         // Test 3: Blockchain Connection
