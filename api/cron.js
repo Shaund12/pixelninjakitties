@@ -105,7 +105,7 @@ async function processSingleTask(nft, taskInfo, state) {
         });
 
         console.log(`🔍 CRON DEBUG: About to call finalizeMint with breed: "${breed}"`);
-        console.log(`🔍 CRON DEBUG: finalizeMint parameters:`, {
+        console.log('🔍 CRON DEBUG: finalizeMint parameters:', {
             breed,
             tokenId: id,
             imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
@@ -120,14 +120,14 @@ async function processSingleTask(nft, taskInfo, state) {
                 imageProvider: process.env.IMAGE_PROVIDER || 'dall-e',
                 taskId
             });
-            console.log(`🔍 CRON DEBUG: finalizeMint completed successfully`);
+            console.log('🔍 CRON DEBUG: finalizeMint completed successfully');
         } catch (finalizeMintError) {
-            console.error(`❌ CRON DEBUG: finalizeMint failed:`, finalizeMintError);
-            console.error(`❌ CRON DEBUG: finalizeMint error stack:`, finalizeMintError.stack);
+            console.error('❌ CRON DEBUG: finalizeMint failed:', finalizeMintError);
+            console.error('❌ CRON DEBUG: finalizeMint error stack:', finalizeMintError.stack);
             throw finalizeMintError;
         }
 
-        console.log(`🔍 CRON DEBUG: finalizeMint result:`, {
+        console.log('🔍 CRON DEBUG: finalizeMint result:', {
             tokenURI: result.tokenURI,
             provider: result.provider,
             breed: result.metadata?.attributes?.find(a => a.trait_type === 'Breed')?.value
