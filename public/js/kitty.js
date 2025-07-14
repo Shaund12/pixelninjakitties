@@ -377,141 +377,143 @@ function setupRegenerationInterface(tokenId) {
     }
 
     // Confirm regeneration button - FULLY IMPLEMENTED
-if (confirmRegenerateBtn) {
-    confirmRegenerateBtn.addEventListener('click', async () => {
-        try {
-            // Get form values
-            const provider = document.getElementById('regenerateProvider').value;
-            const promptExtras = document.getElementById('regeneratePrompt').value || '';
-            const negativePrompt = document.getElementById('regenerateNegativePrompt').value || '';
-
-            // Update UI to show processing
-            const statusEl = document.getElementById('regenerateStatus');
-            const statusTextEl = document.getElementById('regenerateStatusText');
-            confirmRegenerateBtn.disabled = true;
-            confirmRegenerateBtn.textContent = 'Processing...';
-
-            if (statusEl && statusTextEl) {
-                statusEl.style.display = 'block';
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Initiating payment transaction...';
-            }
-
-            // Validate inputs
-            if (!provider) {
-                throw new Error('Please select an art style');
-            }
-
-            // First handle the USDC payment
+    if (confirmRegenerateBtn) {
+        confirmRegenerateBtn.addEventListener('click', async () => {
             try {
-                // Check if MetaMask is installed
-                if (typeof window.ethereum === 'undefined') {
-                    throw new Error('MetaMask or compatible wallet not found. Please install it to continue.');
+                // Get form values
+                const provider = document.getElementById('regenerateProvider').value;
+                const promptExtras = document.getElementById('regeneratePrompt').value || '';
+                const negativePrompt = document.getElementById('regenerateNegativePrompt').value || '';
+
+                // Update UI to show processing
+                const statusEl = document.getElementById('regenerateStatus');
+                const statusTextEl = document.getElementById('regenerateStatusText');
+                confirmRegenerateBtn.disabled = true;
+                confirmRegenerateBtn.textContent = 'Processing...';
+
+                if (statusEl && statusTextEl) {
+                    statusEl.style.display = 'block';
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Initiating payment transaction...';
                 }
 
-                // Import config values
-                const { USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT } = await import('./config.js');
-
-                // Calculate the amount in wei (USDC has 6 decimals)
-                const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6);
-
-                // Request account access
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Connecting to wallet...';
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                if (accounts.length === 0) {
-                    throw new Error('No accounts found. Please connect your wallet.');
-                }
-                const userAddress = accounts[0];
-
-                // Get the web3 provider - using ethers v6 syntax
-                const web3Provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await web3Provider.getSigner();
-
-                // USDC ABI for the transfer function
-                const usdcAbi = [
-                    'function transfer(address to, uint256 value) returns (bool)',
-                    'function balanceOf(address owner) view returns (uint256)'
-                ];
-
-                const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
-
-                // Check USDC balance
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Checking USDC balance...';
-                const balance = await usdcContract.balanceOf(userAddress);
-                if (balance < AMOUNT) {
-                    throw new Error(`Insufficient USDC balance. You need at least ${REGENERATION_FEE_AMOUNT} USDC.`);
+                // Validate inputs
+                if (!provider) {
+                    throw new Error('Please select an art style');
                 }
 
-                // Send the transaction
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Sending payment transaction...';
-                const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, AMOUNT);
+                // First handle the USDC payment
+                try {
+                    // Check if MetaMask is installed
+                    if (typeof window.ethereum === 'undefined') {
+                        throw new Error('MetaMask or compatible wallet not found. Please install it to continue.');
+                    }
 
-                // Wait for confirmation
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Confirming payment transaction...';
-                await tx.wait();
+                    // Import config values
+                    const { USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT } = await import('./config.js');
 
-                // Payment successful, now proceed with regeneration
-                statusTextEl.innerHTML = '<div class="success-icon">✓</div>Payment successful! Initiating regeneration...';
+                    // Calculate the amount in wei (USDC has 6 decimals)
+                    const AMOUNT = ethers.parseUnits(REGENERATION_FEE_AMOUNT, 6);
 
-                // Get breed from page if available
-                const breedEl = document.getElementById('catBreed');
-                const breed = breedEl ? breedEl.textContent : 'Tabby';
-                
-                // Create task through the new API endpoint
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Creating regeneration task...';
-                
-                const response = await fetch('/api/regenerate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        tokenId: id,
-                        imageProvider: provider,
-                        breed: breed,
-                        promptExtras: promptExtras || undefined,
-                        negativePrompt: negativePrompt || undefined,
-                        paymentTx: tx.hash,
-                        payer: userAddress
-                    })
-                });
+                    // Request account access
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Connecting to wallet...';
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    if (accounts.length === 0) {
+                        throw new Error('No accounts found. Please connect your wallet.');
+                    }
+                    const userAddress = accounts[0];
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to start regeneration process');
+                    // Get the web3 provider - using ethers v6 syntax
+                    const web3Provider = new ethers.BrowserProvider(window.ethereum);
+                    const signer = await web3Provider.getSigner();
+
+                    // USDC ABI for the transfer function
+                    const usdcAbi = [
+                        'function transfer(address to, uint256 value) returns (bool)',
+                        'function balanceOf(address owner) view returns (uint256)'
+                    ];
+
+                    const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
+
+                    // Check USDC balance
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Checking USDC balance...';
+                    const balance = await usdcContract.balanceOf(userAddress);
+                    if (balance < AMOUNT) {
+                        throw new Error(`Insufficient USDC balance. You need at least ${REGENERATION_FEE_AMOUNT} USDC.`);
+                    }
+
+                    // Send the transaction
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Sending payment transaction...';
+                    const tx = await usdcContract.transfer(REGENERATION_FEE_RECIPIENT, AMOUNT);
+
+                    // Wait for confirmation
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Confirming payment transaction...';
+                    await tx.wait();
+
+                    // Payment successful, now proceed with regeneration
+                    statusTextEl.innerHTML = '<div class="success-icon">✓</div>Payment successful! Initiating regeneration...';
+
+                    // Get breed from page if available
+                    const breedEl = document.getElementById('catBreed');
+                    const breed = breedEl ? breedEl.textContent : 'Tabby';
+                    
+                    // Create task through the new API endpoint
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Creating regeneration task...';
+                    
+                    const response = await fetch('/api/regenerate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            tokenId: tokenId,  // Use tokenId parameter instead of id global variable
+                            imageProvider: provider,
+                            breed: breed,
+                            promptExtras: promptExtras || undefined,
+                            negativePrompt: negativePrompt || undefined,
+                            paymentTx: tx.hash,
+                            payer: userAddress
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to start regeneration process');
+                    }
+
+                    const responseData = await response.json();
+                    const { taskId } = responseData;
+
+                    if (!taskId) {
+                        throw new Error('No task ID returned from server');
+                    }
+
+                    statusTextEl.innerHTML = '<div class="loading-spinner"></div>Request accepted! Monitoring progress...';
+
+                    // Start polling for status with the new task system
+                    await pollTaskStatus(taskId, statusTextEl);
+
+                } catch (paymentError) {
+                    console.error('Payment failed:', paymentError);
+                    throw new Error(`Payment failed: ${paymentError.message || 'Unknown error'}`);
                 }
-
-                const responseData = await response.json();
-                const { taskId } = responseData;
-
-                if (!taskId) {
-                    throw new Error('No task ID returned from server');
+            } catch (error) {
+                console.error('Regeneration failed:', error);
+                const statusTextEl = document.getElementById('regenerateStatusText');
+                if (statusTextEl) {
+                    statusTextEl.innerHTML = `<div class="error-icon">❌</div> Error: ${error.message}`;
                 }
-
-                statusTextEl.innerHTML = '<div class="loading-spinner"></div>Request accepted! Monitoring progress...';
-
-                // Start polling for status with the new task system
-                await pollTaskStatus(taskId, statusTextEl);
-
-            } catch (paymentError) {
-                console.error('Payment failed:', paymentError);
-                throw new Error(`Payment failed: ${paymentError.message || 'Unknown error'}`);
+                showToast(error.message, 'error');
+            } finally {
+                // Re-enable button
+                confirmRegenerateBtn.disabled = false;
+                // Using dynamic import to get REGENERATION_FEE_AMOUNT
+                const { REGENERATION_FEE_AMOUNT } = await import('./config.js').catch(() => ({ REGENERATION_FEE_AMOUNT: '5' }));
+                confirmRegenerateBtn.textContent = `Pay ${REGENERATION_FEE_AMOUNT} USDC & Regenerate`;
             }
-        } catch (error) {
-            console.error('Regeneration failed:', error);
-            const statusTextEl = document.getElementById('regenerateStatusText');
-            if (statusTextEl) {
-                statusTextEl.innerHTML = `<div class="error-icon">❌</div> Error: ${error.message}`;
-            }
-            showToast(error.message, 'error');
-        } finally {
-            // Re-enable button
-            confirmRegenerateBtn.disabled = false;
-            confirmRegenerateBtn.textContent = `Pay ${REGENERATION_FEE_AMOUNT} USDC & Regenerate`;
-        }
-    });
+        });
+    }
 }
 
-// Updated polling function for task status
 // Updated polling function for task status
 async function pollTaskStatus(taskId, statusElement) {
     let completed = false;
@@ -1435,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                                     <div class="skill-progress" style="width: 50%"></div>
                                 </div>
                             </div>
-                            <div class="attribute-card">
+                                                        <div class="attribute-card">
                                 <div class="attribute-type">Power</div>
                                 <div class="attribute-value">5/10</div>
                                 <div class="skill-bar">
