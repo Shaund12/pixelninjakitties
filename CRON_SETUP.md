@@ -32,7 +32,7 @@ The cron job is configured in `vercel.json` with the following schedule:
 The cron job at `/api/cron` is designed to:
 1. **Process multiple tasks per execution** to compensate for the 1-minute minimum
 2. **Handle up to 3 tasks per run** to avoid timeout
-3. **Maintain persistent state** between executions using MongoDB
+3. **Maintain persistent state** between executions using Supabase
 4. **Queue tasks efficiently** to process them across multiple cron runs
 
 ## Alternative Solutions for Higher Frequency
@@ -58,14 +58,14 @@ If you need higher frequency than every minute:
 
 ✅ **Working**: Cron job runs every minute and processes pending NFT generation tasks
 ✅ **Efficient**: Handles multiple tasks per execution to maximize throughput
-✅ **Persistent**: Uses MongoDB to maintain state between executions
+✅ **Persistent**: Uses Supabase to maintain state between executions
 ✅ **Robust**: Comprehensive error handling and logging
 
 ## Monitoring
 
 You can monitor cron job execution by:
 1. **Vercel Dashboard**: Check function logs and invocations
-2. **MongoDB**: Check task status and completion rates
+2. **Supabase Dashboard**: Check task status and completion rates
 3. **Health Endpoint**: `/api/health` shows system status
 4. **Direct Cron Check**: Visit `/api/cron` to manually trigger execution
 
