@@ -28,9 +28,7 @@ export async function connectToMongoDB() {
         client = new MongoClient(mongoUri, {
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000,
-            bufferMaxEntries: 0,
-            useUnifiedTopology: true
+            socketTimeoutMS: 45000
         });
 
         // Connect to MongoDB
@@ -211,10 +209,15 @@ export function isMongoConnected() {
 /**
  * Ensure MongoDB connection is active
  * @returns {Promise<boolean>} - Connection success
+ * @throws {Error} - If connection fails
  */
 export async function ensureConnection() {
     if (!isConnected) {
-        return await connectToMongoDB();
+        const connected = await connectToMongoDB();
+        if (!connected) {
+            throw new Error('Failed to establish MongoDB connection');
+        }
+        return true;
     }
 
     try {
@@ -224,7 +227,11 @@ export async function ensureConnection() {
     } catch (error) {
         console.error('❌ MongoDB connection test failed:', error);
         isConnected = false;
-        return await connectToMongoDB();
+        const connected = await connectToMongoDB();
+        if (!connected) {
+            throw new Error('Failed to re-establish MongoDB connection');
+        }
+        return true;
     }
 }
 
