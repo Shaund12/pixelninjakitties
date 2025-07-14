@@ -1258,6 +1258,7 @@ function showToast(message, type = 'info', duration = 3000) {
 }
 
 // Poll Supabase task status until completion - CRITICAL FIX FOR ISSUE #31
+// Poll Supabase task status until completion
 function pollSupabaseTaskStatus(taskId, tokenId, provider) {
     let pollAttempts = 0;
     const maxPolls = 45; // Maximum polling attempts (90 seconds at 2-second intervals)
@@ -1268,7 +1269,6 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
     const checkTaskStatus = async () => {
         if (pollAttempts >= maxPolls) {
             console.warn(`⏰ Task polling timeout after ${maxPolls} attempts`);
-            // Stop polling after max attempts and show timeout message
             updateProgress(100);
             showTimeoutMessage(tokenId, null);
             return;
@@ -1278,36 +1278,68 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
         console.log(`📊 Polling attempt ${pollAttempts}/${maxPolls} for task ${taskId}`);
 
         try {
-            const response = await fetch(`/api/status/${taskId}`);
-            if (!response.ok) {
-                throw new Error(`Server responded with status: ${response.status}`);
+            // Try multiple URL formats for resilience
+            let response = null;
+            let error = null;
+            
+            // Try different endpoint formats
+            const endpoints = [
+                `/api/task-status?id=${taskId}`,
+                `/api/task-status/${taskId}`,
+                `/api/tasks/${taskId}`,
+                `/api/status/${taskId}`
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`Trying endpoint: ${endpoint}`);
+                    const resp = await fetch(endpoint);
+                    if (resp.ok) {
+                        response = resp;
+                        break;
+                    }
+                } catch (err) {
+                    error = err;
+                    // Continue to next endpoint
+                    console.warn(`Endpoint ${endpoint} failed:`, err);
+                }
+            }
+            
+            if (!response) {
+                throw error || new Error('All status endpoints failed');
             }
 
             const data = await response.json();
-            console.log('✅ Task status response:', data);
+            console.log('Task status response:', data);
 
+            // Make status check case-insensitive
+            const taskStatus = (data.status || data.state || '').toUpperCase();
+            
             // Update progress based on task progress
             if (data.progress) {
                 const progressPercent = Math.min(Math.max(data.progress, 80), 99);
                 updateProgress(progressPercent);
             }
 
-            // Update generation stage based on status
-            if (data.status === 'IN_PROGRESS') {
+            // Update generation stage based on status message
+            if (taskStatus === 'IN_PROGRESS' || taskStatus === 'PROCESSING') {
                 if (data.message) {
-                    if (data.message.includes('trait') || data.message.includes('Trait')) {
+                    if (data.message.toLowerCase().includes('trait')) {
                         updateGenerationStage('traits');
-                    } else if (data.message.includes('image') || data.message.includes('Image') || data.message.includes('generating') || data.message.includes('Creating')) {
+                    } else if (data.message.toLowerCase().includes('image') || 
+                               data.message.toLowerCase().includes('generat') || 
+                               data.message.toLowerCase().includes('creat')) {
                         updateGenerationStage('image');
-                    } else if (data.message.includes('metadata') || data.message.includes('Metadata') || data.message.includes('finalizing') || data.message.includes('Finalizing')) {
+                    } else if (data.message.toLowerCase().includes('metadata') || 
+                               data.message.toLowerCase().includes('finaliz')) {
                         updateGenerationStage('metadata');
                     }
                 }
             }
 
-            // CRITICAL: Only show success when task is COMPLETED AND has token_uri
-            if (data.status === 'COMPLETED' && data.token_uri) {
-                console.log('🎉 Task completed successfully with token URI:', data.token_uri);
+            // Handle status values - use case-insensitive comparison
+            if (taskStatus === 'COMPLETED') {
+                console.log('🎉 Task completed successfully!', data);
 
                 // Final stage - all complete
                 updateGenerationStage('metadata');
@@ -1331,43 +1363,43 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
                     showMintSuccess(tokenId, null, provider);
                 }, 1000);
                 return;
-            } else if (data.status === 'FAILED') {
-                console.error('❌ Task failed:', data.message);
-                // Task failed but NFT is still minted
+            } else if (taskStatus === 'FAILED') {
+                console.error('❌ Task failed:', data.message || data.error);
                 updateProgress(100);
                 showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
                 showMintSuccess(tokenId, null, provider);
                 return;
-            } else if (data.status === 'TIMEOUT') {
+            } else if (taskStatus === 'TIMEOUT') {
                 console.warn('⏰ Task timed out');
                 updateProgress(100);
                 showTimeoutMessage(tokenId, null);
                 return;
-            } else if (data.status === 'IN_PROGRESS' || data.status === 'PENDING') {
+            } else if (['IN_PROGRESS', 'PENDING', 'PROCESSING', 'RUNNING', 'STARTED'].includes(taskStatus)) {
                 // Still processing - continue polling
-                console.log(`⏳ Task still in progress (${data.status}): ${data.message}`);
+                console.log(`⏳ Task still in progress (${taskStatus}): ${data.message || 'Processing...'}`);
 
                 // Update progress if available
                 if (data.progress && data.progress > 0) {
-                    updateProgress(Math.min(data.progress, 99));
+                    const calculatedProgress = 80 + (data.progress / 5); // Scale to 80-99%
+                    updateProgress(Math.min(calculatedProgress, 99));
                 }
 
                 // Continue polling
-                setTimeout(checkTaskStatus, pollInterval);
+                setTimeout(checkStatus, pollInterval);
             } else {
                 // Unknown status - continue polling with caution
-                console.warn('❓ Unknown task status:', data.status);
-                setTimeout(checkTaskStatus, pollInterval * 1.5);  // Slightly longer wait on unknown status
+                console.warn('❓ Unknown task status:', taskStatus);
+                setTimeout(checkStatus, pollInterval * 1.5);
             }
         } catch (error) {
             console.error('❌ Error polling task status:', error);
             // Continue polling despite error, but with longer intervals
-            setTimeout(checkTaskStatus, pollInterval * 2);
+            setTimeout(checkStatus, pollInterval * 2);
         }
     };
 
     // Start polling immediately
-    checkTaskStatus();
+    checkStatus();
 }
 
 // Show timeout message when task takes too long

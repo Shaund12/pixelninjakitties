@@ -526,6 +526,9 @@ async function pollTaskStatus(taskId, statusElement) {
         try {
             // Try multiple API endpoints for resilience
             let response = null;
+            let error = null;
+            
+            // Try different endpoint formats
             const endpoints = [
                 `/api/task-status?id=${taskId}`,
                 `/api/task-status/${taskId}`,
@@ -542,13 +545,13 @@ async function pollTaskStatus(taskId, statusElement) {
                         break;
                     }
                 } catch (err) {
-                    // Continue to next endpoint
+                    error = err;
                     console.warn(`Failed endpoint ${endpoint}:`, err);
                 }
             }
 
             if (!response) {
-                throw new Error('Failed to get task status from any endpoint');
+                throw error || new Error('Failed to get task status from any endpoint');
             }
 
             const taskData = await response.json();
@@ -569,6 +572,7 @@ async function pollTaskStatus(taskId, statusElement) {
 
                 switch (status) {
                     case 'PROCESSING':
+                    case 'IN_PROGRESS':
                         statusMsg = `<div class="loading-spinner"></div>${message} - ${progress}%`;
                         break;
                     case 'COMPLETED':
@@ -613,7 +617,7 @@ async function pollTaskStatus(taskId, statusElement) {
                         }
                         break;
                     case 'FAILED':
-                        statusMsg = `<div class="error-icon">❌</div>Failed: ${message || 'Unknown error'}`;
+                        statusMsg = `<div class="error-icon">❌</div>Failed: ${message || taskData.error || 'Unknown error'}`;
                         completed = true;
                         break;
                     default:
@@ -1586,4 +1590,3 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Fatal error:', error);
     }
 });
-
