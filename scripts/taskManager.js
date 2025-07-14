@@ -1,13 +1,13 @@
 /**
  * Advanced Task Management System
  * Handles tracking, updating, and monitoring of asynchronous NFT generation tasks
- * Now using MongoDB for persistent storage
+ * Now using Supabase for persistent storage - NO MONGODB ALLOWED
  */
 
 import crypto from 'crypto';
-import { withDatabase } from './mongodb.js';
+import { withSupabase } from './supabase.js';
 
-// Task metrics (loaded from MongoDB)
+// Task metrics (loaded from Supabase)
 let metrics = {
     created: 0,
     completed: 0,
@@ -28,48 +28,65 @@ export const TASK_STATES = {
 };
 
 /**
- * Load metrics from MongoDB
+ * Load metrics from Supabase
  */
 async function loadMetrics() {
     try {
-        return await withDatabase(async (db) => {
-            const metricsDoc = await db.collection('metrics').findOne({ type: 'task_metrics' });
-            if (metricsDoc) {
-                metrics = { ...metrics, ...metricsDoc.data };
+        return await withSupabase(async (supabase) => {
+            const { data, error } = await supabase
+                .from('metrics')
+                .select('*')
+                .eq('type', 'task_metrics')
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // No metrics found, use defaults
+                    return metrics;
+                }
+                throw error;
+            }
+
+            if (data && data.data) {
+                metrics = { ...metrics, ...data.data };
             }
             return metrics;
         }, 'Load task metrics');
     } catch (error) {
-        console.error('Failed to load metrics from MongoDB:', error);
+        console.error('Failed to load metrics from Supabase:', error);
         return metrics;
     }
 }
 
 /**
- * Save metrics to MongoDB
+ * Save metrics to Supabase
  */
 async function saveMetrics() {
     try {
-        return await withDatabase(async (db) => {
-            const result = await db.collection('metrics').replaceOne(
-                { type: 'task_metrics' },
-                {
+        return await withSupabase(async (supabase) => {
+            const { error } = await supabase
+                .from('metrics')
+                .upsert({
                     type: 'task_metrics',
                     data: metrics,
-                    updatedAt: new Date()
-                },
-                { upsert: true }
-            );
-            return result.acknowledged;
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'type'
+                });
+
+            if (error) {
+                throw error;
+            }
+            return true;
         }, 'Save task metrics');
     } catch (error) {
-        console.error('Failed to save metrics to MongoDB:', error);
+        console.error('Failed to save metrics to Supabase:', error);
         return false;
     }
 }
 
 /**
- * Create a new task and store it in MongoDB
+ * Create a new task and store it in Supabase
  * @param {string|number} tokenId - The NFT token ID
  * @param {string} provider - The image provider to use
  * @param {Object} options - Additional task options
@@ -83,31 +100,39 @@ export async function createTask(tokenId, provider, options = {}) {
 
     // Create the task with extended properties
     const task = {
-        _id: taskId,
-        taskId,
-        tokenId,
+        id: taskId,
+        task_id: taskId,
+        token_id: tokenId,
         provider,
         status: TASK_STATES.PENDING,
         progress: 0,
         message: 'Task created',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        history: [{
-            time: new Date(),
-            status: TASK_STATES.PENDING,
-            message: 'Task created'
-        }],
-        timeoutAt: options.timeout ? new Date(Date.now() + options.timeout) : null,
-        priority: options.priority || 'normal',
-        providerOptions: options.providerOptions || {},
-        estimatedCompletionTime: null,
-        ...options
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        metadata: {
+            history: [{
+                time: new Date().toISOString(),
+                status: TASK_STATES.PENDING,
+                message: 'Task created'
+            }],
+            timeout_at: options.timeout ? new Date(Date.now() + options.timeout).toISOString() : null,
+            priority: options.priority || 'normal',
+            provider_options: options.providerOptions || {},
+            estimated_completion_time: null,
+            ...options
+        }
     };
 
     try {
-        // Store the task in MongoDB
-        await withDatabase(async (db) => {
-            await db.collection('tasks').insertOne(task);
+        // Store the task in Supabase
+        await withSupabase(async (supabase) => {
+            const { error } = await supabase
+                .from('tasks')
+                .insert([task]);
+
+            if (error) {
+                throw error;
+            }
         }, 'Create task');
 
         // Update metrics
@@ -131,17 +156,23 @@ export async function createTask(tokenId, provider, options = {}) {
  */
 export async function updateTask(taskId, update) {
     try {
-        return await withDatabase(async (db) => {
-            const task = await db.collection('tasks').findOne({ _id: taskId });
-            if (!task) {
-                throw new Error(`Task ${taskId} not found`);
+        return await withSupabase(async (supabase) => {
+            const { data: task, error: fetchError } = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('task_id', taskId)
+                .single();
+
+            if (fetchError) {
+                throw new Error(`Task ${taskId} not found: ${fetchError.message}`);
             }
 
-            const now = new Date();
+            const now = new Date().toISOString();
+            let history = task.metadata?.history || [];
 
             // Track status changes in history
             if (update.status && update.status !== task.status) {
-                task.history.push({
+                history.push({
                     time: now,
                     status: update.status,
                     message: update.message || `Status changed to ${update.status}`,
@@ -150,7 +181,7 @@ export async function updateTask(taskId, update) {
             }
             // Track progress updates
             else if (update.progress && update.progress !== task.progress) {
-                task.history.push({
+                history.push({
                     time: now,
                     status: task.status,
                     message: update.message || `Progress updated to ${update.progress}%`,
@@ -159,7 +190,7 @@ export async function updateTask(taskId, update) {
             }
             // Track message updates
             else if (update.message && update.message !== task.message) {
-                task.history.push({
+                history.push({
                     time: now,
                     status: task.status,
                     message: update.message,
@@ -168,19 +199,32 @@ export async function updateTask(taskId, update) {
             }
 
             // Calculate estimated completion time for tasks in progress
+            let estimatedCompletionTime = task.metadata?.estimated_completion_time;
             if (update.progress && update.progress > task.progress && update.progress < 100) {
-                const elapsedTime = now - task.createdAt;
+                const elapsedTime = new Date() - new Date(task.created_at);
                 const estimatedTotalTime = (elapsedTime / update.progress) * 100;
                 const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
-
-                update.estimatedCompletionTime = new Date(now.getTime() + estimatedTimeRemaining);
+                
+                estimatedCompletionTime = new Date(Date.now() + estimatedTimeRemaining).toISOString();
             }
 
             // Create the updated task object
             const updatedTask = {
                 ...task,
-                ...update,
-                updatedAt: now
+                status: update.status || task.status,
+                progress: update.progress !== undefined ? update.progress : task.progress,
+                message: update.message || task.message,
+                updated_at: now,
+                metadata: {
+                    ...task.metadata,
+                    history,
+                    estimated_completion_time: estimatedCompletionTime,
+                    ...(update.result && { result: update.result }),
+                    ...(update.error && { error: update.error }),
+                    ...(update.completedAt && { completed_at: update.completedAt }),
+                    ...(update.failedAt && { failed_at: update.failedAt }),
+                    ...(update.canceledAt && { canceled_at: update.canceledAt })
+                }
             };
 
             // Update task metrics when status changes to completed or failed
@@ -190,7 +234,7 @@ export async function updateTask(taskId, update) {
                 metrics.active--;
 
                 // Update average completion time
-                const completionTime = now - task.createdAt;
+                const completionTime = new Date() - new Date(task.created_at);
                 metrics.averageCompletionTime =
                     (metrics.averageCompletionTime * (metrics.completed - 1) + completionTime) / metrics.completed;
             }
@@ -199,8 +243,15 @@ export async function updateTask(taskId, update) {
                 metrics.active--;
             }
 
-            // Save updated task to MongoDB
-            await db.collection('tasks').replaceOne({ _id: taskId }, updatedTask);
+            // Save updated task to Supabase
+            const { error: updateError } = await supabase
+                .from('tasks')
+                .update(updatedTask)
+                .eq('task_id', taskId);
+
+            if (updateError) {
+                throw updateError;
+            }
 
             // Save updated metrics
             await saveMetrics();
@@ -221,11 +272,15 @@ export async function updateTask(taskId, update) {
  */
 export async function getTaskStatus(taskId, options = {}) {
     try {
-        return await withDatabase(async (db) => {
-            const task = await db.collection('tasks').findOne({ _id: taskId });
+        return await withSupabase(async (supabase) => {
+            const { data: task, error } = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('task_id', taskId)
+                .single();
 
             // Check if task exists
-            if (!task) {
+            if (error || !task) {
                 return {
                     status: TASK_STATES.UNKNOWN,
                     message: 'Task not found or expired',
@@ -234,7 +289,7 @@ export async function getTaskStatus(taskId, options = {}) {
             }
 
             // Check for task timeout
-            if (task.timeoutAt && new Date() > task.timeoutAt &&
+            if (task.metadata?.timeout_at && new Date() > new Date(task.metadata.timeout_at) &&
                 ![TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.CANCELED].includes(task.status)) {
                 await updateTask(taskId, {
                     status: TASK_STATES.TIMEOUT,
@@ -250,11 +305,19 @@ export async function getTaskStatus(taskId, options = {}) {
                     status: task.status,
                     progress: task.progress,
                     message: task.message,
-                    updatedAt: task.updatedAt
+                    updatedAt: task.updated_at
                 };
             }
 
-            return task;
+            return {
+                taskId: task.task_id,
+                ...task,
+                // Convert snake_case to camelCase for compatibility
+                createdAt: task.created_at,
+                updatedAt: task.updated_at,
+                tokenId: task.token_id,
+                taskId: task.task_id
+            };
         }, 'Get task status');
     } catch (error) {
         console.error(`Failed to get task status for ${taskId}:`, error);
@@ -279,7 +342,7 @@ export async function completeTask(taskId, result) {
         progress: 100,
         result,
         message: 'Task completed successfully',
-        completedAt: new Date()
+        completedAt: new Date().toISOString()
     });
 }
 
@@ -294,7 +357,7 @@ export async function failTask(taskId, error) {
         status: TASK_STATES.FAILED,
         message: error.message || 'Task failed',
         error: error.toString(),
-        failedAt: new Date()
+        failedAt: new Date().toISOString()
     });
 }
 

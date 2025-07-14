@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/taskManager.js';
-import { saveState, loadState, ensureConnection } from '../scripts/mongodb.js';
+import { saveState, loadState, ensureConnection } from '../scripts/supabase.js';
 
 // Default state structure for cron system
 const DEFAULT_STATE = {
@@ -10,30 +10,87 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from MongoDB
+// Load state from Supabase
 async function loadCronState() {
     try {
         const state = await loadState('cron', DEFAULT_STATE);
+        
+        // Validate that state is an object
+        if (!state || typeof state !== 'object') {
+            console.warn('⚠️ Invalid state object returned from Supabase, using default state');
+            return { ...DEFAULT_STATE, processedTokens: new Set() };
+        }
+
+        // Validate processedTokens - ensure it's an array before converting to Set
+        if (!Array.isArray(state.processedTokens)) {
+            console.warn('⚠️ processedTokens is not an array, resetting to empty array');
+            state.processedTokens = [];
+        }
+
+        // Validate pendingTasks - ensure it's an array
+        if (!Array.isArray(state.pendingTasks)) {
+            console.warn('⚠️ pendingTasks is not an array, resetting to empty array');
+            state.pendingTasks = [];
+        }
+
+        // Validate lastProcessedBlock
+        if (typeof state.lastProcessedBlock !== 'number' || state.lastProcessedBlock < 0) {
+            console.warn('⚠️ lastProcessedBlock is invalid, resetting to 0');
+            state.lastProcessedBlock = 0;
+        }
+
         // Convert array back to Set for processedTokens
         state.processedTokens = new Set(state.processedTokens);
+        
+        console.log(`📊 Validated state: lastBlock=${state.lastProcessedBlock}, processedTokens=${state.processedTokens.size}, pendingTasks=${state.pendingTasks.length}`);
+        
         return state;
     } catch (error) {
-        console.error('Failed to load cron state from MongoDB:', error);
+        console.error('Failed to load cron state from Supabase:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to MongoDB
+// Save state to Supabase
 async function saveCronState(state) {
     try {
+        // Validate state structure before saving
+        if (!state || typeof state !== 'object') {
+            console.error('❌ Invalid state object, cannot save to Supabase');
+            return;
+        }
+
+        // Ensure processedTokens is a Set and convert to array for storage
+        let processedTokensArray = [];
+        if (state.processedTokens instanceof Set) {
+            processedTokensArray = Array.from(state.processedTokens);
+        } else if (Array.isArray(state.processedTokens)) {
+            processedTokensArray = state.processedTokens;
+        } else {
+            console.warn('⚠️ processedTokens is not Set or Array, saving as empty array');
+            processedTokensArray = [];
+        }
+
+        // Ensure pendingTasks is an array
+        let pendingTasksArray = [];
+        if (Array.isArray(state.pendingTasks)) {
+            pendingTasksArray = state.pendingTasks;
+        } else {
+            console.warn('⚠️ pendingTasks is not an array, saving as empty array');
+            pendingTasksArray = [];
+        }
+
         // Convert Set to array for storage
         const stateToSave = {
-            ...state,
-            processedTokens: Array.from(state.processedTokens)
+            lastProcessedBlock: state.lastProcessedBlock || 0,
+            processedTokens: processedTokensArray,
+            pendingTasks: pendingTasksArray
         };
+        
         await saveState('cron', stateToSave);
+        console.log(`💾 State saved to Supabase: lastBlock=${stateToSave.lastProcessedBlock}, processedTokens=${stateToSave.processedTokens.length}, pendingTasks=${stateToSave.pendingTasks.length}`);
     } catch (error) {
-        console.error('Failed to save cron state to MongoDB:', error);
+        console.error('Failed to save cron state to Supabase:', error);
     }
 }
 
@@ -162,7 +219,8 @@ export default async function handler(req, res) {
             PRIVATE_KEY,
             PLACEHOLDER_URI,
             IMAGE_PROVIDER = 'dall-e',
-            MONGODB_URI
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
         } = process.env;
 
         // Validate all required environment variables
@@ -181,22 +239,50 @@ export default async function handler(req, res) {
             });
         }
 
-        if (!MONGODB_URI) {
-            console.error('❌ MONGODB_URI not configured');
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            console.error('❌ SUPABASE_URL and SUPABASE_ANON_KEY not configured');
             return res.status(500).json({
-                error: 'MONGODB_URI not configured',
+                error: 'SUPABASE_URL and SUPABASE_ANON_KEY not configured',
                 timestamp: new Date().toISOString()
             });
         }
 
-        // Ensure MongoDB connection with detailed logging
-        console.log('🔗 Connecting to MongoDB...');
+        // Ensure Supabase connection with detailed logging
+        console.log('🔗 Connecting to Supabase...');
         await ensureConnection();
-        console.log('✅ MongoDB connection established');
+        console.log('✅ Supabase connection established');
 
         // Load persistent state with error handling
         console.log('📂 Loading cron state...');
         const state = await loadCronState();
+        
+        // Additional safety checks to prevent .length of undefined errors
+        if (!state || typeof state !== 'object') {
+            console.error('❌ Invalid state object returned from loadCronState');
+            return res.status(500).json({
+                error: 'Invalid state object returned from loadCronState',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        if (!Array.isArray(state.pendingTasks)) {
+            console.error('❌ pendingTasks is not an array:', typeof state.pendingTasks);
+            return res.status(500).json({
+                error: 'pendingTasks is not an array',
+                receivedType: typeof state.pendingTasks,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        if (!(state.processedTokens instanceof Set)) {
+            console.error('❌ processedTokens is not a Set:', typeof state.processedTokens);
+            return res.status(500).json({
+                error: 'processedTokens is not a Set',
+                receivedType: typeof state.processedTokens,
+                timestamp: new Date().toISOString()
+            });
+        }
+
         console.log(`📊 Loaded state: lastBlock=${state.lastProcessedBlock}, processedTokens=${state.processedTokens.size}, pendingTasks=${state.pendingTasks.length}`);
 
         // Initialize blockchain connection
@@ -351,7 +437,7 @@ export default async function handler(req, res) {
             totalProcessedTokens: state.processedTokens.size,
             environment: {
                 imageProvider: IMAGE_PROVIDER,
-                mongoConnected: true,
+                supabaseConnected: true,
                 blockchainConnected: true
             },
             results
