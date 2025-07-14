@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
-import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/taskManager.js';
-import { saveState, loadState, ensureConnection } from '../scripts/mongodb.js';
+import { createTask, updateTask, completeTask, failTask, getTaskStatus, TASK_STATES } from '../scripts/supabaseTaskManager.js';
+import { saveState, loadState, ensureConnection } from '../scripts/supabase.js';
 
 // Default state structure for cron system
 const DEFAULT_STATE = {
@@ -10,7 +10,7 @@ const DEFAULT_STATE = {
     pendingTasks: []
 };
 
-// Load state from MongoDB
+// Load state from Supabase
 async function loadCronState() {
     try {
         const state = await loadState('cron', DEFAULT_STATE);
@@ -18,12 +18,12 @@ async function loadCronState() {
         state.processedTokens = new Set(state.processedTokens);
         return state;
     } catch (error) {
-        console.error('Failed to load cron state from MongoDB:', error);
+        console.error('Failed to load cron state from Supabase:', error);
         return { ...DEFAULT_STATE, processedTokens: new Set() };
     }
 }
 
-// Save state to MongoDB
+// Save state to Supabase
 async function saveCronState(state) {
     try {
         // Convert Set to array for storage
@@ -33,7 +33,7 @@ async function saveCronState(state) {
         };
         await saveState('cron', stateToSave);
     } catch (error) {
-        console.error('Failed to save cron state to MongoDB:', error);
+        console.error('Failed to save cron state to Supabase:', error);
     }
 }
 
@@ -162,7 +162,8 @@ export default async function handler(req, res) {
             PRIVATE_KEY,
             PLACEHOLDER_URI,
             IMAGE_PROVIDER = 'dall-e',
-            MONGODB_URI
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
         } = process.env;
 
         // Validate all required environment variables
@@ -181,18 +182,22 @@ export default async function handler(req, res) {
             });
         }
 
-        if (!MONGODB_URI) {
-            console.error('❌ MONGODB_URI not configured');
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            console.error('❌ Supabase environment variables not configured');
             return res.status(500).json({
-                error: 'MONGODB_URI not configured',
+                error: 'Supabase environment variables not configured',
+                missing: [
+                    ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
+                    ...(!SUPABASE_ANON_KEY ? ['SUPABASE_ANON_KEY'] : [])
+                ],
                 timestamp: new Date().toISOString()
             });
         }
 
-        // Ensure MongoDB connection with detailed logging
-        console.log('🔗 Connecting to MongoDB...');
+        // Ensure Supabase connection with detailed logging
+        console.log('🔗 Connecting to Supabase...');
         await ensureConnection();
-        console.log('✅ MongoDB connection established');
+        console.log('✅ Supabase connection established');
 
         // Load persistent state with error handling
         console.log('📂 Loading cron state...');
@@ -351,7 +356,7 @@ export default async function handler(req, res) {
             totalProcessedTokens: state.processedTokens.size,
             environment: {
                 imageProvider: IMAGE_PROVIDER,
-                mongoConnected: true,
+                supabaseConnected: true,
                 blockchainConnected: true
             },
             results
