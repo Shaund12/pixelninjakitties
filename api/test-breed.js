@@ -13,12 +13,12 @@ export default async function handler(req, res) {
         // Get parameters from query
         const breed = req.query.breed || 'Calico';
         const tokenId = req.query.tokenId || '999';
-        
+
         console.log(`🧪 Testing breed selection for: "${breed}" (Token ID: ${tokenId})`);
 
         // Import finalizeMint function
         const { finalizeMint } = await import('../scripts/finalizeMint.js');
-        
+
         // Test the breed selection
         const result = await finalizeMint({
             breed: breed,
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
         // Extract relevant information
         const breedAttribute = result.metadata?.attributes?.find(a => a.trait_type === 'Breed');
-        
+
         const testResult = {
             status: 'success',
             test: {
@@ -43,12 +43,12 @@ export default async function handler(req, res) {
         };
 
         console.log('🧪 Test Result:', testResult);
-        
+
         return res.status(200).json(testResult);
-        
+
     } catch (error) {
         console.error('❌ Breed selection test failed:', error);
-        
+
         return res.status(500).json({
             status: 'error',
             error: error.message,
