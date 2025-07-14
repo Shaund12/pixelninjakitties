@@ -21,7 +21,7 @@ import compression from 'compression';
 import { ethers } from 'ethers';
 import { finalizeMint } from './scripts/finalizeMint.js';
 import { createStorage } from './scripts/storageHelpers.js'; // You'll need to create this file
-import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks } from './scripts/taskManager.js';
+import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks, initializeSupabaseTables } from './scripts/supabaseTaskManager.js';
 import {
     validateTokenId,
     validateBreed,
@@ -41,7 +41,6 @@ import {
     errorHandler
 } from './scripts/middleware.js';
 import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
-import { connectToMongoDB } from './scripts/mongodb.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -56,13 +55,17 @@ const {
     PRIVATE_KEY,
     PLACEHOLDER_URI,
     PORT = 5000,
-    IMAGE_PROVIDER = 'dall-e'
+    IMAGE_PROVIDER = 'dall-e',
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
 } = process.env;
 
 // Log environment configuration at startup (with security considerations)
 console.log('Environment check:');
 console.log(`- RPC_URL: ${RPC_URL ? '✓ Set' : '❌ Missing'}`);
 console.log(`- CONTRACT_ADDRESS: ${CONTRACT_ADDRESS ? '✓ Set' : '❌ Missing'}`);
+console.log(`- SUPABASE_URL: ${SUPABASE_URL ? '✓ Set' : '❌ Missing'}`);
+console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? '✓ Set' : '❌ Missing'}`);
 console.log(`- PINATA_API_KEY: ${process.env.PINATA_API_KEY ? '✓ Set' : '❌ Missing'}`);
 console.log(`- PINATA_SECRET_KEY: ${process.env.PINATA_SECRET_KEY ? '✓ Set' : '❌ Missing'}`);
 console.log(`- BASE_URL: ${process.env.BASE_URL ? '✓ Set' : '(using default)'}`);
@@ -72,7 +75,12 @@ console.log(`- HUGGING_FACE_TOKEN: ${process.env.HUGGING_FACE_TOKEN ? '✓ Set' 
 console.log(`- STABILITY_API_KEY: ${process.env.STABILITY_API_KEY ? '✓ Set' : '❌ Missing'}`);
 
 if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY || !PLACEHOLDER_URI) {
-    console.error('❌  Missing env vars – check .env');
+    console.error('❌  Missing required env vars – check .env');
+    process.exit(1);
+}
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('❌  Missing Supabase env vars – SUPABASE_URL and SUPABASE_ANON_KEY are required');
     process.exit(1);
 }
 
@@ -378,14 +386,19 @@ app.get('/api/process/:tokenId', async (req, res) => {
         console.log(`   Owner: ${sanitizeForLogging(owner)}`);
 
         // Create a task for tracking
-        const taskId = await createTask(tokenId, imageProvider);
+        const taskId = await createTask(tokenId, imageProvider, {
+            breed,
+            owner,
+            providerOptions,
+            timeout: 300000 // 5 minutes timeout
+        });
         await updateTask(taskId, {
-            status: 'queued',
+            status: 'IN_PROGRESS',
             message: 'Waiting in processing queue',
             breed,
             owner,
             provider: imageProvider,
-            providerOptions
+            provider_options: providerOptions
         });
 
         // Add to processing queue with explicit provider and all options
@@ -526,17 +539,22 @@ app.get('/api/docs', (req, res) => {
     });
 });
 
-// Initialize MongoDB connection and start server
+// Initialize Supabase and start server
 async function startServer() {
     try {
-        // Connect to MongoDB
-        await connectToMongoDB();
-        console.log('✅ MongoDB connection established');
+        // Initialize Supabase tables
+        const tablesInitialized = await initializeSupabaseTables();
+        if (!tablesInitialized) {
+            console.error('❌ Failed to initialize Supabase tables. Please check the console output for SQL commands.');
+            // Don't exit - let the server run, but log the issue
+        } else {
+            console.log('✅ Supabase connection and tables verified');
+        }
 
         // Start Express server
         app.listen(PORT, () => {
             console.log(`🌐 Ninja Kitty server running on port ${PORT}`);
-            console.log('📊 MongoDB integrated for task persistence');
+            console.log('📊 Supabase integrated for task persistence');
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
@@ -660,13 +678,18 @@ async function processMintTask(task) {
     const providerToUse = imageProvider || IMAGE_PROVIDER;
 
     // Create or use existing task ID
-    const mintTaskId = existingTaskId || await createTask(id, providerToUse);
+    const mintTaskId = existingTaskId || await createTask(id, providerToUse, {
+        breed,
+        owner: buyer,
+        providerOptions: task.providerOptions || {},
+        timeout: 300000 // 5 minutes timeout
+    });
     await updateTask(mintTaskId, {
-        status: 'processing',
+        status: 'IN_PROGRESS',
         progress: 5,
         message: 'Starting mint process',
         breed,
-        buyer
+        owner: buyer
     });
 
     console.log(`⚙️ Processing queued mint for #${id} (${breed}) by ${buyer} using ${providerToUse}`);

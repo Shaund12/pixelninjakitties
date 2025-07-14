@@ -700,7 +700,7 @@ mintBtn.onclick = async () => {
                 }
             }
 
-            // If we found a token ID, notify the server about the provider choice
+            // If we found a token ID, monitor the task until completion
             if (tokenId) {
                 updateProgress(75);
 
@@ -716,8 +716,8 @@ mintBtn.onclick = async () => {
                             </svg>
                         </div>
                         <div class="generation-text">
-                            <h4>Creating Your Ninja Cat</h4>
-                            <p>Generating AI image with ${providerName}...</p>
+                            <h4>⏳ Minting in progress...</h4>
+                            <p>🎨 Generating your NFT with ${providerName}...</p>
                             <div class="generation-stages">
                                 <div class="generation-stage active" data-stage="mint">✓ NFT Minted</div>
                                 <div class="generation-stage" data-stage="traits">Generating Traits</div>
@@ -774,47 +774,38 @@ mintBtn.onclick = async () => {
 
                 try {
                     // Send request to the server with all options
-                    fetch(apiUrl)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`Server responded with status: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            console.log('Server processing image:', data);
-                            updateProgress(85);
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) {
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Server processing response:', data);
+                    updateProgress(85);
 
-                            // Update generation stage
-                            updateGenerationStage('traits');
+                    // Update generation stage
+                    updateGenerationStage('traits');
 
-                            // Start polling for image status if server supports it
-                            if (data.taskId) {
-                                pollImageStatus(data.taskId, tokenId);
-                            } else {
-                                // No task ID, just show completion after a delay
-                                setTimeout(() => {
-                                    updateProgress(100);
-                                    showMintSuccess(tokenId, tx.hash, imageProvider);
-                                }, 3000);
-                            }
-                        })
-                        .catch(error => {
-                            console.warn('Server notification issue:', error);
-                            // Still show success even if server notification fails
-                            updateProgress(100);
-                            showMintSuccess(tokenId, tx.hash, imageProvider);
-                        });
+                    // CRITICAL FIX: Start polling for task completion using the taskId
+                    if (data.taskId) {
+                        console.log(`🔄 Starting task polling for taskId: ${data.taskId}`);
+                        pollSupabaseTaskStatus(data.taskId, tokenId, imageProvider);
+                    } else {
+                        console.warn('No taskId returned from server, falling back to timeout');
+                        // No task ID, show timeout message after delay
+                        setTimeout(() => {
+                            showTimeoutMessage(tokenId, tx.hash);
+                        }, 30000); // 30 second fallback
+                    }
                 } catch (apiError) {
                     console.warn('Could not notify server about provider choice:', apiError);
-                    // Still show success
-                    updateProgress(100);
-                    showMintSuccess(tokenId, tx.hash, imageProvider);
+                    // Show timeout message since we can't track the task
+                    showTimeoutMessage(tokenId, tx.hash);
                 }
             } else {
                 // No token ID found, but transaction succeeded
                 updateProgress(100);
-                showMintSuccess(null, tx.hash, imageProvider);
+                showTimeoutMessage(null, tx.hash);
             }
         } catch (eventErr) {
             console.warn('Could not determine token ID:', eventErr);
@@ -1266,21 +1257,25 @@ function showToast(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-// Poll for image generation status
-function pollImageStatus(taskId, tokenId) {
+// Poll Supabase task status until completion - CRITICAL FIX FOR ISSUE #31
+function pollSupabaseTaskStatus(taskId, tokenId, provider) {
     let pollAttempts = 0;
-    const maxPolls = 30; // Maximum number of polling attempts
+    const maxPolls = 45; // Maximum polling attempts (90 seconds at 2-second intervals)
     const pollInterval = 2000; // Poll every 2 seconds
 
-    const checkStatus = async () => {
+    console.log(`🔄 Starting Supabase task polling for taskId: ${taskId}`);
+
+    const checkTaskStatus = async () => {
         if (pollAttempts >= maxPolls) {
-            // Stop polling after max attempts
+            console.warn(`⏰ Task polling timeout after ${maxPolls} attempts`);
+            // Stop polling after max attempts and show timeout message
             updateProgress(100);
-            showMintSuccess(tokenId, null, 'AI service');
+            showTimeoutMessage(tokenId, null);
             return;
         }
 
         pollAttempts++;
+        console.log(`📊 Polling attempt ${pollAttempts}/${maxPolls} for task ${taskId}`);
 
         try {
             const response = await fetch(`/api/status/${taskId}`);
@@ -1289,10 +1284,31 @@ function pollImageStatus(taskId, tokenId) {
             }
 
             const data = await response.json();
-            console.log('Image generation status:', data);
+            console.log('✅ Task status response:', data);
 
-            // Update progress based on status
-            if (data.status === 'completed') {
+            // Update progress based on task progress
+            if (data.progress) {
+                const progressPercent = Math.min(Math.max(data.progress, 80), 99);
+                updateProgress(progressPercent);
+            }
+
+            // Update generation stage based on status
+            if (data.status === 'IN_PROGRESS') {
+                if (data.message) {
+                    if (data.message.includes('trait') || data.message.includes('Trait')) {
+                        updateGenerationStage('traits');
+                    } else if (data.message.includes('image') || data.message.includes('Image') || data.message.includes('generating') || data.message.includes('Creating')) {
+                        updateGenerationStage('image');
+                    } else if (data.message.includes('metadata') || data.message.includes('Metadata') || data.message.includes('finalizing') || data.message.includes('Finalizing')) {
+                        updateGenerationStage('metadata');
+                    }
+                }
+            }
+
+            // CRITICAL: Only show success when task is COMPLETED AND has token_uri
+            if (data.status === 'COMPLETED' && data.token_uri) {
+                console.log('🎉 Task completed successfully with token URI:', data.token_uri);
+                
                 // Final stage - all complete
                 updateGenerationStage('metadata');
 
@@ -1303,59 +1319,95 @@ function pollImageStatus(taskId, tokenId) {
                         stroke: '#4ade80',
                         duration: 0.5
                     })
-                        .to('.generation-path', {
-                            stroke: '#4ade80',
-                            opacity: 0,
-                            duration: 0.3
-                        });
+                    .to('.generation-path', {
+                        stroke: '#4ade80',
+                        opacity: 0,
+                        duration: 0.3
+                    });
                 }
 
                 updateProgress(100);
                 setTimeout(() => {
-                    showMintSuccess(tokenId, null, data.provider || 'AI service');
+                    showMintSuccess(tokenId, null, provider);
                 }, 1000);
                 return;
-            } else if (data.status === 'failed') {
-                // Image failed but NFT is still minted
+            } else if (data.status === 'FAILED') {
+                console.error('❌ Task failed:', data.message);
+                // Task failed but NFT is still minted
                 updateProgress(100);
                 showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
-                showMintSuccess(tokenId, null, data.provider || 'AI service');
+                showMintSuccess(tokenId, null, provider);
                 return;
-            } else if (data.status === 'processing') {
-                // Still processing - update the stage based on progress
-                const progressPercent = data.progress || Math.min(80 + (pollAttempts * 1), 95);
-                updateProgress(progressPercent);
-
-                // Update generation stage based on message
-                if (data.stage) {
-                    updateGenerationStage(data.stage);
-                } else if (data.message) {
-                    if (data.message.includes('trait')) {
-                        updateGenerationStage('traits');
-                    } else if (data.message.includes('image') || data.message.includes('generating')) {
-                        updateGenerationStage('image');
-                    } else if (data.message.includes('metadata') || data.message.includes('finalizing')) {
-                        updateGenerationStage('metadata');
-                    }
+            } else if (data.status === 'TIMEOUT') {
+                console.warn('⏰ Task timed out');
+                updateProgress(100);
+                showTimeoutMessage(tokenId, null);
+                return;
+            } else if (data.status === 'IN_PROGRESS' || data.status === 'PENDING') {
+                // Still processing - continue polling
+                console.log(`⏳ Task still in progress (${data.status}): ${data.message}`);
+                
+                // Update progress if available
+                if (data.progress && data.progress > 0) {
+                    updateProgress(Math.min(data.progress, 99));
                 }
-
+                
                 // Continue polling
-                setTimeout(checkStatus, pollInterval);
+                setTimeout(checkTaskStatus, pollInterval);
             } else {
-                // Unknown status - just continue polling
-                updateProgress(Math.min(80 + (pollAttempts * 1), 95));
-                setTimeout(checkStatus, pollInterval);
+                // Unknown status - continue polling with caution
+                console.warn('❓ Unknown task status:', data.status);
+                setTimeout(checkTaskStatus, pollInterval * 1.5);  // Slightly longer wait on unknown status
             }
         } catch (error) {
-            console.warn('Error polling for image status:', error);
-            // Continue polling despite error
-            updateProgress(Math.min(80 + (pollAttempts * 1), 95));
-            setTimeout(checkStatus, pollInterval * 1.5);  // Slightly longer wait on error
+            console.error('❌ Error polling task status:', error);
+            // Continue polling despite error, but with longer intervals
+            setTimeout(checkTaskStatus, pollInterval * 2);
         }
     };
 
-    // Start polling
-    checkStatus();
+    // Start polling immediately
+    checkTaskStatus();
+}
+
+// Show timeout message when task takes too long
+function showTimeoutMessage(tokenId, txHash) {
+    const timeoutUI = document.createElement('div');
+    timeoutUI.className = 'timeout-ui';
+    timeoutUI.innerHTML = `
+        <div class="timeout-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+                <path fill="#ff9800" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
+            </svg>
+        </div>
+        <div class="timeout-content">
+            <h4>Your NFT is still processing</h4>
+            <p>Your NFT is taking longer than expected to generate. It will appear in your collection soon.</p>
+            ${tokenId ? `<a href="kitty.html?id=${tokenId}" class="view-nft-btn">Check NFT Status #${tokenId}</a>` : ''}
+            ${txHash ? `<a href="https://explorer-new.vitruveo.xyz/tx/${txHash}" target="_blank" class="explorer-link">View Transaction</a>` : ''}
+        </div>
+    `;
+
+    // Add to status with animation
+    statusEl.innerHTML = '';
+    statusEl.appendChild(timeoutUI);
+
+    // Animate timeout appearance if GSAP is available
+    if (window.gsap) {
+        gsap.from('.timeout-icon', {
+            scale: 0.5,
+            opacity: 0,
+            duration: 0.5,
+            ease: 'back.out(1.7)'
+        });
+
+        gsap.from('.timeout-content', {
+            y: 20,
+            opacity: 0,
+            duration: 0.5,
+            delay: 0.2
+        });
+    }
 }
 
 // Initialize the page
