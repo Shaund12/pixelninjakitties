@@ -41,7 +41,7 @@ import {
     errorHandler
 } from './scripts/middleware.js';
 import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
-import { connectToMongoDB } from './scripts/mongodb.js';
+import { initializeSupabase } from './scripts/supabase.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -526,17 +526,17 @@ app.get('/api/docs', (req, res) => {
     });
 });
 
-// Initialize MongoDB connection and start server
+// Initialize Supabase connection and start server
 async function startServer() {
     try {
-        // Connect to MongoDB
-        await connectToMongoDB();
-        console.log('✅ MongoDB connection established');
+        // Connect to Supabase
+        await initializeSupabase();
+        console.log('✅ Supabase connection established');
 
         // Start Express server
         app.listen(PORT, () => {
             console.log(`🌐 Ninja Kitty server running on port ${PORT}`);
-            console.log('📊 MongoDB integrated for task persistence');
+            console.log('📊 Supabase integrated for task persistence');
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
