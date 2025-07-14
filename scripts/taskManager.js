@@ -3,6 +3,8 @@
  * Handles tracking, updating, and monitoring of asynchronous NFT generation tasks
  */
 
+import crypto from 'crypto';
+
 // Simple in-memory task storage (would use a database in production)
 const tasks = new Map();
 
@@ -16,7 +18,7 @@ const metrics = {
 };
 
 // Task states
-const TASK_STATES = {
+export const TASK_STATES = {
     PENDING: 'pending',
     PROCESSING: 'processing',
     COMPLETED: 'completed',
@@ -36,8 +38,7 @@ const TASK_STATES = {
 export function createTask(tokenId, provider, options = {}) {
     // Create a more secure task ID with timestamp and random component
     const timestamp = Date.now();
-    const randomPart = crypto.getRandomValues(new Uint8Array(8))
-        .reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
+    const randomPart = crypto.randomBytes(8).toString('hex');
     const taskId = `task_${timestamp}_${randomPart}`;
 
     // Create the task with extended properties
@@ -312,6 +313,3 @@ export function cleanupTasks(maxAge = 24 * 60 * 60 * 1000) {
 
     return removed;
 }
-
-// Export task states for use in other files
-export { TASK_STATES };
