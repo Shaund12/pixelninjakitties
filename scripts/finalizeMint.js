@@ -469,40 +469,43 @@ const PROVIDERS = {
     }
 };
 
-// Verify we have at least one image generation API key
-if (!OPENAI_API_KEY && !STABILITY_API_KEY && !HUGGING_FACE_TOKEN) {
-    throw new Error('Missing API keys in .env: need at least one of HUGGING_FACE_TOKEN, OPENAI_API_KEY, or STABILITY_API_KEY');
-}
+// Function to verify configuration when actually called
+function verifyConfiguration() {
+    // Verify we have at least one image generation API key
+    if (!OPENAI_API_KEY && !STABILITY_API_KEY && !HUGGING_FACE_TOKEN) {
+        throw new Error('Missing API keys in .env: need at least one of HUGGING_FACE_TOKEN, OPENAI_API_KEY, or STABILITY_API_KEY');
+    }
 
-// Check if the selected provider is configured
-const selectedProvider = PROVIDERS[IMAGE_PROVIDER];
-if (!selectedProvider) {
-    console.warn(`⚠️ Unknown provider "${IMAGE_PROVIDER}". Valid options are: ${Object.keys(PROVIDERS).join(', ')}`);
-    console.warn('⚠️ Falling back to available provider...');
-}
-if (selectedProvider && !selectedProvider.key) {
-    console.warn(`⚠️ Selected provider "${IMAGE_PROVIDER}" has no API key configured.`);
-    console.warn('⚠️ Falling back to available provider...');
-}
+    // Check if the selected provider is configured
+    const selectedProvider = PROVIDERS[IMAGE_PROVIDER];
+    if (!selectedProvider) {
+        console.warn(`⚠️ Unknown provider "${IMAGE_PROVIDER}". Valid options are: ${Object.keys(PROVIDERS).join(', ')}`);
+        console.warn('⚠️ Falling back to available provider...');
+    }
+    if (selectedProvider && !selectedProvider.key) {
+        console.warn(`⚠️ Selected provider "${IMAGE_PROVIDER}" has no API key configured.`);
+        console.warn('⚠️ Falling back to available provider...');
+    }
 
-console.log(`🖼️ Default image provider: ${selectedProvider && selectedProvider.key ?
-    `${selectedProvider.name} (${selectedProvider.model})` :
-    'Will try all available providers'
-    }`);
+    console.log(`🖼️ Default image provider: ${selectedProvider && selectedProvider.key ?
+        `${selectedProvider.name} (${selectedProvider.model})` :
+        'Will try all available providers'
+        }`);
 
-const baseUrl = BASE_URL || 'http://localhost:5000';
-const projectName = PROJECT_NAME || 'Pixel Ninja Cats';
-const isPinataConfigured = PINATA_API_KEY && PINATA_SECRET_KEY;
+    return {
+        selectedProvider,
+        baseUrl: BASE_URL || 'http://localhost:5000',
+        projectName: PROJECT_NAME || 'Pixel Ninja Cats',
+        isPinataConfigured: PINATA_API_KEY && PINATA_SECRET_KEY
+    };
+}
 
 /* ─── optional sharp (auto-crop) ─────────────────────────────── */
 let sharp;
 try { sharp = (await import('sharp')).default; } catch { /* fine */ }
 
-/* ─── OpenAI client ──────────────────────────────────────────── */
+/* ─── OpenAI client (initialized when needed) ──────────────────── */
 let openai;
-if (OPENAI_API_KEY) {
-    openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-}
 
 /* ─── trait generation ─────────────────────────────────────────── */
 function generateTraits(breed, tokenId) {
@@ -1736,6 +1739,15 @@ export async function finalizeMint({
     taskId = null,
     ...rest
 }) {
+    // Verify configuration when function is actually called
+    const config = verifyConfiguration();
+    const { selectedProvider, baseUrl, projectName, isPinataConfigured } = config;
+    
+    // Initialize OpenAI client if needed
+    if (OPENAI_API_KEY && !openai) {
+        openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+    }
+    
     // CRITICAL: Capture the provider value immediately and make it immutable
     const LOCKED_PROVIDER = imageProvider?.toLowerCase()?.trim();
     console.log(`🔒 PROVIDER LOCKED: "${LOCKED_PROVIDER || 'default'}" will be used exclusively`);

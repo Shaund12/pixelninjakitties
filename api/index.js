@@ -16,48 +16,69 @@ const {
     MARKETPLACE_ADDRESS
 } = process.env;
 
-// Provider + signer + contract setup
-const provider = new ethers.JsonRpcProvider(RPC_URL);
-const signer = new ethers.Wallet(PRIVATE_KEY, provider);
+// Initialize blockchain connections when needed
+let provider, signer, nft, marketplace;
 
-// NFT contract setup
-const nftAbi = [
-    'event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)',
-    'function tokenURI(uint256) view returns (string)',
-    'function setTokenURI(uint256,string)',
-    'function totalSupply() view returns (uint256)',
-    'function tokenByIndex(uint256) view returns (uint256)',
-    'function ownerOf(uint256) view returns (address)',
-    'function balanceOf(address) view returns (uint256)',
-    'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)'
-];
-const nft = new ethers.Contract(CONTRACT_ADDRESS, nftAbi, signer);
-
-// Marketplace contract setup
-const marketplaceAbi = [
-    'function createListing(uint256 tokenId, uint256 price, address currency) external',
-    'function cancelListing(uint256 tokenId) external',
-    'function buyItem(uint256 tokenId) external payable',
-    'function buyItemWithERC20(uint256 tokenId) external',
-    'function getListings() view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active)[])',
-    'function getListing(uint256 tokenId) view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active))'
-];
-
-let marketplace;
-if (MARKETPLACE_ADDRESS) {
-    marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, marketplaceAbi, signer);
+function initializeBlockchainConnections() {
+    if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY) {
+        throw new Error('Missing required environment variables: RPC_URL, CONTRACT_ADDRESS, PRIVATE_KEY');
+    }
+    
+    if (!provider) {
+        provider = new ethers.JsonRpcProvider(RPC_URL);
+        signer = new ethers.Wallet(PRIVATE_KEY, provider);
+        
+        // NFT contract setup
+        const nftAbi = [
+            'event MintRequested(uint256 indexed tokenId,address indexed buyer,string breed)',
+            'function tokenURI(uint256) view returns (string)',
+            'function setTokenURI(uint256,string)',
+            'function totalSupply() view returns (uint256)',
+            'function tokenByIndex(uint256) view returns (uint256)',
+            'function ownerOf(uint256) view returns (address)',
+            'function balanceOf(address) view returns (uint256)',
+            'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)'
+        ];
+        nft = new ethers.Contract(CONTRACT_ADDRESS, nftAbi, signer);
+        
+        // Marketplace contract setup
+        if (MARKETPLACE_ADDRESS) {
+            const marketplaceAbi = [
+                'function createListing(uint256 tokenId, uint256 price, address currency) external',
+                'function cancelListing(uint256 tokenId) external',
+                'function buyItem(uint256 tokenId) external payable',
+                'function buyItemWithERC20(uint256 tokenId) external',
+                'function getListings() view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active)[])',
+                'function getListing(uint256 tokenId) view returns (tuple(uint256 tokenId, address seller, uint256 price, address currency, bool active))'
+            ];
+            marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, marketplaceAbi, signer);
+        }
+    }
+    
+    return { provider, signer, nft, marketplace };
 }
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        contracts: {
-            nft: CONTRACT_ADDRESS,
-            marketplace: MARKETPLACE_ADDRESS || 'Not configured'
-        }
-    });
+    try {
+        // Try to initialize connections to check if env vars are set
+        initializeBlockchainConnections();
+        
+        res.json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            contracts: {
+                nft: CONTRACT_ADDRESS,
+                marketplace: MARKETPLACE_ADDRESS || 'Not configured'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // METADATA CACHE
@@ -68,6 +89,7 @@ const metadataCache = {};
 // Get total supply
 app.get('/api/kitties/total', async (req, res) => {
     try {
+        const { nft } = initializeBlockchainConnections();
         const totalSupply = await nft.totalSupply();
         res.json({ totalSupply: Number(totalSupply) });
     } catch (error) {
@@ -76,9 +98,11 @@ app.get('/api/kitties/total', async (req, res) => {
     }
 });
 
-// Get a page of kitties with pagination
+// Get a page of kitties with pagination  
 app.get('/api/kitties', async (req, res) => {
     try {
+        const { nft } = initializeBlockchainConnections();
+        
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 12;
         const skip = (page - 1) * limit;
@@ -134,6 +158,7 @@ app.get('/api/kitties', async (req, res) => {
 // Get specific kitty by ID
 app.get('/api/kitties/:id', async (req, res) => {
     try {
+        const { nft, marketplace } = initializeBlockchainConnections();
         const id = req.params.id;
 
         // Check if token exists by trying to get its owner
@@ -189,6 +214,7 @@ app.get('/api/kitties/:id', async (req, res) => {
 // Get kitties owned by address
 app.get('/api/kitties/owner/:address', async (req, res) => {
     try {
+        const { nft } = initializeBlockchainConnections();
         const address = req.params.address;
         const balance = await nft.balanceOf(address);
 
@@ -227,11 +253,13 @@ app.get('/api/kitties/owner/:address', async (req, res) => {
 
 // Get all marketplace listings
 app.get('/api/marketplace/listings', async (req, res) => {
-    if (!marketplace) {
-        return res.status(404).json({ error: 'Marketplace not configured' });
-    }
-
     try {
+        const { nft, marketplace } = initializeBlockchainConnections();
+        
+        if (!marketplace) {
+            return res.status(404).json({ error: 'Marketplace not configured' });
+        }
+
         const listings = await marketplace.getListings();
 
         // Filter only active listings
@@ -274,11 +302,13 @@ app.get('/api/marketplace/listings', async (req, res) => {
 
 // Get a specific listing
 app.get('/api/marketplace/listings/:tokenId', async (req, res) => {
-    if (!marketplace) {
-        return res.status(404).json({ error: 'Marketplace not configured' });
-    }
-
     try {
+        const { nft, marketplace } = initializeBlockchainConnections();
+        
+        if (!marketplace) {
+            return res.status(404).json({ error: 'Marketplace not configured' });
+        }
+
         const tokenId = req.params.tokenId;
         const listing = await marketplace.getListing(tokenId);
 
