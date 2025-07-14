@@ -20,7 +20,8 @@ import cors from 'cors';
 import compression from 'compression';
 import { ethers } from 'ethers';
 import { finalizeMint } from './scripts/finalizeMint.js';
-import { createStorage } from './scripts/storageHelpers.js'; // You'll need to create this file
+import { createStorage } from './scripts/storageHelpers.js';
+import { withDatabase } from './scripts/supabase.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks } from './scripts/taskManager.js';
 import {
     validateTokenId,
@@ -42,8 +43,6 @@ import {
 } from './scripts/middleware.js';
 import { performHealthCheck, UptimeTracker } from './scripts/healthCheck.js';
 import { initializeSupabase } from './scripts/supabase.js';
-import fs from 'fs/promises';
-import path from 'path';
 
 // Initialize uptime tracker
 const uptimeTracker = new UptimeTracker();
@@ -352,11 +351,7 @@ app.get('/api/process/:tokenId', async (req, res) => {
         console.log(`🎯 Processing token #${tokenId} with provider: ${imageProvider}`);
 
         // Store the user's provider preference for this token
-        await providerPreferences.set(tokenId.toString(), {
-            provider: imageProvider,
-            timestamp: Date.now(),
-            options: providerOptions
-        });
+        await setProviderPreference(tokenId, imageProvider, providerOptions);
 
         let current = 'unknown';
         let owner = 'unknown';
@@ -570,7 +565,57 @@ const eventSig = nft.interface.getEvent('MintRequested').topicHash;
 const RATE_LIMIT = 5;
 const RATE_WINDOW = 60000; // 1 minute in milliseconds
 const mintQueue = [];
-const providerPreferences = createStorage('provider-preferences.json');
+/* ───── Provider preferences - using Supabase ────────── */
+async function getProviderPreference(tokenId) {
+    try {
+        return await withDatabase(async (client) => {
+            const { data, error } = await client
+                .from('provider_preferences')
+                .select('*')
+                .eq('token_id', parseInt(tokenId, 10))
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // No preference found, return null
+                    return null;
+                }
+                throw error;
+            }
+
+            return data;
+        });
+    } catch (error) {
+        console.error(`Failed to get provider preference for token ${tokenId}:`, error);
+        return null;
+    }
+}
+
+async function setProviderPreference(tokenId, provider, options = {}) {
+    try {
+        return await withDatabase(async (client) => {
+            const { error } = await client
+                .from('provider_preferences')
+                .upsert({
+                    token_id: parseInt(tokenId, 10),
+                    provider,
+                    options,
+                    timestamp: new Date().toISOString()
+                }, {
+                    onConflict: 'token_id'
+                });
+
+            if (error) {
+                throw error;
+            }
+
+            return true;
+        });
+    } catch (error) {
+        console.error(`Failed to set provider preference for token ${tokenId}:`, error);
+        return false;
+    }
+}
 let processingQueue = false;
 let lastMinuteRequests = [];
 
@@ -806,43 +851,88 @@ async function processQueue() {
     }
 }
 
-/* ───── Process state tracking - persist between restarts ────── */
-const STATE_FILE = path.join(process.cwd(), 'event-state.json');
+/* ───── Process state tracking - using Supabase ────────────────── */
 let processedTokens = new Set();
 let lastBlock = 0;
 
 /**
- * Load state from persistent storage
+ * Load state from Supabase
  * @returns {Promise<void>}
  */
 async function loadState() {
     try {
-        const stateData = await fs.readFile(STATE_FILE, 'utf8');
-        const state = JSON.parse(stateData);
-        lastBlock = state.lastBlock || 0;
-        processedTokens = new Set(state.processedTokens || []);
-        console.log(`📂 Loaded state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
-    } catch {
-        // If file doesn't exist, start from a few blocks back for safety
+        const state = await withDatabase(async (client) => {
+            const { data, error } = await client
+                .from('state')
+                .select('state_data')
+                .eq('type', 'server_state')
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // No state found, return default
+                    return null;
+                }
+                throw error;
+            }
+
+            return data ? data.state_data : null;
+        });
+
+        if (state) {
+            lastBlock = state.lastBlock || 0;
+            processedTokens = new Set(state.processedTokens || []);
+            console.log(`📂 Loaded state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
+        } else {
+            // If no state exists, start from a few blocks back for safety
+            const currentBlock = await provider.getBlockNumber();
+            lastBlock = Math.max(0, currentBlock - 1000);
+            processedTokens = new Set();
+            console.log(`🆕 Created new state: starting from block ${lastBlock}`);
+            await saveState();
+        }
+    } catch (error) {
+        console.error('Failed to load state from Supabase:', error);
+        // Fallback to starting from recent blocks
         const currentBlock = await provider.getBlockNumber();
         lastBlock = Math.max(0, currentBlock - 1000);
         processedTokens = new Set();
-        console.log(`🆕 Created new state: starting from block ${lastBlock}`);
+        console.log(`🆕 Created new state (fallback): starting from block ${lastBlock}`);
         await saveState();
     }
 }
 
 /**
- * Save current state to persistent storage
+ * Save current state to Supabase
  * @returns {Promise<void>}
  */
 async function saveState() {
-    const state = {
-        lastBlock,
-        processedTokens: Array.from(processedTokens)
-    };
-    await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
-    console.log(`💾 Saved state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
+    try {
+        const state = {
+            lastBlock,
+            processedTokens: Array.from(processedTokens)
+        };
+
+        await withDatabase(async (client) => {
+            const { error } = await client
+                .from('state')
+                .upsert({
+                    type: 'server_state',
+                    state_data: state,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'type'
+                });
+
+            if (error) {
+                throw error;
+            }
+        });
+
+        console.log(`💾 Saved state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
+    } catch (error) {
+        console.error('Failed to save state to Supabase:', error);
+    }
 }
 
 /* ───── Enhanced log-polling with rate-limited processing ────── */
