@@ -1,4 +1,5 @@
 ﻿import { createTask } from '../scripts/supabaseTaskManager.js';
+import cronHandler from './cron.js';
 
 export default async function handler(req, res) {
   try {
@@ -25,20 +26,39 @@ export default async function handler(req, res) {
       breed,
       buyer: payer, // For regeneration, the buyer is the current payer
       isRegeneration: true,
-      forceProcess: true,
+      forceProcess: true, // Important: This flag ensures the token is processed even if previously handled
       promptExtras: promptExtras || undefined,
       negativePrompt: negativePrompt || undefined,
       paymentTx,
       createdFrom: 'web-ui',
-      priority: 'high'
+      priority: 'high',
+      status: 'PENDING' // Explicitly set status to ensure consistency
     });
 
     console.log(`✅ Created regeneration task ${taskId} for token #${tokenId}`);
 
+    // Immediately trigger the cron job to process this task
+    try {
+      console.log('🔄 Triggering immediate task processing via cron handler');
+      // Create a fake request and response object for the cron handler
+      const cronReq = { method: 'POST', body: { immediate: true } };
+      const cronRes = {
+        status: () => ({ json: () => {} }),
+        json: () => {}
+      };
+      
+      // Call the cron handler directly
+      await cronHandler(cronReq, cronRes);
+      console.log('✅ Cron handler triggered successfully');
+    } catch (cronError) {
+      console.error('⚠️ Failed to trigger immediate processing:', cronError);
+      // Continue anyway, since the scheduled cron job will eventually process the task
+    }
+
     // Return success with task ID for polling
     return res.status(200).json({
       success: true,
-      message: 'Regeneration task created successfully',
+      message: 'Regeneration task created successfully and processing triggered',
       taskId: taskId
     });
   } catch (error) {
