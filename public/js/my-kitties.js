@@ -2308,18 +2308,41 @@ async function pollForTaskCompletion(taskId, tokenId) {
         }
 
         try {
-            // Check task status
-            const response = await fetch(`/api/task-status/${taskId}`);
+            // Try multiple URL formats to be more resilient
+            let response = null;
+            let error = null;
             
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}`);
+            // Try different endpoint formats
+            const endpoints = [
+                `/api/task-status?id=${taskId}`,
+                `/api/task-status/${taskId}`,
+                `/api/tasks/${taskId}`,
+                `/api/status/${taskId}`
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`Trying to fetch status from: ${endpoint}`);
+                    const resp = await fetch(endpoint);
+                    if (resp.ok) {
+                        response = resp;
+                        break;
+                    }
+                } catch (err) {
+                    error = err;
+                    // Continue to next endpoint
+                }
             }
-
+            
+            if (!response) {
+                throw error || new Error('All status endpoints failed');
+            }
+            
             const task = await response.json();
             console.log('Task status update:', task);
             
             // Handle different status values
-            if (task.status === 'completed') {
+            if (task.status === 'completed' || task.state === 'completed') {
                 statusTextEl.innerHTML = '<div class="success-icon">✓</div>Regeneration completed successfully!';
                 statusEl.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
                 
@@ -2330,13 +2353,13 @@ async function pollForTaskCompletion(taskId, tokenId) {
                 }, 3000);
                 return;
             } 
-            else if (task.status === 'failed') {
-                statusTextEl.innerHTML = `<div class="error-icon">❌</div>Failed: ${task.error || 'Unknown error'}`;
+            else if (task.status === 'failed' || task.state === 'failed') {
+                statusTextEl.innerHTML = `<div class="error-icon">❌</div>Failed: ${task.error || task.message || 'Unknown error'}`;
                 statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
                 return;
             } 
             else {
-                // Update progress information
+                // Still processing - show progress
                 const progress = task.progress || 0;
                 const message = task.message || 'Processing...';
                 statusTextEl.innerHTML = `<div class="loading-spinner"></div>${message} (${progress}%)`;
@@ -2346,7 +2369,7 @@ async function pollForTaskCompletion(taskId, tokenId) {
             }
         } catch (error) {
             console.error('Error checking task status:', error);
-            statusTextEl.innerHTML = `<div class="warning-icon">⚠️</div>Status check error. Retrying...`;
+            statusTextEl.innerHTML = `<div class="warning-icon">⚠️</div>Status check error. Retrying in 8s...`;
             setTimeout(checkStatus, 8000);
         }
     };
