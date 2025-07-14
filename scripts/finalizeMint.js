@@ -604,6 +604,11 @@ function generateTraits(breed, tokenId) {
             elements: ['Water', 'Wind'],
             accessories: ['Face Mask', 'Scarf']
         },
+        'Calico': {
+            weapons: ['Sai', 'Nunchucks'],
+            stances: ['Focus', 'Defense'],
+            elements: ['Earth', 'Fire']
+        },
         'Maine Coon': {
             weapons: ['Bo Staff', 'Kusarigama'],
             stances: ['Defense', 'Focus'],
@@ -614,15 +619,32 @@ function generateTraits(breed, tokenId) {
             stances: ['Berserker', 'Agility'],
             elements: ['Lightning', 'Fire']
         },
-        'Shadow': {
-            elements: ['Shadow', 'Void'],
+        'Bombay': {
+            weapons: ['Kusarigama', 'Ghost Dagger'],
             stances: ['Shadow', 'Stealth'],
-            weapons: ['Ghost Dagger', 'Kusarigama']
+            elements: ['Shadow', 'Void']
+        },
+        'Persian': {
+            weapons: ['War Fan', 'Sai'],
+            stances: ['Focus', 'Crane'],
+            elements: ['Light', 'Wind'],
+            accessories: ['Enchanted Amulet', 'Celestial Mark']
+        },
+        'Sphynx': {
+            weapons: ['Kusarigama', 'War Fan'],
+            stances: ['Focus', 'Void'],
+            elements: ['Void', 'Lightning'],
+            accessories: ['Ancient Scroll', 'Spirit Companion']
         },
         'Nyan': {
             elements: ['Cosmic', 'Light'],
             accessories: ['Celestial Mark'],
             ranks: ['Immortal', 'Legendary']
+        },
+        'Shadow': {
+            elements: ['Shadow', 'Void'],
+            stances: ['Shadow', 'Stealth'],
+            weapons: ['Ghost Dagger', 'Kusarigama']
         }
     };
 
@@ -955,7 +977,11 @@ function generateTraits(breed, tokenId) {
     // Generate core traits - use the specified breed instead of random selection
     console.log(`🔍 DEBUG: Looking for breed "${breed}" in available breeds`);
     console.log(`🔍 DEBUG: Available breeds: ${traitCategories.breeds.map(b => b.value).join(', ')}`);
+    console.log(`🔍 DEBUG: Breed type: ${typeof breed}, Length: ${breed.length}`);
+
     let breedTrait = traitCategories.breeds.find(b => b.value === breed);
+    console.log('🔍 DEBUG: Found breed trait:', breedTrait);
+
     if (!breedTrait) {
         console.log(`⚠️ Breed "${breed}" not found in available breeds, using random selection`);
         breedTrait = getWeightedTrait(weightedCategories.breeds, 'breed');
