@@ -1720,11 +1720,14 @@ export async function finalizeMint({
             throw new Error('TokenId is required');
         }
 
-        // Normalize the breed name
+        // Normalize the breed name properly for multi-word breeds
         if (typeof breed !== 'string' || breed.trim() === '') {
             breed = 'Tabby';
         }
-        const normalizedBreed = breed.charAt(0).toUpperCase() + breed.slice(1).toLowerCase();
+        const normalizedBreed = breed.trim()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
 
         // Generate traits based on breed and tokenId
         console.log(`💫 Generating traits for #${tokenId}...`);

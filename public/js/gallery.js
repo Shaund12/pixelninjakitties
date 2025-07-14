@@ -855,7 +855,7 @@ async function initializeGallery() {
         }
     }
 
-    // Listen for wallet connection events from connect-only.js
+    // Listen for wallet connection events from wallet.js
     window.addEventListener('walletChanged', (event) => {
         const address = event.detail?.address;
         if (address) {
@@ -872,7 +872,7 @@ async function initializeGallery() {
     });
 
     // For backward compatibility, still handle direct button click
-    // This won't conflict because connect-only.js will update the button text
+    // This won't conflict because wallet.js will update the button text
     const connectBtn = document.getElementById('connectBtn');
     if (connectBtn && !connectBtn.hasClickHandler) {
         connectBtn.hasClickHandler = true;
