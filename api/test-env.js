@@ -25,14 +25,14 @@ export default async function handler(req, res) {
         console.log('🧪 Test 1: Environment Variables');
         const requiredEnvVars = ['RPC_URL', 'CONTRACT_ADDRESS', 'PRIVATE_KEY', 'PLACEHOLDER_URI', 'MONGODB_URI'];
         result.environment = {};
-        
+
         for (const envVar of requiredEnvVars) {
             result.environment[envVar] = process.env[envVar] ? '✅ Set' : '❌ Missing';
         }
-        
+
         result.environment.IMAGE_PROVIDER = process.env.IMAGE_PROVIDER || 'dall-e (default)';
         result.environment.OPENAI_API_KEY = process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing';
-        
+
         // Test 2: MongoDB Connection
         console.log('🧪 Test 2: MongoDB Connection');
         try {
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
             const os = await import('os');
             const fs = await import('fs/promises');
             const path = await import('path');
-            
+
             const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test-'));
             await fs.rmdir(tmpDir);
             result.tests.tempDir = '✅ Accessible';
