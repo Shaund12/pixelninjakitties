@@ -1,4 +1,4 @@
-﻿import { ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { finalizeMint } from '../scripts/finalizeMint.js';
 
 // Define serverless function handler for cron job

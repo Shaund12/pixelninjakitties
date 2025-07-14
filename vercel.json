@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": "public",
   "public": false,
   "builds": [
     {
@@ -27,7 +24,7 @@
   "crons": [
     {
       "path": "/api/cron",
-      "schedule": "*/15 * * * * *"
+      "schedule": "* * * * *"
     }
   ]
 }
