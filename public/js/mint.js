@@ -90,6 +90,7 @@ const breedSel = document.getElementById('breed');
 const priceEl = document.getElementById('price');
 const mintBtn = document.getElementById('mintBtn');
 const statusEl = document.getElementById('status');
+const mintStatusEl = document.getElementById('mint-status');
 
 /* Progress bar elements - create if they don't exist */
 const progressBar = document.querySelector('.progress-bar') || document.createElement('div');
@@ -450,6 +451,55 @@ function showStatus(msg, showSpinner = true) {
     } else {
         // Fallback without animation
         statusEl.innerHTML = statusHTML;
+    }
+}
+
+function updateMintStatus(status, message) {
+    if (!mintStatusEl) return;
+
+    mintStatusEl.style.display = 'block';
+
+    let statusHTML = '';
+    let statusClass = '';
+
+    switch (status) {
+        case 'pending':
+            statusClass = 'mint-status-pending';
+            statusHTML = '<div class="spinner"></div> ' + (message || 'Your NFT is still processing...');
+            break;
+        case 'processing':
+            statusClass = 'mint-status-processing';
+            statusHTML = '<div class="spinner"></div> ' + (message || 'Your NFT is still processing...');
+            break;
+        case 'completed':
+            statusClass = 'mint-status-completed';
+            statusHTML = '✅ ' + (message || 'Success! View in your collection');
+            break;
+        case 'failed':
+            statusClass = 'mint-status-failed';
+            statusHTML = '❌ ' + (message || 'Generation failed - please retry');
+            break;
+        case 'timeout':
+            statusClass = 'mint-status-timeout';
+            statusHTML = '⏰ ' + (message || 'Generation is taking unusually long');
+            break;
+        default:
+            statusClass = 'mint-status-default';
+            statusHTML = message || 'Processing...';
+    }
+
+    // Update the content and class
+    mintStatusEl.className = `mint-status ${statusClass}`;
+    mintStatusEl.innerHTML = statusHTML;
+
+    // Animate if GSAP is available
+    if (window.gsap) {
+        gsap.from(mintStatusEl, {
+            opacity: 0,
+            y: 10,
+            duration: 0.3,
+            ease: 'power2.out'
+        });
     }
 }
 
@@ -1261,145 +1311,138 @@ function showToast(message, type = 'info', duration = 3000) {
 // Poll Supabase task status until completion
 function pollSupabaseTaskStatus(taskId, tokenId, provider) {
     let pollAttempts = 0;
-    const maxPolls = 45; // Maximum polling attempts (90 seconds at 2-second intervals)
-    const pollInterval = 2000; // Poll every 2 seconds
+    const maxPolls = 24; // Maximum polling attempts (2 minutes at 5-second intervals)
+    const pollInterval = 5000; // Poll every 5 seconds as specified in the issue
+    const graceDelay = 2000; // 2 second grace period as specified in the issue
 
-    console.log(`🔄 Starting Supabase task polling for taskId: ${taskId}`);
+    console.log(`🔄 Starting Supabase task polling for taskId: ${taskId} (after ${graceDelay / 1000}s grace period)`);
 
-    const checkTaskStatus = async () => {
-        if (pollAttempts >= maxPolls) {
-            console.warn(`⏰ Task polling timeout after ${maxPolls} attempts`);
-            updateProgress(100);
-            showTimeoutMessage(tokenId, null);
-            return;
-        }
+    // Show initial "mint confirmed" status
+    showStatus('Mint confirmed! Starting NFT generation...', false);
 
-        pollAttempts++;
-        console.log(`📊 Polling attempt ${pollAttempts}/${maxPolls} for task ${taskId}`);
+    // Start polling after grace period
+    setTimeout(() => {
+        updateMintStatus('pending', 'Your NFT is still processing...');
 
-        try {
-            // Try multiple URL formats for resilience
-            let response = null;
-            let error = null;
-
-            // Try different endpoint formats
-            const endpoints = [
-                `/api/task-status?id=${taskId}`,
-                `/api/task-status/${taskId}`,
-                `/api/tasks/${taskId}`,
-                `/api/status/${taskId}`
-            ];
-
-            for (const endpoint of endpoints) {
-                try {
-                    console.log(`Trying endpoint: ${endpoint}`);
-                    const resp = await fetch(endpoint);
-                    if (resp.ok) {
-                        response = resp;
-                        break;
-                    }
-                } catch (err) {
-                    error = err;
-                    // Continue to next endpoint
-                    console.warn(`Endpoint ${endpoint} failed:`, err);
-                }
-            }
-
-            if (!response) {
-                throw error || new Error('All status endpoints failed');
-            }
-
-            const data = await response.json();
-            console.log('Task status response:', data);
-
-            // Make status check case-insensitive
-            const taskStatus = (data.status || data.state || '').toUpperCase();
-
-            // Update progress based on task progress
-            if (data.progress) {
-                const progressPercent = Math.min(Math.max(data.progress, 80), 99);
-                updateProgress(progressPercent);
-            }
-
-            // Update generation stage based on status message
-            if (taskStatus === 'IN_PROGRESS' || taskStatus === 'PROCESSING') {
-                if (data.message) {
-                    if (data.message.toLowerCase().includes('trait')) {
-                        updateGenerationStage('traits');
-                    } else if (data.message.toLowerCase().includes('image') ||
-                               data.message.toLowerCase().includes('generat') ||
-                               data.message.toLowerCase().includes('creat')) {
-                        updateGenerationStage('image');
-                    } else if (data.message.toLowerCase().includes('metadata') ||
-                               data.message.toLowerCase().includes('finaliz')) {
-                        updateGenerationStage('metadata');
-                    }
-                }
-            }
-
-            // Handle status values - use case-insensitive comparison
-            if (taskStatus === 'COMPLETED') {
-                console.log('🎉 Task completed successfully!', data);
-
-                // Final stage - all complete
-                updateGenerationStage('metadata');
-
-                // Show completion animation
-                if (window.gsap) {
-                    const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
-                    tl.to('.generation-circle', {
-                        stroke: '#4ade80',
-                        duration: 0.5
-                    })
-                    .to('.generation-path', {
-                        stroke: '#4ade80',
-                        opacity: 0,
-                        duration: 0.3
-                    });
-                }
-
-                updateProgress(100);
-                setTimeout(() => {
-                    showMintSuccess(tokenId, null, provider);
-                }, 1000);
-                return;
-            } else if (taskStatus === 'FAILED') {
-                console.error('❌ Task failed:', data.message || data.error);
-                updateProgress(100);
-                showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
-                showMintSuccess(tokenId, null, provider);
-                return;
-            } else if (taskStatus === 'TIMEOUT') {
-                console.warn('⏰ Task timed out');
+        const checkTaskStatus = async () => {
+            if (pollAttempts >= maxPolls) {
+                console.warn(`⏰ Task polling timeout after ${maxPolls} attempts (${(maxPolls * pollInterval) / 1000}s)`);
+                updateMintStatus('timeout', 'Generation is taking unusually long');
                 updateProgress(100);
                 showTimeoutMessage(tokenId, null);
                 return;
-            } else if (['IN_PROGRESS', 'PENDING', 'PROCESSING', 'RUNNING', 'STARTED'].includes(taskStatus)) {
-                // Still processing - continue polling
-                console.log(`⏳ Task still in progress (${taskStatus}): ${data.message || 'Processing...'}`);
+            }
 
-                // Update progress if available
-                if (data.progress && data.progress > 0) {
-                    const calculatedProgress = 80 + (data.progress / 5); // Scale to 80-99%
-                    updateProgress(Math.min(calculatedProgress, 99));
+            pollAttempts++;
+            console.log(`📊 Polling attempt ${pollAttempts}/${maxPolls} for task ${taskId}`);
+
+            try {
+                // Use the new /api/taskStatus endpoint
+                const response = await fetch(`/api/taskStatus?id=${taskId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
-                // Continue polling
-                setTimeout(checkStatus, pollInterval);
-            } else {
-                // Unknown status - continue polling with caution
-                console.warn('❓ Unknown task status:', taskStatus);
-                setTimeout(checkStatus, pollInterval * 1.5);
-            }
-        } catch (error) {
-            console.error('❌ Error polling task status:', error);
-            // Continue polling despite error, but with longer intervals
-            setTimeout(checkStatus, pollInterval * 2);
-        }
-    };
+                const data = await response.json();
+                console.log('Task status response:', data);
 
-    // Start polling immediately
-    checkStatus();
+                // Make status check case-insensitive
+                const taskStatus = (data.status || data.state || '').toUpperCase();
+
+                // Update progress based on task progress
+                if (data.progress) {
+                    const progressPercent = Math.min(Math.max(data.progress, 80), 99);
+                    updateProgress(progressPercent);
+                }
+
+                // Update generation stage based on status message
+                if (taskStatus === 'IN_PROGRESS' || taskStatus === 'PROCESSING') {
+                    updateMintStatus('processing', data.message || 'Your NFT is still processing...');
+
+                    if (data.message) {
+                        if (data.message.toLowerCase().includes('trait')) {
+                            updateGenerationStage('traits');
+                        } else if (data.message.toLowerCase().includes('image') ||
+                                   data.message.toLowerCase().includes('generat') ||
+                                   data.message.toLowerCase().includes('creat')) {
+                            updateGenerationStage('image');
+                        } else if (data.message.toLowerCase().includes('metadata') ||
+                                   data.message.toLowerCase().includes('finaliz')) {
+                            updateGenerationStage('metadata');
+                        }
+                    }
+                }
+
+                // Handle status values - use case-insensitive comparison
+                if (taskStatus === 'COMPLETED') {
+                    console.log('🎉 Task completed successfully!', data);
+
+                    // Final stage - all complete
+                    updateGenerationStage('metadata');
+                    updateMintStatus('completed', 'Success! View in your collection');
+
+                    // Show completion animation
+                    if (window.gsap) {
+                        const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
+                        tl.to('.generation-circle', {
+                            stroke: '#4ade80',
+                            duration: 0.5
+                        })
+                        .to('.generation-path', {
+                            stroke: '#4ade80',
+                            opacity: 0,
+                            duration: 0.3
+                        });
+                    }
+
+                    updateProgress(100);
+                    setTimeout(() => {
+                        showMintSuccess(tokenId, null, provider);
+                    }, 1000);
+                    return;
+                } else if (taskStatus === 'FAILED') {
+                    console.error('❌ Task failed:', data.message || data.error);
+                    updateMintStatus('failed', data.message || 'Generation failed - please retry');
+                    updateProgress(100);
+                    showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
+                    showMintSuccess(tokenId, null, provider);
+                    return;
+                } else if (taskStatus === 'TIMEOUT') {
+                    console.warn('⏰ Task timed out');
+                    updateMintStatus('timeout', 'Generation is taking unusually long');
+                    updateProgress(100);
+                    showTimeoutMessage(tokenId, null);
+                    return;
+                } else if (['IN_PROGRESS', 'PENDING', 'PROCESSING', 'RUNNING', 'STARTED'].includes(taskStatus)) {
+                    // Still processing - continue polling
+                    console.log(`⏳ Task still in progress (${taskStatus}): ${data.message || 'Processing...'}`);
+                    updateMintStatus('processing', data.message || 'Your NFT is still processing...');
+
+                    // Update progress if available
+                    if (data.progress && data.progress > 0) {
+                        const calculatedProgress = 80 + (data.progress / 5); // Scale to 80-99%
+                        updateProgress(Math.min(calculatedProgress, 99));
+                    }
+
+                    // Continue polling
+                    setTimeout(checkTaskStatus, pollInterval);
+                } else {
+                    // Unknown status - continue polling with caution
+                    console.warn('❓ Unknown task status:', taskStatus);
+                    updateMintStatus('processing', 'Your NFT is still processing...');
+                    setTimeout(checkTaskStatus, pollInterval * 1.5);
+                }
+            } catch (error) {
+                console.error('❌ Error polling task status:', error);
+                // Continue polling despite error, but with longer intervals
+                setTimeout(checkTaskStatus, pollInterval * 2);
+            }
+        };
+
+        // Start polling immediately after grace period
+        checkTaskStatus();
+    }, graceDelay);
 }
 
 // Show timeout message when task takes too long

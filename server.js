@@ -465,6 +465,35 @@ app.get('/api/status/:taskId', async (req, res) => {
     }
 });
 
+// Task status endpoint (alternative format for frontend compatibility)
+app.get('/api/taskStatus', async (req, res) => {
+    try {
+        const taskId = req.query.id;
+
+        // Basic validation
+        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
+            return res.status(400).json({ error: 'Invalid task ID' });
+        }
+
+        const status = await getTaskStatus(taskId);
+
+        // If no status found, return 404
+        if (!status) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        // Add the provider to the status response
+        if (!status.provider && status.details?.provider) {
+            status.provider = status.details.provider;
+        }
+
+        return res.json(status);
+    } catch (error) {
+        console.error('Error in /api/taskStatus:', sanitizeForLogging(error.message));
+        return res.status(500).json(createSafeErrorResponse(error, process.env.NODE_ENV === 'development'));
+    }
+});
+
 // API documentation endpoint
 app.get('/api/docs', (req, res) => {
     res.json({
@@ -511,6 +540,14 @@ app.get('/api/docs', (req, res) => {
                     imageProvider: 'AI provider to use (dall-e, huggingface, stability)',
                     promptExtras: 'Additional prompt instructions',
                     negativePrompt: 'Things to exclude from the image'
+                }
+            },
+            {
+                path: '/api/taskStatus',
+                method: 'GET',
+                description: 'Get task status by ID',
+                query: {
+                    id: 'Task ID to check status for'
                 }
             },
             {

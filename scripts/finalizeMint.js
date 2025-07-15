@@ -1040,6 +1040,7 @@ export async function finalizeMint({
             model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
             background: backgroundTrait?.name,
             providerOptions,
+            taskId, // Include taskId in the response
             stats: {
                 totalTime: parseFloat(totalTime),
                 timestamp: Date.now()
