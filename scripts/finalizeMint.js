@@ -953,31 +953,31 @@ export async function finalizeMint({
         });
 
         // 📄 Save metadata to `<tokenId>.json`
-        +        const fileName = `${tokenId}.json`;
-        +        const metaPath = path.join(processedImage.directory, fileName);
-        +        await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
-        +
-            +        // 🚀 Upload metadata to IPFS as `<tokenId>.json`
-            +        if (taskManager) {
-                +            taskManager.updateTask(taskId, {
-+ progress: 90,
-                    +                message: 'Uploading metadata to IPFS'
-                +            });
-        +        }
-+
-        +        const metadataStartTime = Date.now();
-    +        let metadataUri;
-    +        try {
-        +            metadataUri = await uploadToIPFS(metaPath, fileName);
-        +            const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
-        +            console.log(`✅ Metadata uploaded in ${metadataUploadTime}s as ${fileName}`);
-        +        } catch (error) {
-            +            console.error(`❌ Metadata upload failed: ${error.message}`);
-            +            if (taskManager) {
-                +                taskManager.failTask(taskId, new Error(`Failed to upload metadata: ${error.message}`));
-                +            }
-            +            throw new Error(`Failed to upload metadata to IPFS: ${error.message}`);
-            +        }
+        const fileName = `${tokenId}.json`;
+        const metaPath = path.join(processedImage.directory, fileName);
+        await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
+
+        // 🚀 Upload metadata to IPFS as `<tokenId>.json`
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 90,
+                message: 'Uploading metadata to IPFS'
+            });
+        }
+
+        const metadataStartTime = Date.now();
+        let metadataUri;
+        try {
+            metadataUri = await uploadToIPFS(metaPath, fileName);
+            const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
+            console.log(`✅ Metadata uploaded in ${metadataUploadTime}s as ${fileName}`);
+        } catch (error) {
+            console.error(`❌ Metadata upload failed: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Failed to upload metadata: ${error.message}`));
+            }
+            throw new Error(`Failed to upload metadata to IPFS: ${error.message}`);
+        }
 
         console.log(`🔗 Token URI metadata at: ${metadataUri}`);
 
