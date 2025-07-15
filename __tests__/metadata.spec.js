@@ -2,7 +2,7 @@
  * __tests__/metadata.spec.js
  * ───────────────────────────────────────────────────────────────
  * Unit tests for metadata generation functions.
- * 
+ *
  * These tests verify deterministic trait generation, rarity calculation,
  * and metadata assembly using seeded random number generation.
  */
@@ -45,37 +45,37 @@ const validate = ajv.compile(schema);
  */
 function runTests() {
     console.log('🧪 Running metadata generation tests...\n');
-    
+
     // Test basic trait generation
     console.log('Testing trait generation...');
     const breed = 'Tabby';
     const tokenId = '1';
-    
+
     try {
         const traits = generateTraits(breed, tokenId);
         console.log('✅ Trait generation successful');
         console.log(`   Generated ${traits.attributes.length} attributes`);
         console.log(`   Rarity: ${traits.rarity.tier} (score: ${traits.rarity.score})`);
-        
+
         // Test stats generation
         console.log('\nTesting stats generation...');
         const stats = generateStats(traits.rawTraits, 12345);
         console.log('✅ Stats generation successful');
         console.log(`   Stats: ${JSON.stringify(stats)}`);
-        
+
         // Test description generation
         console.log('\nTesting description generation...');
         const description = generateNinjaCatDescription(tokenId, breed, traits.rawTraits);
         console.log('✅ Description generation successful');
         console.log(`   Description length: ${description.length} characters`);
-        
+
         // Test rarity calculation
         console.log('\nTesting rarity calculation...');
         const score = calculateRarityScore(traits.rawTraits);
         const tier = getRarityTier(score);
         console.log('✅ Rarity calculation successful');
         console.log(`   Score: ${score}, Tier: ${tier}`);
-        
+
         // Test metadata assembly
         console.log('\nTesting metadata assembly...');
         const metadata = assembleMetadata(traits, 'ipfs://QmTestHash', {
@@ -83,7 +83,7 @@ function runTests() {
             tokenId: '1'
         });
         console.log('✅ Metadata assembly successful');
-        
+
         // Test schema validation
         console.log('\nTesting schema validation...');
         const isValid = validate(metadata);
@@ -93,7 +93,7 @@ function runTests() {
             console.log('❌ Schema validation failed:');
             console.log(validate.errors);
         }
-        
+
         // Test deterministic generation
         console.log('\nTesting deterministic generation...');
         const traits2 = generateTraits(breed, tokenId);
@@ -103,25 +103,25 @@ function runTests() {
         } else {
             console.log('❌ Deterministic generation failed');
         }
-        
+
         // Test multiple breeds
         console.log('\nTesting multiple breeds...');
         const breeds = ['Tabby', 'Bengal', 'Persian', 'Shadow', 'Nyan'];
         const rarityTiers = new Set();
-        
+
         breeds.forEach(testBreed => {
             for (let i = 1; i <= 5; i++) {
                 const testTraits = generateTraits(testBreed, i.toString());
                 rarityTiers.add(testTraits.rarity.tier);
             }
         });
-        
+
         console.log('✅ Multiple breeds tested');
         console.log(`   Generated rarity tiers: ${Array.from(rarityTiers).join(', ')}`);
-        
+
         // Test edge cases
         console.log('\nTesting edge cases...');
-        
+
         // Test empty attributes for rarity calculation
         try {
             calculateRarityScore([]);
@@ -129,7 +129,7 @@ function runTests() {
         } catch (error) {
             console.log('✅ Empty attributes correctly throws error');
         }
-        
+
         // Test unknown breed fallback
         const unknownBreedTraits = generateTraits('UnknownBreed', '1');
         const breedAttribute = unknownBreedTraits.attributes.find(attr => attr.trait_type === 'Breed');
@@ -138,9 +138,9 @@ function runTests() {
         } else {
             console.log('❌ Unknown breed fallback failed');
         }
-        
+
         console.log('\n🎉 All tests completed!');
-        
+
     } catch (error) {
         console.error('❌ Test failed:', error.message);
         console.error(error.stack);

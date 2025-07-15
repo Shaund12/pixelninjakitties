@@ -3,7 +3,7 @@
  * ───────────────────────────────────────────────────────────────
  * Centralized definitions for all NFT metadata traits, backgrounds,
  * synergy pairs, and breed weightings.
- * 
+ *
  * This file contains the core data structures that drive the metadata
  * generation process, extracted from the original finalizeMint.js
  * for better maintainability and testing.

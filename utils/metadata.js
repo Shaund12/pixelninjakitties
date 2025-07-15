@@ -2,7 +2,7 @@
  * utils/metadata.js
  * ───────────────────────────────────────────────────────────────
  * Core metadata generation utilities for Pixel Ninja Cats NFTs.
- * 
+ *
  * This module contains the main logic for generating traits, stats,
  * descriptions, and rarity calculations, extracted from finalizeMint.js
  * for better modularity and testing.
@@ -616,7 +616,7 @@ export function getRarityTier(score) {
  */
 export function assembleMetadata(traits, imageUri, metadataExtras = {}) {
     const metadata = {
-        metadata_version: "2.0",
+        metadata_version: '2.0',
         name: metadataExtras.name || `Pixel Ninja Cat #${metadataExtras.tokenId || 'Unknown'}`,
         description: traits.description,
         image: imageUri,
