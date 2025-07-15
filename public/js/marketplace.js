@@ -60,10 +60,10 @@ let allListings = [];
 let userCats = [];
 let userActiveListings = [];
 let hotItems = []; // Store the hottest items based on activity
-let rarityFloorPrices = {}; // Track floor prices by rarity
+const rarityFloorPrices = {}; // Track floor prices by rarity
 let allListingsForPreview = []; // Store all listings for preview navigation
 let currentPreviewIndex = 0;
-let favorites = JSON.parse(localStorage.getItem('nft_favorites') || '[]');
+const favorites = JSON.parse(localStorage.getItem('nft_favorites') || '[]');
 let hotItemsCarouselIndex = 0;
 
 // Token cache to avoid refetching metadata
@@ -156,9 +156,9 @@ function showQuickPreview(token, listing = null) {
     // Set up preview data for navigation
     if (listing) {
         allListingsForPreview = allListings.filter(l => l.active);
-        currentPreviewIndex = allListingsForPreview.findIndex(l => 
+        currentPreviewIndex = allListingsForPreview.findIndex(l =>
             Number(l.tokenId) === Number(token.id));
-        
+
         if (currentPreviewIndex === -1) currentPreviewIndex = 0;
     } else {
         allListingsForPreview = [];
@@ -291,15 +291,15 @@ function updatePreviewNavigation() {
 async function navigatePreview(direction) {
     if (allListingsForPreview.length === 0) return;
 
-    const newIndex = direction === 'prev' ? 
-        Math.max(0, currentPreviewIndex - 1) : 
+    const newIndex = direction === 'prev' ?
+        Math.max(0, currentPreviewIndex - 1) :
         Math.min(allListingsForPreview.length - 1, currentPreviewIndex + 1);
 
     if (newIndex !== currentPreviewIndex) {
         currentPreviewIndex = newIndex;
         const listing = allListingsForPreview[currentPreviewIndex];
         const token = await fetchTokenMetadata(Number(listing.tokenId));
-        
+
         if (token) {
             showQuickPreview(token, {
                 price: listing.price,
@@ -335,10 +335,10 @@ function toggleFavorite(tokenId) {
         favorites.splice(index, 1);
         showEnhancedNotification('Removed from Favorites', 'Item removed from your favorites list', 'info');
     }
-    
+
     // Save to localStorage
     localStorage.setItem('nft_favorites', JSON.stringify(favorites));
-    
+
     // Update button state
     updateFavoriteButton(favorites.includes(tokenId));
 }
@@ -604,27 +604,27 @@ function updateHotItems(items) {
 async function renderHotItemsCarousel() {
     const carousel = document.getElementById('hotlistCarousel');
     const hotItemCount = document.getElementById('hotItemCount');
-    
+
     if (!carousel || !hotItems.length) return;
-    
+
     // Update count
     if (hotItemCount) {
         hotItemCount.textContent = hotItems.length;
     }
-    
+
     // Clear existing items
     carousel.innerHTML = '';
-    
+
     // Create carousel items
     for (const listing of hotItems) {
         const tokenId = Number(listing.tokenId);
         const token = await fetchTokenMetadata(tokenId);
-        
+
         if (!token) continue;
-        
+
         const formattedPrice = formatPrice(listing.price, listing.currency);
         const currencyName = getCurrencyName(listing.currency);
-        
+
         const hotItem = document.createElement('div');
         hotItem.className = 'hotlist-item';
         hotItem.innerHTML = `
@@ -633,7 +633,7 @@ async function renderHotItemsCarousel() {
             <div class="hotlist-item-name">${token.name}</div>
             <div class="hotlist-item-price">${formattedPrice} ${currencyName}</div>
         `;
-        
+
         // Add click handler to show preview
         hotItem.addEventListener('click', () => {
             showQuickPreview(token, {
@@ -642,10 +642,10 @@ async function renderHotItemsCarousel() {
                 seller: listing.seller
             });
         });
-        
+
         carousel.appendChild(hotItem);
     }
-    
+
     // Setup carousel navigation
     setupHotItemsCarouselNavigation();
 }
@@ -655,30 +655,30 @@ function setupHotItemsCarouselNavigation() {
     const prevBtn = document.getElementById('hotlistPrev');
     const nextBtn = document.getElementById('hotlistNext');
     const carousel = document.getElementById('hotlistCarousel');
-    
+
     if (!prevBtn || !nextBtn || !carousel) return;
-    
+
     prevBtn.addEventListener('click', () => {
         hotItemsCarouselIndex = Math.max(0, hotItemsCarouselIndex - 1);
         updateCarouselPosition();
     });
-    
+
     nextBtn.addEventListener('click', () => {
         const maxIndex = Math.max(0, hotItems.length - 3);
         hotItemsCarouselIndex = Math.min(maxIndex, hotItemsCarouselIndex + 1);
         updateCarouselPosition();
     });
-    
+
     function updateCarouselPosition() {
         const itemWidth = 200 + 24; // item width + gap
         const scrollLeft = hotItemsCarouselIndex * itemWidth;
         carousel.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-        
+
         // Update button states
         prevBtn.disabled = hotItemsCarouselIndex === 0;
         nextBtn.disabled = hotItemsCarouselIndex >= hotItems.length - 3;
     }
-    
+
     // Initial state
     updateCarouselPosition();
 }
@@ -1043,10 +1043,16 @@ function setupListingFormModal() {
     const listingFormModal = document.getElementById('listingFormModal');
     const closeBtn = document.getElementById('closeListingFormBtn');
     const confirmBtn = document.getElementById('confirmListingBtn');
+    const cancelBtn = document.getElementById('cancelListingForm');
 
     // Close button in header
     if (closeBtn) {
         closeBtn.addEventListener('click', hideListingForm);
+    }
+
+    // Cancel button in footer
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', hideListingForm);
     }
 
     // Confirm button in footer - properly get the price from the active modal
@@ -1117,6 +1123,22 @@ function showListingForm(token) {
         listingPriceInput.value = '';
     }
 
+    // Load saved price from localStorage
+    const savedPrice = localStorage.getItem('lastListingPrice');
+    if (savedPrice && listingPriceInput) {
+        listingPriceInput.value = savedPrice;
+    }
+
+    // Show pricing context and load pricing data
+    const pricingContext = document.getElementById('pricingContext');
+    if (pricingContext) {
+        pricingContext.style.display = 'block';
+        loadPricingData(token.id);
+    }
+
+    // Setup event listeners for this modal instance
+    setupListingFormEventListeners();
+
     // Show the modal
     listingFormModal.classList.add('active');
 
@@ -1128,12 +1150,210 @@ function showListingForm(token) {
     }, 100);
 }
 
+// Load pricing data from the API
+async function loadPricingData(tokenId) {
+    const pricingLoading = document.getElementById('pricingLoading');
+    const pricingData = document.getElementById('pricingData');
+
+    try {
+        // Show loading state
+        pricingLoading.style.display = 'flex';
+        pricingData.style.display = 'none';
+
+        // Fetch pricing data
+        const response = await fetch(`/api/pricing-info/${tokenId}`);
+        const data = await response.json();
+
+        // Update pricing display
+        document.getElementById('floorPrice').textContent = data.floorPrice ? `${data.floorPrice.toFixed(4)} USDC` : 'No data';
+        document.getElementById('avgPrice').textContent = data.avgPrice ? `${data.avgPrice.toFixed(4)} USDC` : 'No data';
+        document.getElementById('lastSold').textContent = data.lastSold ? `${data.lastSold.toFixed(4)} USDC` : 'No data';
+        document.getElementById('matchingListings').textContent = `${data.matchingListings} matching listings found`;
+
+        // Update trait matches
+        const traitMatches = document.getElementById('traitMatches');
+        if (data.breed) {
+            traitMatches.textContent = `${data.traitMatches} trait matches found for breed: ${data.breed}`;
+            traitMatches.style.display = 'block';
+        } else {
+            traitMatches.style.display = 'none';
+        }
+
+        // Show suggested price
+        const suggestedPriceSection = document.getElementById('suggestedPriceSection');
+        const suggestedPrice = document.getElementById('suggestedPrice');
+        if (data.suggestedPrice) {
+            suggestedPrice.textContent = `${data.suggestedPrice.toFixed(4)} USDC`;
+            suggestedPriceSection.style.display = 'flex';
+        } else {
+            suggestedPriceSection.style.display = 'none';
+        }
+
+        // Store pricing data for validation
+        window.currentPricingData = data;
+
+        // Hide loading, show data
+        pricingLoading.style.display = 'none';
+        pricingData.style.display = 'block';
+
+    } catch (error) {
+        console.error('Error loading pricing data:', error);
+
+        // Hide loading on error
+        pricingLoading.style.display = 'none';
+
+        // Show error message
+        pricingData.innerHTML = `
+            <div style="text-align: center; color: #dc3545; font-size: 0.9rem;">
+                ⚠️ Unable to load market data. Please try again.
+            </div>
+        `;
+        pricingData.style.display = 'block';
+    }
+}
+
+// Setup event listeners for the listing form modal
+function setupListingFormEventListeners() {
+    const listingFormModal = document.getElementById('listingFormModal');
+    const listingPriceInput = document.getElementById('listingPrice');
+    const traitMatchingCheckbox = document.getElementById('traitMatchingEnabled');
+    const useSuggestedBtn = document.getElementById('useSuggestedBtn');
+
+    // Price input validation
+    if (listingPriceInput) {
+        listingPriceInput.addEventListener('input', function() {
+            const price = parseFloat(this.value);
+            validatePrice(price);
+
+            // Save to localStorage
+            localStorage.setItem('lastListingPrice', this.value);
+        });
+
+        // Keyboard navigation
+        listingPriceInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const confirmBtn = document.getElementById('confirmListingBtn');
+                if (confirmBtn) {
+                    confirmBtn.click();
+                }
+            }
+        });
+    }
+
+    // Trait matching toggle
+    if (traitMatchingCheckbox) {
+        traitMatchingCheckbox.addEventListener('change', function() {
+            const traitMatches = document.getElementById('traitMatches');
+            if (this.checked) {
+                traitMatches.style.display = 'block';
+            } else {
+                traitMatches.style.display = 'none';
+            }
+        });
+    }
+
+    // Use suggested price button
+    if (useSuggestedBtn) {
+        useSuggestedBtn.addEventListener('click', function() {
+            const suggestedPrice = document.getElementById('suggestedPrice');
+            if (suggestedPrice && listingPriceInput) {
+                const price = parseFloat(suggestedPrice.textContent);
+                listingPriceInput.value = price.toFixed(4);
+                validatePrice(price);
+            }
+        });
+    }
+
+    // Keyboard navigation for modal
+    listingFormModal.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideListingForm();
+        }
+    });
+}
+
+// Validate price input and show visual feedback
+function validatePrice(price) {
+    const priceValidation = document.getElementById('priceValidation');
+    const priceBand = document.getElementById('priceBand');
+    const bandIndicator = document.getElementById('bandIndicator');
+
+    if (!window.currentPricingData || !priceValidation || !priceBand) return;
+
+    const { floorPrice, avgPrice } = window.currentPricingData;
+
+    // Clear previous validation
+    priceValidation.style.display = 'none';
+    priceBand.style.display = 'none';
+    priceValidation.className = 'price-validation';
+    bandIndicator.className = 'band-indicator';
+
+    if (isNaN(price) || price <= 0) return;
+
+    let message = '';
+    let level = 'success';
+    let band = 'fair';
+
+    // Check if price is too high (>2x average)
+    if (avgPrice && price > avgPrice * 2) {
+        message = '⚠️ Price is more than 2x the average - may reduce visibility';
+        level = 'warning';
+        band = 'high';
+    }
+    // Check if price is too low (<50% of floor)
+    else if (floorPrice && price < floorPrice * 0.5) {
+        message = '⚠️ Price is significantly below floor - expect quick sale';
+        level = 'error';
+        band = 'low';
+    }
+    // Check if price is above average
+    else if (avgPrice && price > avgPrice) {
+        message = '💡 Price exceeds average - good for maximizing profit';
+        level = 'warning';
+        band = 'high';
+    }
+    // Check if price is below floor
+    else if (floorPrice && price < floorPrice) {
+        message = '📉 Price is below floor - expect quick sale';
+        level = 'warning';
+        band = 'low';
+    }
+    // Price is in fair range
+    else {
+        message = '✅ Price is in fair range';
+        level = 'success';
+        band = 'fair';
+    }
+
+    // Show validation message
+    priceValidation.textContent = message;
+    priceValidation.className = `price-validation ${level}`;
+    priceValidation.style.display = 'block';
+
+    // Show price band
+    bandIndicator.textContent = band === 'fair' ? 'Fair Range' :
+                                band === 'high' ? 'Above Average' : 'Below Floor';
+    bandIndicator.className = `band-indicator ${band}`;
+    priceBand.style.display = 'block';
+}
+
 // Hide listing form
 function hideListingForm() {
     const listingFormModal = document.getElementById('listingFormModal');
     if (listingFormModal) {
         listingFormModal.classList.remove('active');
     }
+
+    // Hide pricing context
+    const pricingContext = document.getElementById('pricingContext');
+    if (pricingContext) {
+        pricingContext.style.display = 'none';
+    }
+
+    // Clear pricing data
+    window.currentPricingData = null;
+
     selectedCatForListing = null;
 }
 
@@ -1716,20 +1936,20 @@ function setupEnhancedEventListeners() {
     const hotlistPrev = document.getElementById('hotlistPrev');
     const hotlistNext = document.getElementById('hotlistNext');
     const viewHotCollectionBtn = document.getElementById('viewHotCollectionBtn');
-    
+
     if (hotlistPrev && hotlistNext) {
         hotlistPrev.addEventListener('click', () => {
             hotItemsCarouselIndex = Math.max(0, hotItemsCarouselIndex - 1);
             updateHotItemsCarouselPosition();
         });
-        
+
         hotlistNext.addEventListener('click', () => {
             const maxIndex = Math.max(0, hotItems.length - 3);
             hotItemsCarouselIndex = Math.min(maxIndex, hotItemsCarouselIndex + 1);
             updateHotItemsCarouselPosition();
         });
     }
-    
+
     if (viewHotCollectionBtn) {
         viewHotCollectionBtn.addEventListener('click', () => {
             const browseTab = document.querySelector('.tab-btn[data-tab="browse"]');
@@ -1739,20 +1959,20 @@ function setupEnhancedEventListeners() {
             document.getElementById('browse-tab').scrollIntoView({ behavior: 'smooth' });
         });
     }
-    
+
     // Preview navigation
     const prevPreviewBtn = document.getElementById('prevPreviewBtn');
     const nextPreviewBtn = document.getElementById('nextPreviewBtn');
-    
+
     if (prevPreviewBtn && nextPreviewBtn) {
         prevPreviewBtn.addEventListener('click', () => navigatePreview('prev'));
         nextPreviewBtn.addEventListener('click', () => navigatePreview('next'));
     }
-    
+
     // Favorite and share buttons
     const favoriteBtn = document.getElementById('favoriteBtn');
     const shareBtn = document.getElementById('shareBtn');
-    
+
     if (favoriteBtn) {
         favoriteBtn.addEventListener('click', () => {
             const previewImage = document.getElementById('previewImage');
@@ -1765,7 +1985,7 @@ function setupEnhancedEventListeners() {
             }
         });
     }
-    
+
     if (shareBtn) {
         shareBtn.addEventListener('click', () => {
             const currentListing = allListingsForPreview[currentPreviewIndex];
@@ -1776,11 +1996,11 @@ function setupEnhancedEventListeners() {
             }
         });
     }
-    
+
     // Wallet actions
     const copyAddressBtn = document.getElementById('copyAddressBtn');
     const viewOnExplorerBtn = document.getElementById('viewOnExplorerBtn');
-    
+
     if (copyAddressBtn) {
         copyAddressBtn.addEventListener('click', () => {
             if (currentAccount) {
@@ -1792,7 +2012,7 @@ function setupEnhancedEventListeners() {
             }
         });
     }
-    
+
     if (viewOnExplorerBtn) {
         viewOnExplorerBtn.addEventListener('click', () => {
             if (currentAccount) {
@@ -1808,13 +2028,13 @@ function updateHotItemsCarouselPosition() {
     const carousel = document.getElementById('hotlistCarousel');
     const prevBtn = document.getElementById('hotlistPrev');
     const nextBtn = document.getElementById('hotlistNext');
-    
+
     if (!carousel) return;
-    
+
     const itemWidth = 200 + 24; // item width + gap
     const scrollLeft = hotItemsCarouselIndex * itemWidth;
     carousel.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-    
+
     // Update button states
     if (prevBtn) prevBtn.disabled = hotItemsCarouselIndex === 0;
     if (nextBtn) nextBtn.disabled = hotItemsCarouselIndex >= hotItems.length - 3;
@@ -2373,9 +2593,9 @@ async function calculateMarketplaceStats() {
         let floorPrice = null;
         let floorPriceCurrency = null;
 
-        const nativeFloorPriceUSD = lowestNativeListing ? 
+        const nativeFloorPriceUSD = lowestNativeListing ?
             parseFloat(ethers.formatEther(lowestNativeListing.price)) * vtruPriceInUsdc : Infinity;
-        const usdcFloorPriceUSD = lowestUSDCListing ? 
+        const usdcFloorPriceUSD = lowestUSDCListing ?
             parseFloat(ethers.formatUnits(lowestUSDCListing.price, 6)) : Infinity;
 
         if (usdcFloorPriceUSD <= nativeFloorPriceUSD && lowestUSDCListing) {
@@ -2397,7 +2617,7 @@ async function calculateMarketplaceStats() {
         let totalVolumeUSDC = BigInt(0);
         let volume24hNative = BigInt(0);
         let volume24hUSDC = BigInt(0);
-        
+
         const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
 
         for (const event of soldEvents) {
@@ -2434,7 +2654,7 @@ async function calculateMarketplaceStats() {
         // Calculate total value locked (all active listings)
         let totalValueLockedNative = BigInt(0);
         let totalValueLockedUSDC = BigInt(0);
-        
+
         for (const listing of activeListings) {
             if (listing.currency === ethers.ZeroAddress) {
                 totalValueLockedNative += listing.price;
@@ -2448,7 +2668,7 @@ async function calculateMarketplaceStats() {
         const totalValueLocked = (tvlNative * vtruPriceInUsdc) + tvlUSDC;
 
         // Calculate average listing duration (placeholder for now)
-        const avgListingDuration = "3.2 days"; // This would require more complex tracking
+        const avgListingDuration = '3.2 days'; // This would require more complex tracking
 
         // Construct stats object
         const stats = {
@@ -2473,7 +2693,7 @@ async function calculateMarketplaceStats() {
         if (window.updateMarketplaceStats) {
             window.updateMarketplaceStats(stats);
         }
-        
+
         // Update rarity floor prices
         updateRarityFloorPrices(stats);
 
@@ -2493,7 +2713,7 @@ async function calculateMarketplaceStats() {
             totalSales: 0,
             rarityFloorPrices: {},
             rarityCounts: { legendary: 0, epic: 0, rare: 0, common: 0 },
-            avgListingDuration: "-- days"
+            avgListingDuration: '-- days'
         };
     }
 }
@@ -2501,24 +2721,24 @@ async function calculateMarketplaceStats() {
 // Update rarity floor prices display
 function updateRarityFloorPrices(stats) {
     const rarities = ['legendary', 'epic', 'rare', 'common'];
-    
+
     rarities.forEach(rarity => {
         const floorElement = document.getElementById(`${rarity}Floor`);
         const countElement = document.getElementById(`${rarity}Count`);
-        
+
         if (floorElement && countElement) {
             const rarityData = stats.rarityFloorPrices[rarity];
             const count = stats.rarityCounts[rarity];
-            
+
             // Find the lowest price between native and USDC
             let lowestPrice = null;
             let currency = null;
-            
+
             if (rarityData.native && rarityData.usdc) {
                 const nativePrice = parseFloat(ethers.formatEther(rarityData.native.price));
                 const usdcPrice = parseFloat(ethers.formatUnits(rarityData.usdc.price, 6));
                 const nativePriceUSD = nativePrice * stats.vtruPriceInUsdc;
-                
+
                 if (usdcPrice <= nativePriceUSD) {
                     lowestPrice = usdcPrice;
                     currency = 'USDC';
@@ -2533,30 +2753,30 @@ function updateRarityFloorPrices(stats) {
                 lowestPrice = parseFloat(ethers.formatUnits(rarityData.usdc.price, 6));
                 currency = 'USDC';
             }
-            
+
             if (lowestPrice !== null) {
                 floorElement.textContent = `${lowestPrice.toFixed(2)} ${currency}`;
             } else {
                 floorElement.textContent = 'No listings';
             }
-            
+
             countElement.textContent = `${count} available`;
         }
     });
-    
+
     // Update advanced analytics
     const volume24hElement = document.getElementById('volume24h');
     const avgListingElement = document.getElementById('avgListingDuration');
     const totalValueLockedElement = document.getElementById('totalValueLocked');
-    
+
     if (volume24hElement) {
         volume24hElement.textContent = `$${stats.volume24hInUsdc.toFixed(2)} USDC`;
     }
-    
+
     if (avgListingElement) {
         avgListingElement.textContent = stats.avgListingDuration;
     }
-    
+
     if (totalValueLockedElement) {
         totalValueLockedElement.textContent = `$${stats.totalValueLocked.toFixed(2)} USDC`;
     }
@@ -2612,25 +2832,25 @@ async function calculateCollectionValue(userCats, stats) {
 async function updateCollectionValueDisplay() {
     const collectionValueElement = document.getElementById('collectionValue');
     const collectionValueSubtextElement = document.getElementById('collectionValueSubtext');
-    
+
     if (!collectionValueElement || !currentAccount) return;
 
     try {
         // Get current marketplace stats
         const stats = await calculateMarketplaceStats();
-        
+
         // Calculate collection value
         const collectionValue = await calculateCollectionValue(userCats, stats);
-        
+
         if (collectionValue.total > 0) {
             collectionValueElement.textContent = `$${collectionValue.total.toFixed(2)} USDC`;
-            
+
             // Create breakdown tooltip
             const breakdown = Object.entries(collectionValue.breakdown)
                 .filter(([_, data]) => data.count > 0)
                 .map(([rarity, data]) => `${data.count} ${rarity}: $${data.value.toFixed(2)}`)
                 .join(' • ');
-            
+
             collectionValueSubtextElement.textContent = breakdown || 'Based on floor prices';
         } else {
             collectionValueElement.textContent = '$0.00 USDC';

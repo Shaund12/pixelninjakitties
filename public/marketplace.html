@@ -1632,6 +1632,238 @@
                 transform: translateX(-50%) translateY(0);
             }
 
+        /* Pricing Context Styles */
+        .pricing-context {
+            background: linear-gradient(135deg, rgba(138, 101, 255, 0.1), rgba(39, 117, 202, 0.1));
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(138, 101, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .pricing-context h4 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .pricing-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(138, 101, 255, 0.2);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .pricing-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .pricing-stat {
+            text-align: center;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem;
+            border-radius: 12px;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        .pricing-counts {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-counts span {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .suggested-price {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            background: rgba(79, 209, 197, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(79, 209, 197, 0.2);
+        }
+
+        .suggested-label {
+            font-size: 1rem;
+            color: var(--text-light);
+        }
+
+        .suggested-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .use-suggested-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .use-suggested-btn:hover {
+            background: #45c4b8;
+            transform: translateY(-2px);
+        }
+
+        /* Trait Matching Styles */
+        .trait-matching {
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkmark {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(138, 101, 255, 0.5);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Price Input Enhancements */
+        .price-input-wrapper {
+            position: relative;
+        }
+
+        .price-validation {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            border-radius: 0 0 8px 8px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .price-validation.warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
+        .price-validation.error {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+        }
+
+        .price-validation.success {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            color: #28a745;
+        }
+
+        .price-band {
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .band-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .band-indicator.fair {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .band-indicator.high {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .band-indicator.low {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
         /* Enhanced USDC Value Displays */
         .usdc-equivalent {
             font-size: 0.9rem;
@@ -3549,11 +3781,63 @@
             </div>
             <div class="modal-body">
                 <div class="selected-cat"></div>
+                
+                <!-- Pricing Context Section -->
+                <div class="pricing-context" id="pricingContext" style="display: none;">
+                    <div class="pricing-loading" id="pricingLoading">
+                        <div class="loading-spinner"></div>
+                        <span>Loading market data...</span>
+                    </div>
+                    <div class="pricing-data" id="pricingData" style="display: none;">
+                        <h4>💰 Market Context</h4>
+                        <div class="pricing-stats">
+                            <div class="pricing-stat">
+                                <span class="stat-label">📉 Floor:</span>
+                                <span class="stat-value" id="floorPrice">-</span>
+                            </div>
+                            <div class="pricing-stat">
+                                <span class="stat-label">📈 Avg:</span>
+                                <span class="stat-value" id="avgPrice">-</span>
+                            </div>
+                            <div class="pricing-stat">
+                                <span class="stat-label">📦 Last Sold:</span>
+                                <span class="stat-value" id="lastSold">-</span>
+                            </div>
+                        </div>
+                        <div class="pricing-counts">
+                            <span id="matchingListings">0 matching listings found</span>
+                            <span id="traitMatches" style="display: none;">0 trait matches found</span>
+                        </div>
+                        
+                        <!-- Suggested Price -->
+                        <div class="suggested-price" id="suggestedPriceSection" style="display: none;">
+                            <span class="suggested-label">💡 Suggested: </span>
+                            <span class="suggested-value" id="suggestedPrice">-</span>
+                            <button type="button" class="use-suggested-btn" id="useSuggestedBtn">Use Suggested</button>
+                        </div>
+                    </div>
+                </div>
+
                 <form id="createListingForm">
+                    <!-- Trait Matching Option -->
+                    <div class="form-group trait-matching">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="traitMatchingEnabled">
+                            <span class="checkmark"></span>
+                            Match by trait (breed, rank, or element)
+                        </label>
+                    </div>
+                    
                     <div class="form-row">
                         <div class="form-group">
                             <label for="listingPrice">Price</label>
-                            <input type="number" id="listingPrice" step="0.01" min="0" required placeholder="Enter price">
+                            <div class="price-input-wrapper">
+                                <input type="number" id="listingPrice" step="0.01" min="0" required placeholder="Enter price">
+                                <div class="price-validation" id="priceValidation"></div>
+                            </div>
+                            <div class="price-band" id="priceBand" style="display: none;">
+                                <span class="band-indicator" id="bandIndicator"></span>
+                            </div>
                         </div>
 
                         <div class="form-group">

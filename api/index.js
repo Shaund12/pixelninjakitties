@@ -319,6 +319,110 @@ app.get('/api/marketplace/listings/:tokenId', async (req, res) => {
     }
 });
 
+// Get pricing information for a specific token ID
+app.get('/api/pricing-info/:tokenId', async (req, res) => {
+    if (!marketplace) {
+        return res.status(404).json({ error: 'Marketplace not configured' });
+    }
+
+    try {
+        const tokenId = req.params.tokenId;
+
+        // Get the token's metadata and rarity
+        let metadata;
+        if (metadataCache[tokenId]) {
+            metadata = metadataCache[tokenId];
+        } else {
+            const uri = await nft.tokenURI(tokenId);
+            const response = await fetch(uri.replace('ipfs://', 'https://ipfs.io/ipfs/'));
+            metadata = await response.json();
+            metadataCache[tokenId] = metadata;
+        }
+
+        const rarity = getRarity(tokenId, metadata);
+
+        // Get all active listings
+        const listings = await marketplace.getListings();
+        const activeListings = listings.filter(listing => listing.active);
+
+        // Enhance listings with metadata for filtering
+        const enhancedListings = [];
+        for (const listing of activeListings) {
+            try {
+                let listingMetadata;
+                if (metadataCache[listing.tokenId]) {
+                    listingMetadata = metadataCache[listing.tokenId];
+                } else {
+                    const uri = await nft.tokenURI(listing.tokenId);
+                    const response = await fetch(uri.replace('ipfs://', 'https://ipfs.io/ipfs/'));
+                    listingMetadata = await response.json();
+                    metadataCache[listing.tokenId] = listingMetadata;
+                }
+
+                const listingRarity = getRarity(listing.tokenId, listingMetadata);
+                enhancedListings.push({
+                    ...listing,
+                    metadata: listingMetadata,
+                    rarity: listingRarity,
+                    priceInEth: listing.currency === '0x0000000000000000000000000000000000000000' ?
+                        parseFloat(ethers.formatEther(listing.price)) :
+                        parseFloat(ethers.formatUnits(listing.price, 6)) // USDC has 6 decimals
+                });
+            } catch (error) {
+                console.error(`Error processing listing #${listing.tokenId}:`, error);
+            }
+        }
+
+        // Filter listings by same rarity
+        const sameRarityListings = enhancedListings.filter(listing =>
+            listing.rarity === rarity
+        );
+
+        // Calculate floor price (lowest price)
+        const floorPrice = sameRarityListings.length > 0 ?
+            Math.min(...sameRarityListings.map(l => l.priceInEth)) : null;
+
+        // Calculate average price
+        const avgPrice = sameRarityListings.length > 0 ?
+            sameRarityListings.reduce((sum, l) => sum + l.priceInEth, 0) / sameRarityListings.length : null;
+
+        // Get trait-based matches if breed exists
+        let traitMatches = [];
+        if (metadata && metadata.attributes) {
+            const breed = metadata.attributes.find(attr => attr.trait_type === 'Breed')?.value;
+            if (breed) {
+                traitMatches = enhancedListings.filter(listing => {
+                    const listingBreed = listing.metadata?.attributes?.find(attr => attr.trait_type === 'Breed')?.value;
+                    return listingBreed === breed;
+                });
+            }
+        }
+
+        // Calculate suggested price (floor + 10% or average, whichever is higher)
+        let suggestedPrice = null;
+        if (floorPrice !== null) {
+            suggestedPrice = Math.max(floorPrice * 1.1, avgPrice || floorPrice);
+        }
+
+        // Format response
+        const pricingInfo = {
+            rarity: rarity,
+            floorPrice: floorPrice,
+            avgPrice: avgPrice,
+            lastSold: null, // TODO: Would need to track historical sales
+            matchingListings: sameRarityListings.length,
+            traitMatches: traitMatches.length,
+            suggestedPrice: suggestedPrice,
+            breed: metadata?.attributes?.find(attr => attr.trait_type === 'Breed')?.value || null
+        };
+
+        res.json(pricingInfo);
+    } catch (error) {
+        console.error(`Error fetching pricing info for token #${req.params.tokenId}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Helper function to determine rarity based on metadata or token ID as fallback
 function getRarity(id, metadata) {
     // If we have metadata with ninja_data containing rarity info, use that
