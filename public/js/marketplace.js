@@ -1176,9 +1176,9 @@ async function loadPricingData(tokenId) {
         const data = await response.json();
 
         // Update pricing display
-        document.getElementById('floorPrice').textContent = data.floorPrice ? `${data.floorPrice.toFixed(4)} USDC` : 'Unknown';
-        document.getElementById('avgPrice').textContent = data.avgPrice ? `${data.avgPrice.toFixed(4)} USDC` : 'Unknown';
-        document.getElementById('lastSold').textContent = data.lastSold ? `${data.lastSold.toFixed(4)} USDC` : 'Unknown';
+        document.getElementById('floorPrice').textContent = data.floorPrice && data.floorPrice > 0 ? `${data.floorPrice.toFixed(4)} USDC` : 'No listings';
+        document.getElementById('avgPrice').textContent = data.avgPrice && data.avgPrice > 0 ? `${data.avgPrice.toFixed(4)} USDC` : 'No data';
+        document.getElementById('lastSold').textContent = data.lastSold && data.lastSold > 0 ? `${data.lastSold.toFixed(4)} USDC` : 'No data';
         document.getElementById('matchingListings').textContent = `${data.matchingListings} matching listings found`;
 
         // Update trait matches
@@ -1193,7 +1193,7 @@ async function loadPricingData(tokenId) {
         // Show suggested price
         const suggestedPriceSection = document.getElementById('suggestedPriceSection');
         const suggestedPrice = document.getElementById('suggestedPrice');
-        if (data.suggestedPrice) {
+        if (data.suggestedPrice && data.suggestedPrice > 0) {
             suggestedPrice.textContent = `${data.suggestedPrice.toFixed(4)} USDC`;
             suggestedPriceSection.style.display = 'flex';
         } else {
@@ -1224,9 +1224,9 @@ function showFallbackPricingData() {
     const pricingData = document.getElementById('pricingData');
     
     // Set fallback values instead of breaking the modal
-    document.getElementById('floorPrice').textContent = 'Unknown';
-    document.getElementById('avgPrice').textContent = 'Unknown';
-    document.getElementById('lastSold').textContent = 'Unknown';
+    document.getElementById('floorPrice').textContent = 'No listings';
+    document.getElementById('avgPrice').textContent = 'No data';
+    document.getElementById('lastSold').textContent = 'No data';
     document.getElementById('matchingListings').textContent = 'Market data unavailable';
     
     // Hide trait matches section
@@ -1239,12 +1239,12 @@ function showFallbackPricingData() {
     
     // Clear pricing data to prevent validation errors
     window.currentPricingData = {
-        floorPrice: null,
-        avgPrice: null,
-        lastSold: null,
+        floorPrice: 0,
+        avgPrice: 0,
+        lastSold: 0,
         matchingListings: 0,
         traitMatches: 0,
-        suggestedPrice: null
+        suggestedPrice: 0
     };
     
     // Add a small notice at the top of pricing data
@@ -2617,8 +2617,15 @@ async function calculateMarketplaceStats() {
             const currency = listing.currency;
             const isNative = currency === ethers.ZeroAddress;
 
-            // Get rarity for this token
-            const rarity = getRarity(tokenId);
+            // Get rarity for this token - try to get metadata first for accurate rarity
+            let rarity;
+            try {
+                const metadata = await fetchTokenMetadata(tokenId);
+                rarity = getRarity(tokenId, metadata);
+            } catch (error) {
+                // Fallback to ID-based rarity if metadata fetch fails
+                rarity = getRarity(tokenId);
+            }
             rarityCounts[rarity]++;
 
             // Track rarity floor prices
@@ -2850,7 +2857,14 @@ async function calculateCollectionValue(userCats, stats) {
     };
 
     for (const tokenId of userCats) {
-        const rarity = getRarity(tokenId);
+        let rarity;
+        try {
+            const metadata = await fetchTokenMetadata(tokenId);
+            rarity = getRarity(tokenId, metadata);
+        } catch (error) {
+            // Fallback to ID-based rarity if metadata fetch fails
+            rarity = getRarity(tokenId);
+        }
         breakdown[rarity].count++;
 
         // Get floor price for this rarity

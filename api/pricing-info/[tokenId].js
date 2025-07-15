@@ -66,12 +66,12 @@ export default async function handler(req, res) {
     if (!MARKETPLACE_ADDRESS) {
         return res.json({
             rarity: 'common',
-            floorPrice: null,
-            avgPrice: null,
-            lastSold: null,
+            floorPrice: 0,
+            avgPrice: 0,
+            lastSold: 0,
             matchingListings: 0,
             traitMatches: 0,
-            suggestedPrice: null,
+            suggestedPrice: 0,
             breed: null,
             error: 'Marketplace not configured'
         });
@@ -108,12 +108,12 @@ export default async function handler(req, res) {
             // Return fallback data if blockchain call fails
             return res.json({
                 rarity: rarity,
-                floorPrice: null,
-                avgPrice: null,
-                lastSold: null,
+                floorPrice: 0,
+                avgPrice: 0,
+                lastSold: 0,
                 matchingListings: 0,
                 traitMatches: 0,
-                suggestedPrice: null,
+                suggestedPrice: 0,
                 breed: metadata?.attributes?.find(attr => attr.trait_type === 'Breed')?.value || null,
                 error: 'Unable to fetch marketplace data'
             });
@@ -146,6 +146,16 @@ export default async function handler(req, res) {
                 });
             } catch (error) {
                 console.error(`Error processing listing #${listing.tokenId}:`, error);
+                // Include listing without metadata if fetch fails
+                const fallbackRarity = getRarity(listing.tokenId, null);
+                enhancedListings.push({
+                    ...listing,
+                    metadata: null,
+                    rarity: fallbackRarity,
+                    priceInEth: listing.currency === '0x0000000000000000000000000000000000000000' ?
+                        parseFloat(ethers.formatEther(listing.price)) :
+                        parseFloat(ethers.formatUnits(listing.price, 6))
+                });
             }
         }
 
@@ -154,13 +164,21 @@ export default async function handler(req, res) {
             listing.rarity === rarity
         );
 
+        console.log(`Token ${tokenId} rarity: ${rarity}`);
+        console.log(`Total enhanced listings: ${enhancedListings.length}`);
+        console.log(`Same rarity listings: ${sameRarityListings.length}`);
+        console.log(`Rarity distribution:`, enhancedListings.reduce((acc, l) => {
+            acc[l.rarity] = (acc[l.rarity] || 0) + 1;
+            return acc;
+        }, {}));
+
         // Calculate floor price (lowest price)
         const floorPrice = sameRarityListings.length > 0 ?
-            Math.min(...sameRarityListings.map(l => l.priceInEth)) : null;
+            Math.min(...sameRarityListings.map(l => l.priceInEth)) : 0;
 
         // Calculate average price
         const avgPrice = sameRarityListings.length > 0 ?
-            sameRarityListings.reduce((sum, l) => sum + l.priceInEth, 0) / sameRarityListings.length : null;
+            sameRarityListings.reduce((sum, l) => sum + l.priceInEth, 0) / sameRarityListings.length : 0;
 
         // Get trait-based matches if breed exists
         let traitMatches = [];
@@ -175,8 +193,8 @@ export default async function handler(req, res) {
         }
 
         // Calculate suggested price (floor + 10% or average, whichever is higher)
-        let suggestedPrice = null;
-        if (floorPrice !== null) {
+        let suggestedPrice = 0;
+        if (floorPrice > 0) {
             suggestedPrice = Math.max(floorPrice * 1.1, avgPrice || floorPrice);
         }
 
@@ -185,7 +203,7 @@ export default async function handler(req, res) {
             rarity: rarity,
             floorPrice: floorPrice,
             avgPrice: avgPrice,
-            lastSold: null, // TODO: Would need to track historical sales
+            lastSold: 0, // TODO: Would need to track historical sales
             matchingListings: sameRarityListings.length,
             traitMatches: traitMatches.length,
             suggestedPrice: suggestedPrice,
@@ -199,12 +217,12 @@ export default async function handler(req, res) {
         // Return fallback data instead of 500 error
         res.json({
             rarity: 'common',
-            floorPrice: null,
-            avgPrice: null,
-            lastSold: null,
+            floorPrice: 0,
+            avgPrice: 0,
+            lastSold: 0,
             matchingListings: 0,
             traitMatches: 0,
-            suggestedPrice: null,
+            suggestedPrice: 0,
             breed: null,
             error: error.message
         });
