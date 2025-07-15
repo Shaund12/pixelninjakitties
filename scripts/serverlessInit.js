@@ -8,7 +8,7 @@ import { UptimeTracker } from './healthCheck.js';
 // ── Env vars ────────────────────────────────────────────────────────────────
 const {
     SUPABASE_URL,
-    SUPABASE_KEY,
+    SUPABASE_ANON_KEY,
     RPC_URL,
     CONTRACT_ADDRESS,
     PRIVATE_KEY,
@@ -17,15 +17,15 @@ const {
     ALLOWED_ORIGINS
 } = process.env;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_KEY');
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY');
 }
 if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY) {
     throw new Error('RPC_URL, CONTRACT_ADDRESS and PRIVATE_KEY are required');
 }
 
 // ── Supabase client ────────────────────────────────────────────────────────
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── Uptime tracker ─────────────────────────────────────────────────────────
 const uptimeTracker = new UptimeTracker();
@@ -182,7 +182,7 @@ export function getEnvVars() {
         PLACEHOLDER_URI,
         IMAGE_PROVIDER,
         SUPABASE_URL,
-        SUPABASE_KEY
+        SUPABASE_ANON_KEY
     };
 }
 
