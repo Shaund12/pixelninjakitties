@@ -894,19 +894,24 @@ export async function finalizeMint({
         }
 
         // Upload image to IPFS with retry logic
+        // Upload image to IPFS with retry logic
         console.log('📦 Saving and uploading image...');
         const uploadStartTime = Date.now();
-        let imageUri;
+        let imageUri, imageHttpUrl;
         try {
-            imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+            const imageUpload = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+            imageUri = imageUpload.ipfs;  // IPFS URI for the blockchain
+            imageHttpUrl = imageUpload.http; // HTTP URL for explorers
             const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
             console.log(`✅ Image uploaded in ${uploadTime}s`);
 
+            // Add both URLs to task manager update
             if (taskManager) {
                 taskManager.updateTask(taskId, {
                     progress: 80,
                     message: 'Image successfully uploaded to IPFS',
-                    imageUri
+                    imageUri,
+                    imageHttpUrl
                 });
             }
         } catch (error) {
@@ -917,21 +922,12 @@ export async function finalizeMint({
             throw new Error(`Failed to upload image to IPFS: ${error.message}`);
         }
 
-        // Create metadata
-        if (taskManager) {
-            taskManager.updateTask(taskId, {
-                progress: 85,
-                message: 'Creating and uploading metadata',
-                imageUri
-            });
-        }
-
-        // Create enhanced metadata using the new assembleMetadata function
-        console.log('📝 Creating metadata...');
+        // When creating metadata, include both URLs
         const metadataOptions = {
             name: `${projectName} #${tokenId}`,
             tokenId,
             external_url: `${baseUrl}/kitty/${tokenId}`,
+            // Include HTTP URL in generationInfo for better explorer compatibility
             generationInfo: {
                 prompt,
                 provider: imageResult.provider,
@@ -940,6 +936,7 @@ export async function finalizeMint({
                 timestamp: Date.now(),
                 rarity: traits.rarity,
                 background: backgroundTrait?.name,
+                imageHttpUrl, // Add HTTP URL here for explorers
                 generation: {
                     version: '2.0',
                     engine: imageResult.provider,
@@ -1161,6 +1158,45 @@ async function processImage(imageResult) {
         path: outputPath,
         directory: tmpDir
     };
+}
+
+/**
+ * Convert IPFS URI to HTTP gateway URL for better explorer compatibility
+ * @param {string} ipfsUri - The IPFS URI to convert 
+ * @returns {string} - HTTP gateway URL
+ */
+function ipfsToHttp(ipfsUri) {
+    if (!ipfsUri || !ipfsUri.startsWith('ipfs://')) return ipfsUri;
+    return ipfsUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
+}
+
+/**
+ * Upload a file to IPFS (Pinata only)
+ * @param {string} filePath - Path to the file
+ * @param {string} name - Name for the upload
+ * @returns {Promise<{ipfs: string, http: string}>} - Both IPFS and HTTP URLs
+ */
+async function uploadToIPFS(filePath, name) {
+    const isMetadataFile = name.endsWith('.json');
+    console.log(`📤 Uploading ${isMetadataFile ? 'metadata' : 'image'} to IPFS via Pinata: ${name}`);
+
+    if (!isPinataConfigured) {
+        throw new Error('Pinata credentials not configured. Please set PINATA_API_KEY and PINATA_SECRET_KEY in your .env file.');
+    }
+
+    try {
+        // Use Pinata exclusively - no fallbacks
+        const ipfsUri = await uploadToPinata(filePath, name);
+        // Also create HTTP gateway URL for better compatibility
+        const httpUrl = ipfsToHttp(ipfsUri);
+        console.log(`🔄 IPFS URI: ${ipfsUri}`);
+        console.log(`🌐 HTTP URL: ${httpUrl}`);
+
+        return { ipfs: ipfsUri, http: httpUrl };
+    } catch (error) {
+        console.error(`❌ Pinata upload failed: ${error.message}`);
+        throw new Error(`IPFS upload failed: ${error.message}`);
+    }
 }
 
 /**
