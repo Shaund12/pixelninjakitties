@@ -313,50 +313,50 @@ function setupRegenerationInterface(tokenId) {
         try {
             // Default to hiding the button until ownership is confirmed
             regenerateBtn.style.display = 'none';
-            
+
             // Check if wallet is connected
             if (typeof window.ethereum === 'undefined') {
-                console.log("No wallet detected");
+                console.log('No wallet detected');
                 return;
             }
-            
+
             // Get current user address
             let accounts = [];
             try {
                 accounts = await window.ethereum.request({ method: 'eth_accounts' });
                 if (accounts.length === 0) {
-                    console.log("No connected accounts");
+                    console.log('No connected accounts');
                     return;
                 }
             } catch (err) {
-                console.log("Error getting accounts:", err);
+                console.log('Error getting accounts:', err);
                 return;
             }
-            
+
             const userAddress = accounts[0].toLowerCase();
-            
+
             // Get NFT owner from contract
             try {
                 const provider = new ethers.JsonRpcProvider('https://rpc.vitruveo.xyz');
                 const nftContract = new ethers.Contract(CONTRACT, ['function ownerOf(uint256) view returns (address)'], provider);
                 const ownerAddress = (await nftContract.ownerOf(tokenId)).toLowerCase();
-                
+
                 console.log(`Current user: ${userAddress}`);
                 console.log(`NFT owner: ${ownerAddress}`);
-                
+
                 // Only show regenerate button if user is the owner
                 regenerateBtn.style.display = userAddress === ownerAddress ? 'inline-flex' : 'none';
             } catch (err) {
-                console.error("Error checking NFT ownership:", err);
+                console.error('Error checking NFT ownership:', err);
             }
         } catch (err) {
-            console.error("Error in ownership check:", err);
+            console.error('Error in ownership check:', err);
         }
     }
-    
+
     // Run the ownership check when setting up the interface
     checkOwnershipAndUpdateUI();
-    
+
     // Check again if account changes
     if (window.ethereum) {
         window.ethereum.on('accountsChanged', checkOwnershipAndUpdateUI);
@@ -481,14 +481,14 @@ function setupRegenerationInterface(tokenId) {
                     try {
                         const nftContract = new ethers.Contract(CONTRACT, ['function ownerOf(uint256) view returns (address)'], web3Provider);
                         const ownerAddress = (await nftContract.ownerOf(tokenId)).toLowerCase();
-                        
+
                         if (userAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
                             throw new Error('You are not the owner of this NFT. Only the owner can regenerate this NFT.');
                         }
-                        
-                        console.log("Ownership verified:", userAddress.toLowerCase() === ownerAddress.toLowerCase());
+
+                        console.log('Ownership verified:', userAddress.toLowerCase() === ownerAddress.toLowerCase());
                     } catch (ownerError) {
-                        console.error("Ownership verification failed:", ownerError);
+                        console.error('Ownership verification failed:', ownerError);
                         throw new Error('Ownership verification failed. Only the owner can regenerate this NFT.');
                     }
 

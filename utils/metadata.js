@@ -145,6 +145,21 @@ export function generateTraits(breed, tokenId) {
     const accessoryTrait = hasAccessory ?
         getWeightedTrait(weightedCategories.accessories, 'accessory') : null;
 
+    // 60% chance to have origin
+    const hasOrigin = parseInt(getTraitHash('hasOrigin', seed).substring(0, 4), 16) % 100 < 60;
+    const originTrait = hasOrigin ?
+        getWeightedTrait(weightedCategories.origin, 'origin') : null;
+
+    // 50% chance to have battle technique
+    const hasBattleTechnique = parseInt(getTraitHash('hasBattleTechnique', seed).substring(0, 4), 16) % 100 < 50;
+    const battleTechniqueTrait = hasBattleTechnique ?
+        getWeightedTrait(weightedCategories.battletechnique, 'battletechnique') : null;
+
+    // 40% chance to have art style
+    const hasArtStyle = parseInt(getTraitHash('hasArtStyle', seed).substring(0, 4), 16) % 100 < 40;
+    const artStyleTrait = hasArtStyle ?
+        getWeightedTrait(weightedCategories.artstyle, 'artstyle') : null;
+
     // Build attribute array
     const attributes = [
         { trait_type: 'Breed', value: breedTrait.value, rarity: breedTrait.rarity, keywords: breedTrait.keywords },
@@ -161,6 +176,36 @@ export function generateTraits(breed, tokenId) {
             value: accessoryTrait.value,
             rarity: accessoryTrait.rarity,
             keywords: accessoryTrait.keywords
+        });
+    }
+
+    // Add origin if present
+    if (originTrait) {
+        attributes.push({
+            trait_type: 'Origin',
+            value: originTrait.value,
+            rarity: originTrait.rarity,
+            keywords: originTrait.keywords
+        });
+    }
+
+    // Add battle technique if present
+    if (battleTechniqueTrait) {
+        attributes.push({
+            trait_type: 'BattleTechnique',
+            value: battleTechniqueTrait.value,
+            rarity: battleTechniqueTrait.rarity,
+            keywords: battleTechniqueTrait.keywords
+        });
+    }
+
+    // Add art style if present
+    if (artStyleTrait) {
+        attributes.push({
+            trait_type: 'ArtStyle',
+            value: artStyleTrait.value,
+            rarity: artStyleTrait.rarity,
+            keywords: artStyleTrait.keywords
         });
     }
 
@@ -345,6 +390,43 @@ export function generateStats(traits, seed) {
             baseStats.stealth += 3;
             baseStats.power += 1;
             break;
+        case 'Chakram':
+            baseStats.agility += 2;
+            break;
+        case 'Dragon Spear':
+            baseStats.power += 2;
+            baseStats.intelligence += 1;
+            break;
+        case 'Electro Tonfa':
+            baseStats.agility += 1;
+            baseStats.power += 1;
+            break;
+        case 'Flame Whip':
+            baseStats.power += 1;
+            baseStats.stealth += 1;
+            break;
+        case 'Ice Needles':
+            baseStats.agility += 1;
+            baseStats.intelligence += 1;
+            break;
+        case 'Shadow Claws':
+            baseStats.stealth += 2;
+            baseStats.power += 1;
+            break;
+        case 'Wind Blades':
+            baseStats.agility += 2;
+            baseStats.stealth += 1;
+            break;
+        case 'Mystic Orb':
+            baseStats.intelligence += 3;
+            break;
+        case 'Thunder Hammer':
+            baseStats.power += 3;
+            break;
+        case 'Void Blade':
+            baseStats.power += 2;
+            baseStats.stealth += 1;
+            break;
     }
 
     // Apply element bonuses
@@ -385,6 +467,21 @@ export function generateStats(traits, seed) {
         case 'Cosmic':
             baseStats.power += 2;
             baseStats.intelligence += 2;
+            break;
+        case 'Ether':
+            baseStats.stealth += 1;
+            baseStats.intelligence += 2;
+            break;
+        case 'Storm':
+            baseStats.power += 2;
+            baseStats.agility += 1;
+            break;
+        case 'Magma':
+            baseStats.power += 3;
+            break;
+        case 'Aurora':
+            baseStats.intelligence += 2;
+            baseStats.agility += 1;
             break;
     }
 
