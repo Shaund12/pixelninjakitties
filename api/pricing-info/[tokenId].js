@@ -26,19 +26,58 @@ const marketplaceAbi = [
 // METADATA CACHE
 const metadataCache = {};
 
+// Get VTRU/USDC price function
+async function getVtruUsdcPrice() {
+    try {
+        // Contract addresses
+        const LP_ADDRESS = '0x8B3808260a058ECfFA9b1d0eaA988A1b4167DDba';
+
+        // Simplified LP ABI just for querying reserves
+        const LP_ABI = [
+            'function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)'
+        ];
+
+        // Create contract instance
+        const lpContract = new ethers.Contract(LP_ADDRESS, LP_ABI, provider);
+
+        // Get reserves
+        const reserves = await lpContract.getReserves();
+
+        // Assuming reserve0 is VTRU and reserve1 is USDC
+        const vtruReserve = parseFloat(ethers.formatEther(reserves[0]));
+        const usdcReserve = parseFloat(ethers.formatUnits(reserves[1], 6)); // USDC has 6 decimals
+
+        // Calculate price (USDC per VTRU)
+        const vtruPriceInUsdc = usdcReserve / vtruReserve;
+
+        console.log(`VTRU/USDC Price: 1 VTRU = ${vtruPriceInUsdc.toFixed(6)} USDC`);
+        return vtruPriceInUsdc;
+    } catch (error) {
+        console.error('Error fetching VTRU/USDC price:', error);
+        // Fallback price if we can't get the actual price
+        return 0.1; // Assume 1 VTRU = 0.1 USDC as fallback
+    }
+}
+
 // Helper function to determine rarity based on metadata or token ID as fallback
 function getRarity(id, metadata) {
     // If we have metadata with ninja_data containing rarity info, use that
     if (metadata && metadata.ninja_data && metadata.ninja_data.rarity && metadata.ninja_data.rarity.tier) {
-        return metadata.ninja_data.rarity.tier.toLowerCase(); // Convert to lowercase to match existing format
+        const metadataRarity = metadata.ninja_data.rarity.tier.toLowerCase();
+        console.log(`Token ${id} rarity from metadata: ${metadataRarity}`);
+        return metadataRarity;
     }
 
     // Fallback to the previous ID-based calculation for backward compatibility
     const numId = parseInt(id, 10);
-    if (numId % 100 === 0) return 'legendary';
-    if (numId % 10 === 0) return 'epic';
-    if (numId % 2 === 0) return 'rare';
-    return 'common';
+    let calculatedRarity;
+    if (numId % 100 === 0) calculatedRarity = 'legendary';
+    else if (numId % 10 === 0) calculatedRarity = 'epic';
+    else if (numId % 2 === 0) calculatedRarity = 'rare';
+    else calculatedRarity = 'common';
+    
+    console.log(`Token ${id} rarity from ID calculation: ${calculatedRarity} (${numId} % 2 = ${numId % 2})`);
+    return calculatedRarity;
 }
 
 export default async function handler(req, res) {
@@ -80,6 +119,9 @@ export default async function handler(req, res) {
     const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, marketplaceAbi, provider);
 
     try {
+        // Get VTRU/USDC price for conversion
+        const vtruPriceInUsdc = await getVtruUsdcPrice();
+        
         // Get the token's metadata and rarity
         let metadata;
         if (metadataCache[tokenId]) {
@@ -136,25 +178,41 @@ export default async function handler(req, res) {
                 }
 
                 const listingRarity = getRarity(listing.tokenId, listingMetadata);
+                const priceInEth = listing.currency === ethers.ZeroAddress ?
+                    parseFloat(ethers.formatEther(listing.price)) :
+                    parseFloat(ethers.formatUnits(listing.price, 6)); // USDC has 6 decimals
+                
+                // Convert to USDC for consistent comparison
+                const priceInUsdc = listing.currency === ethers.ZeroAddress ?
+                    priceInEth * vtruPriceInUsdc : // VTRU to USDC
+                    priceInEth; // Already in USDC
+                
                 enhancedListings.push({
                     ...listing,
                     metadata: listingMetadata,
                     rarity: listingRarity,
-                    priceInEth: listing.currency === '0x0000000000000000000000000000000000000000' ?
-                        parseFloat(ethers.formatEther(listing.price)) :
-                        parseFloat(ethers.formatUnits(listing.price, 6)) // USDC has 6 decimals
+                    priceInEth: priceInEth,
+                    priceInUsdc: priceInUsdc
                 });
             } catch (error) {
                 console.error(`Error processing listing #${listing.tokenId}:`, error);
                 // Include listing without metadata if fetch fails
                 const fallbackRarity = getRarity(listing.tokenId, null);
+                const priceInEth = listing.currency === ethers.ZeroAddress ?
+                    parseFloat(ethers.formatEther(listing.price)) :
+                    parseFloat(ethers.formatUnits(listing.price, 6));
+                
+                // Convert to USDC for consistent comparison
+                const priceInUsdc = listing.currency === ethers.ZeroAddress ?
+                    priceInEth * vtruPriceInUsdc : // VTRU to USDC
+                    priceInEth; // Already in USDC
+                
                 enhancedListings.push({
                     ...listing,
                     metadata: null,
                     rarity: fallbackRarity,
-                    priceInEth: listing.currency === '0x0000000000000000000000000000000000000000' ?
-                        parseFloat(ethers.formatEther(listing.price)) :
-                        parseFloat(ethers.formatUnits(listing.price, 6))
+                    priceInEth: priceInEth,
+                    priceInUsdc: priceInUsdc
                 });
             }
         }
@@ -172,13 +230,30 @@ export default async function handler(req, res) {
             return acc;
         }, {}));
 
-        // Calculate floor price (lowest price)
-        const floorPrice = sameRarityListings.length > 0 ?
-            Math.min(...sameRarityListings.map(l => l.priceInEth)) : 0;
+        // DEBUG: Show detailed listing information for debugging
+        console.log(`Enhanced listings details:`);
+        enhancedListings.forEach((listing, index) => {
+            console.log(`  Listing ${index + 1}:`);
+            console.log(`    Token ID: ${listing.tokenId}`);
+            console.log(`    Rarity: ${listing.rarity}`);
+            console.log(`    Price (ETH): ${listing.priceInEth}`);
+            console.log(`    Price (USDC): ${listing.priceInUsdc}`);
+            console.log(`    Active: ${listing.active}`);
+            console.log(`    Currency: ${listing.currency}`);
+            console.log(`    Metadata loaded: ${!!listing.metadata}`);
+            if (listing.metadata && listing.metadata.attributes) {
+                const breed = listing.metadata.attributes.find(attr => attr.trait_type === 'Breed')?.value;
+                console.log(`    Breed: ${breed}`);
+            }
+        });
 
-        // Calculate average price
+        // Calculate floor price (lowest price in USDC)
+        const floorPrice = sameRarityListings.length > 0 ?
+            Math.min(...sameRarityListings.map(l => l.priceInUsdc)) : 0;
+
+        // Calculate average price (in USDC)
         const avgPrice = sameRarityListings.length > 0 ?
-            sameRarityListings.reduce((sum, l) => sum + l.priceInEth, 0) / sameRarityListings.length : 0;
+            sameRarityListings.reduce((sum, l) => sum + l.priceInUsdc, 0) / sameRarityListings.length : 0;
 
         // Get trait-based matches if breed exists
         let traitMatches = [];
