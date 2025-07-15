@@ -1866,13 +1866,13 @@ if (imageProviderSelect) {
             optionsPanel.style.display = 'block';
         }
 
-        // Store the selected provider in localStorage
-        localStorage.setItem('ninjacat_provider', selectedProvider);
+        // Store the selected provider in a data attribute
+        document.body.setAttribute('data-selected-provider', selectedProvider);
         console.log(`Selected image provider: ${selectedProvider}`);
     });
 
-    // Set initial provider from localStorage if available
-    const savedProvider = localStorage.getItem('ninjacat_provider');
+    // Set initial provider from data attribute if available
+    const savedProvider = document.body.getAttribute('data-selected-provider');
     if (savedProvider && Array.from(imageProviderSelect.options).some(opt => opt.value === savedProvider)) {
         imageProviderSelect.value = savedProvider;
         // Trigger change event to update UI

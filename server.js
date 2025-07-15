@@ -534,25 +534,21 @@ async function checkForEvents() {
                     continue;
                 }
 
-                // Check for user preference in localStorage (if we have it)
-                // Note: This may not work directly for server-side code,
-                // but we need to get the user's preferred provider somehow
-                // In a real implementation, you might store this in a database
-                const storedProvider = global.localStorage?.getItem('ninjacat_provider');
-                const storedPromptExtras = global.localStorage?.getItem('ninjacat_promptExtras');
-                const storedNegativePrompt = global.localStorage?.getItem('ninjacat_negativePrompt');
-
+                // Use the default IMAGE_PROVIDER from environment
+                // Note: User provider selection should be handled on the client side during mint
+                const selectedProvider = IMAGE_PROVIDER;
+                
                 console.log(`📝 Queueing token #${id} (${breed}) from buyer ${buyer}`);
-                console.log(`🎨 Selected image provider: ${storedProvider || IMAGE_PROVIDER}`);
+                console.log(`🎨 Using image provider: ${selectedProvider}`);
 
                 // Add to processing queue with explicit provider and all options
                 mintQueue.push({
                     tokenId,
                     buyer,
                     breed,
-                    imageProvider: storedProvider || IMAGE_PROVIDER,
-                    promptExtras: storedPromptExtras || '',
-                    negativePrompt: storedNegativePrompt || ''
+                    imageProvider: selectedProvider,
+                    promptExtras: '',
+                    negativePrompt: ''
                     // No force or regeneration flags for regular events
                 });
             } catch (err) {

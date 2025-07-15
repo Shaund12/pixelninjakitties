@@ -2763,8 +2763,8 @@
                         optionPanel.style.display = 'block';
                     }
 
-                    // Store the selected provider in localStorage for the server to use
-                    localStorage.setItem('ninjacat_provider', selectedProvider);
+                    // Store the selected provider in a data attribute for the server to use
+                    document.body.setAttribute('data-selected-provider', selectedProvider);
                     console.log(`Selected image provider: ${selectedProvider}`);
 
                     // Update generation summary if applicable
