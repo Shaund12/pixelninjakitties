@@ -1,11 +1,10 @@
 import { ethers } from 'ethers';
 
-// Setup environment variables
-const {
-    RPC_URL,
-    CONTRACT_ADDRESS,
-    MARKETPLACE_ADDRESS
-} = process.env;
+// Setup constants - hardcoded for serverless environment
+const RPC_URL = 'https://rpc.vitruveo.xyz';
+const CONTRACT_ADDRESS = '0x2D732b0Bb33566A13E586aE83fB21d2feE34e906';
+const MARKETPLACE_ADDRESS = '0x5031fc07293d574Ccbd4d12b0E7106A95502a299';
+const USDC_ADDRESS = '0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF';
 
 // Provider and contract setup
 const provider = new ethers.JsonRpcProvider(RPC_URL);
@@ -99,21 +98,6 @@ export default async function handler(req, res) {
 
     if (!tokenId) {
         return res.status(400).json({ error: 'Token ID is required' });
-    }
-
-    // Return fallback data if marketplace is not configured
-    if (!MARKETPLACE_ADDRESS) {
-        return res.json({
-            rarity: 'common',
-            floorPrice: 0,
-            avgPrice: 0,
-            lastSold: 0,
-            matchingListings: 0,
-            traitMatches: 0,
-            suggestedPrice: 0,
-            breed: null,
-            error: 'Marketplace not configured'
-        });
     }
 
     const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, marketplaceAbi, provider);
