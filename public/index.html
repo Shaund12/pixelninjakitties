@@ -2879,6 +2879,15 @@
 
                 // Update navbar price indicator
                 updateNavbarPrice(exchangeRate);
+                
+                // Immediately update the exchange rate display
+                const exchangeRateEl = document.getElementById('exchangeRate');
+                const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
+                if (exchangeRateEl && exchangeRateDisplayEl && exchangeRate) {
+                    exchangeRateEl.textContent = exchangeRate.toFixed(4);
+                    exchangeRateDisplayEl.style.display = 'block';
+                    console.log('Exchange rate display updated immediately');
+                }
 
                 // Set interval to update price every 60 seconds
                 setInterval(async () => {
@@ -2956,37 +2965,42 @@
                 exchangeRateDisplayEl: !!exchangeRateDisplayEl
             });
 
-            // Set the exchange rate display
+            // Set the exchange rate display - always show it if we have a rate
             if (exchangeRateEl && exchangeRateDisplayEl) {
                 if (exchangeRate && !isNaN(exchangeRate)) {
                     exchangeRateEl.textContent = exchangeRate.toFixed(4);
                     exchangeRateDisplayEl.style.display = 'block';
                     console.log('Exchange rate display set to:', exchangeRate.toFixed(4));
                 } else {
-                    exchangeRateDisplayEl.style.display = 'none';
-                    console.log('Exchange rate display hidden - invalid rate');
+                    exchangeRateEl.textContent = '--';
+                    exchangeRateDisplayEl.style.display = 'block'; // Show even if no rate
+                    console.log('Exchange rate display set to -- (no rate)');
                 }
             }
 
-            if (!vtruElement || !vtruConversionEl) return;
+            if (!vtruElement || !vtruConversionEl) {
+                console.log('VTRU elements not found');
+                return;
+            }
+
+            // Always show the VTRU conversion display
+            vtruConversionEl.style.display = 'block';
 
             if (usdcPrice && !isNaN(usdcPrice)) {
                 if (exchangeRate && !isNaN(exchangeRate)) {
                     // Calculate how many VTRU you get for the USDC price
                     const vtruValue = (parseFloat(usdcPrice) / exchangeRate).toFixed(2);
                     vtruElement.textContent = vtruValue;
-                    vtruConversionEl.style.display = 'block';
                     console.log('VTRU conversion set to:', vtruValue, 'VTRU');
                 } else {
                     // No valid exchange rate
-                    vtruElement.textContent = "N/A - Unable to retrieve exchange rate";
-                    vtruConversionEl.style.display = 'block';
+                    vtruElement.textContent = "N/A";
                     console.log('VTRU conversion set to N/A - no exchange rate');
                 }
             } else {
-                // No valid price
-                vtruConversionEl.style.display = 'none';
-                console.log('VTRU conversion hidden - no valid price');
+                // No valid price - show placeholder
+                vtruElement.textContent = "--";
+                console.log('VTRU conversion set to -- (no price)');
             }
         }
     </script>
