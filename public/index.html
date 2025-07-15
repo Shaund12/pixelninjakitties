@@ -2861,21 +2861,9 @@
 
         // Initialize VTRU conversion and navbar price display
         document.addEventListener('DOMContentLoaded', async function () {
-            console.log('DOM loaded, initializing VTRU conversion...');
-            
-            // Don't hide conversion initially - let's see if it helps
-            const vtruConversionEl = document.getElementById('vtruConversion');
-            const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
-            
-            console.log('Elements found on DOM load:', {
-                vtruConversionEl: !!vtruConversionEl,
-                exchangeRateDisplayEl: !!exchangeRateDisplayEl
-            });
-
             try {
                 // Get the current exchange rate
                 const exchangeRate = await window.getExchangeRate();
-                console.log('Exchange rate retrieved:', exchangeRate);
 
                 // Update navbar price indicator
                 updateNavbarPrice(exchangeRate);
@@ -2886,8 +2874,10 @@
                 if (exchangeRateEl && exchangeRateDisplayEl && exchangeRate) {
                     exchangeRateEl.textContent = exchangeRate.toFixed(4);
                     exchangeRateDisplayEl.style.display = 'block';
-                    console.log('Exchange rate display updated immediately');
                 }
+
+                // Try to update VTRU conversion immediately if price is already available
+                updateVtruConversion(null, exchangeRate);
 
                 // Set interval to update price every 60 seconds
                 setInterval(async () => {
@@ -2901,11 +2891,8 @@
                     // Function to check and update VTRU conversion
                     const checkAndUpdateVtruConversion = () => {
                         const priceText = priceElement.innerText || priceElement.textContent;
-                        console.log('Checking price text:', priceText);
                         const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
-                        console.log('Price match result:', priceMatch);
                         if (priceMatch && priceMatch[1]) {
-                            console.log('Calling updateVtruConversion with price:', priceMatch[1], 'exchange rate:', exchangeRate);
                             updateVtruConversion(priceMatch[1], exchangeRate);
                         }
                     };
@@ -2913,7 +2900,7 @@
                     // Initial check of existing price
                     checkAndUpdateVtruConversion();
                     
-                    // Check again after a short delay in case the price loads later
+                    // Check again after short delays in case the price loads later
                     setTimeout(checkAndUpdateVtruConversion, 1000);
                     setTimeout(checkAndUpdateVtruConversion, 3000);
                     setTimeout(checkAndUpdateVtruConversion, 5000);
@@ -2921,7 +2908,6 @@
                     // Monitor for price changes
                     const observer = new MutationObserver(function (mutations) {
                         mutations.forEach(function (mutation) {
-                            console.log('Price element mutation detected');
                             checkAndUpdateVtruConversion();
                         });
                     });
@@ -2951,37 +2937,23 @@
 
         // Function to update VTRU price conversion in the mint card
         function updateVtruConversion(usdcPrice, exchangeRate) {
-            console.log('updateVtruConversion called with:', { usdcPrice, exchangeRate });
-            
             const vtruElement = document.getElementById('vtruValue');
             const vtruConversionEl = document.getElementById('vtruConversion');
             const exchangeRateEl = document.getElementById('exchangeRate');
             const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
-
-            console.log('Elements found:', { 
-                vtruElement: !!vtruElement, 
-                vtruConversionEl: !!vtruConversionEl,
-                exchangeRateEl: !!exchangeRateEl,
-                exchangeRateDisplayEl: !!exchangeRateDisplayEl
-            });
 
             // Set the exchange rate display - always show it if we have a rate
             if (exchangeRateEl && exchangeRateDisplayEl) {
                 if (exchangeRate && !isNaN(exchangeRate)) {
                     exchangeRateEl.textContent = exchangeRate.toFixed(4);
                     exchangeRateDisplayEl.style.display = 'block';
-                    console.log('Exchange rate display set to:', exchangeRate.toFixed(4));
                 } else {
                     exchangeRateEl.textContent = '--';
-                    exchangeRateDisplayEl.style.display = 'block'; // Show even if no rate
-                    console.log('Exchange rate display set to -- (no rate)');
+                    exchangeRateDisplayEl.style.display = 'block';
                 }
             }
 
-            if (!vtruElement || !vtruConversionEl) {
-                console.log('VTRU elements not found');
-                return;
-            }
+            if (!vtruElement || !vtruConversionEl) return;
 
             // Always show the VTRU conversion display
             vtruConversionEl.style.display = 'block';
@@ -2991,16 +2963,11 @@
                     // Calculate how many VTRU you get for the USDC price
                     const vtruValue = (parseFloat(usdcPrice) / exchangeRate).toFixed(2);
                     vtruElement.textContent = vtruValue;
-                    console.log('VTRU conversion set to:', vtruValue, 'VTRU');
                 } else {
-                    // No valid exchange rate
                     vtruElement.textContent = "N/A";
-                    console.log('VTRU conversion set to N/A - no exchange rate');
                 }
             } else {
-                // No valid price - show placeholder
                 vtruElement.textContent = "--";
-                console.log('VTRU conversion set to -- (no price)');
             }
         }
     </script>
