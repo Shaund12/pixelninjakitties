@@ -1,28 +1,36 @@
-/**
- * Serverless initialization module
- * Provides shared instances and utilities for API functions
- */
+// serverlessInit.js
 
 import 'dotenv/config';
 import { ethers } from 'ethers';
-import { createStorage } from './storageHelpers.js';
+import { createClient } from '@supabase/supabase-js';
 import { UptimeTracker } from './healthCheck.js';
-import fs from 'fs/promises';
-import path from 'path';
 
-// Initialize uptime tracker
-const uptimeTracker = new UptimeTracker();
-
-// Environment variables
+// ── Env vars ────────────────────────────────────────────────────────────────
 const {
+    SUPABASE_URL,
+    SUPABASE_KEY,
     RPC_URL,
     CONTRACT_ADDRESS,
     PRIVATE_KEY,
     PLACEHOLDER_URI,
-    IMAGE_PROVIDER = 'dall-e'
+    IMAGE_PROVIDER = 'dall-e',
+    ALLOWED_ORIGINS
 } = process.env;
 
-// Shared instances (initialized lazily)
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_KEY');
+}
+if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY) {
+    throw new Error('RPC_URL, CONTRACT_ADDRESS and PRIVATE_KEY are required');
+}
+
+// ── Supabase client ────────────────────────────────────────────────────────
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Uptime tracker ─────────────────────────────────────────────────────────
+const uptimeTracker = new UptimeTracker();
+
+// ── Shared instances (lazy init) ───────────────────────────────────────────
 let provider;
 let signer;
 let nft;
@@ -31,23 +39,19 @@ let providerPreferences;
 let processedTokens;
 let mintQueue;
 let lastBlock = 0;
-const processingQueue = false;
+let processingQueue = false;
 const lastMinuteRequests = [];
 
-// Constants
-const RATE_LIMIT = 5;
-const RATE_WINDOW = 60000; // 1 minute in milliseconds
-const STATE_FILE = path.join(process.cwd(), 'event-state.json');
+// ── Rate limits ─────────────────────────────────────────────────────────────
+export const RATE_LIMIT = 5;
+export const RATE_WINDOW = 60_000; // ms
 
 /**
- * Initialize blockchain components
+ * Initialize blockchain & storage components
  */
 export async function initializeBlockchain() {
     if (!provider) {
-        if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY) {
-            throw new Error('Missing required environment variables');
-        }
-
+        // ── Ethers setup ────────────────────────────────────────────────────────
         provider = new ethers.JsonRpcProvider(RPC_URL);
         signer = new ethers.Wallet(PRIVATE_KEY, provider);
 
@@ -56,17 +60,66 @@ export async function initializeBlockchain() {
             'function tokenURI(uint256) view returns (string)',
             'function setTokenURI(uint256,string)'
         ];
-
         nft = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
         eventSig = nft.interface.getEvent('MintRequested').topicHash;
 
-        // Initialize storage
-        providerPreferences = createStorage('provider-preferences.json');
-        processedTokens = new Set();
+        // ── Provider preferences storage ───────────────────────────────────────
+        providerPreferences = {
+            async set(tokenId, { provider: prov, timestamp, options }) {
+                const { error } = await supabase
+                    .from('provider_preferences')
+                    .upsert(
+                        { token_id: tokenId, provider: prov, timestamp, options },
+                        { onConflict: 'token_id' }
+                    );
+                if (error) throw error;
+            },
+            async get(tokenId) {
+                const { data, error } = await supabase
+                    .from('provider_preferences')
+                    .select('*')
+                    .eq('token_id', tokenId)
+                    .single();
+                if (error && error.code !== 'PGRST116') throw error; // 116 = no row found
+                return data;
+            }
+        };
+
+        // ── Load processedTokens from Supabase ─────────────────────────────────
+        try {
+            const { data, error } = await supabase
+                .from('processed_tokens')
+                .select('token_id');
+            if (error) throw error;
+            processedTokens = new Set(data.map((r) => Number(r.token_id)));
+        } catch (err) {
+            console.warn('Could not load processed_tokens, starting empty', err);
+            processedTokens = new Set();
+        }
+
+        // ── Initialize mintQueue ───────────────────────────────────────────────
         mintQueue = [];
 
-        // Load state
-        await loadState();
+        // ── Load lastBlock from Supabase ───────────────────────────────────────
+        try {
+            const { data, error } = await supabase
+                .from('event_state')
+                .select('last_block')
+                .eq('id', 1)
+                .single();
+            if (error && error.code !== 'PGRST116') throw error;
+            if (data) {
+                lastBlock = Number(data.last_block);
+            } else {
+                // fallback to currentBlock - 1000
+                const current = await provider.getBlockNumber();
+                lastBlock = current > 1000 ? current - 1000 : 0;
+            }
+        } catch (err) {
+            console.warn('Could not load lastBlock, fetching current block', err);
+            const current = await provider.getBlockNumber();
+            lastBlock = current > 1000 ? current - 1000 : 0;
+        }
     }
 
     return {
@@ -78,81 +131,81 @@ export async function initializeBlockchain() {
         processedTokens,
         mintQueue,
         get lastBlock() { return lastBlock; },
-        set lastBlock(value) { lastBlock = value; },
+        set lastBlock(val) { lastBlock = val; },
         get processingQueue() { return processingQueue; },
-        set processingQueue(value) { processingQueue = value; },
-        get lastMinuteRequests() { return lastMinuteRequests; },
-        set lastMinuteRequests(value) { lastMinuteRequests = value; },
-        RATE_LIMIT,
-        RATE_WINDOW
+        set processingQueue(val) { processingQueue = val; },
+        get lastMinuteRequests() { return lastMinuteRequests; }
     };
 }
 
 /**
- * Load state from persistent storage
- */
-async function loadState() {
-    try {
-        const stateData = await fs.readFile(STATE_FILE, 'utf8');
-        const state = JSON.parse(stateData);
-        lastBlock = state.lastBlock || 0;
-        processedTokens = new Set(state.processedTokens || []);
-        console.log(`📂 Loaded state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
-    } catch {
-        // If file doesn't exist, initialize with safe defaults
-        if (provider) {
-            const currentBlock = await provider.getBlockNumber();
-            lastBlock = Math.max(0, currentBlock - 1000);
-        }
-        processedTokens = new Set();
-        console.log(`🆕 Created new state: starting from block ${lastBlock}`);
-    }
-}
-
-/**
- * Save current state to persistent storage
+ * Persist current state back to Supabase
  */
 export async function saveState() {
-    const state = {
-        lastBlock,
-        processedTokens: Array.from(processedTokens)
-    };
-    await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
-    console.log(`💾 Saved state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`);
+    // ── Upsert processed_tokens ──────────────────────────────────────────────
+    try {
+        const rows = Array.from(processedTokens).map((id) => ({ token_id: id }));
+        const { error } = await supabase
+            .from('processed_tokens')
+            .upsert(rows, { onConflict: 'token_id' });
+        if (error) throw error;
+    } catch (err) {
+        console.error('Error saving processed_tokens', err);
+    }
+
+    // ── Upsert last_block into event_state ───────────────────────────────────
+    try {
+        const { error } = await supabase
+            .from('event_state')
+            .upsert({ id: 1, last_block: lastBlock }, { onConflict: 'id' });
+        if (error) throw error;
+    } catch (err) {
+        console.error('Error saving lastBlock', err);
+    }
+
+    console.log(
+        `💾 Saved state: lastBlock=${lastBlock}, processedTokens=${processedTokens.size}`
+    );
 }
 
-/**
- * Get uptime tracker instance
- */
+/** Return the shared uptime tracker */
 export function getUptimeTracker() {
     return uptimeTracker;
 }
 
-/**
- * Get environment variables
- */
+/** Return raw environment settings */
 export function getEnvVars() {
     return {
         RPC_URL,
         CONTRACT_ADDRESS,
         PRIVATE_KEY,
         PLACEHOLDER_URI,
-        IMAGE_PROVIDER
+        IMAGE_PROVIDER,
+        SUPABASE_URL,
+        SUPABASE_KEY
     };
 }
 
-/**
- * Standard CORS headers for all API responses
- */
+/** Apply CORS headers to every response */
 export function setCorsHeaders(res) {
-    res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS?.split(',')?.join(',') || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader(
+        'Access-Control-Allow-Origin',
+        ALLOWED_ORIGINS?.split(',').join(',') || '*'
+    );
+    res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+    );
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization'
+    );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 }
 
 /**
- * Handle OPTIONS requests for CORS
+ * Handle preflight OPTIONS
+ * @returns true if handled
  */
 export function handleOptions(req, res) {
     if (req.method === 'OPTIONS') {
