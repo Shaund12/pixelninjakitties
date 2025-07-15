@@ -67,9 +67,34 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load and set up JSON schema validation
-const schema = JSON.parse(
-    readFileSync(path.resolve(__dirname, '../docs/metadata-schema.json'), 'utf8')
-);
+let schema;
+try {
+    // Try from project root
+    schema = JSON.parse(
+        readFileSync(path.resolve(__dirname, '../docs/metadata-schema.json'), 'utf8')
+    );
+} catch (err) {
+    try {
+        // Try from scripts directory
+        schema = JSON.parse(
+            readFileSync(path.resolve(__dirname, 'docs/metadata-schema.json'), 'utf8')
+        );
+    } catch (error) {
+        // Create a minimal schema if file can't be found
+        console.warn('⚠️ Could not load metadata schema file, using default schema');
+        schema = {
+            "type": "object",
+            "required": ["name", "image", "attributes"],
+            "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "image": { "type": "string" },
+                "attributes": { "type": "array" }
+            }
+        };
+    }
+}
+
 const ajv = new Ajv();
 addFormats(ajv);
 const validateMetadata = ajv.compile(schema);
