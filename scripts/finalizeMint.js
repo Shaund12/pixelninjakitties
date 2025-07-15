@@ -894,24 +894,19 @@ export async function finalizeMint({
         }
 
         // Upload image to IPFS with retry logic
-        // Upload image to IPFS with retry logic
         console.log('📦 Saving and uploading image...');
         const uploadStartTime = Date.now();
-        let imageUri, imageHttpUrl;
+        let imageUri;
         try {
-            const imageUpload = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
-            imageUri = imageUpload.ipfs;  // IPFS URI for the blockchain
-            imageHttpUrl = imageUpload.http; // HTTP URL for explorers
+            imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
             const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
             console.log(`✅ Image uploaded in ${uploadTime}s`);
 
-            // Add both URLs to task manager update
             if (taskManager) {
                 taskManager.updateTask(taskId, {
                     progress: 80,
                     message: 'Image successfully uploaded to IPFS',
-                    imageUri,
-                    imageHttpUrl
+                    imageUri
                 });
             }
         } catch (error) {
@@ -922,12 +917,21 @@ export async function finalizeMint({
             throw new Error(`Failed to upload image to IPFS: ${error.message}`);
         }
 
-        // When creating metadata, include both URLs
+        // Create metadata
+        if (taskManager) {
+            taskManager.updateTask(taskId, {
+                progress: 85,
+                message: 'Creating and uploading metadata',
+                imageUri
+            });
+        }
+
+        // Create enhanced metadata using the new assembleMetadata function
+        console.log('📝 Creating metadata...');
         const metadataOptions = {
             name: `${projectName} #${tokenId}`,
             tokenId,
             external_url: `${baseUrl}/kitty/${tokenId}`,
-            // Include HTTP URL in generationInfo for better explorer compatibility
             generationInfo: {
                 prompt,
                 provider: imageResult.provider,
@@ -936,7 +940,6 @@ export async function finalizeMint({
                 timestamp: Date.now(),
                 rarity: traits.rarity,
                 background: backgroundTrait?.name,
-                imageHttpUrl, // Add HTTP URL here for explorers
                 generation: {
                     version: '2.0',
                     engine: imageResult.provider,
@@ -1161,91 +1164,27 @@ async function processImage(imageResult) {
 }
 
 /**
- * Convert IPFS URI to HTTP gateway URL for better explorer compatibility
- * @param {string} ipfsUri - The IPFS URI to convert 
- * @returns {string} - HTTP gateway URL
- */
-function ipfsToHttp(ipfsUri) {
-    if (!ipfsUri || !ipfsUri.startsWith('ipfs://')) return ipfsUri;
-    return ipfsUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
-}
-
-/**
- * Upload a file to IPFS (Pinata only)
- * @param {string} filePath - Path to the file
+ * Upload an image to IPFS via Pinata
+ * @param {string} imagePath - Path to the image file
  * @param {string} name - Name for the upload
- * @returns {Promise<{ipfs: string, http: string}>} - Both IPFS and HTTP URLs
+ * @returns {Promise<string>} - IPFS hash/CID
  */
-async function uploadToIPFS(filePath, name) {
-    const isMetadataFile = name.endsWith('.json');
-    console.log(`📤 Uploading ${isMetadataFile ? 'metadata' : 'image'} to IPFS via Pinata: ${name}`);
-
-    if (!isPinataConfigured) {
-        throw new Error('Pinata credentials not configured. Please set PINATA_API_KEY and PINATA_SECRET_KEY in your .env file.');
-    }
-
-    try {
-        // Use Pinata exclusively - no fallbacks
-        const ipfsUri = await uploadToPinata(filePath, name);
-        // Also create HTTP gateway URL for better compatibility
-        const httpUrl = ipfsToHttp(ipfsUri);
-        console.log(`🔄 IPFS URI: ${ipfsUri}`);
-        console.log(`🌐 HTTP URL: ${httpUrl}`);
-
-        return { ipfs: ipfsUri, http: httpUrl };
-    } catch (error) {
-        console.error(`❌ Pinata upload failed: ${error.message}`);
-        throw new Error(`IPFS upload failed: ${error.message}`);
-    }
-}
-
-/**
- * Upload a directory to Pinata to preserve file paths/structure
- * @param {string} dirPath - Path to directory or path to single file with desired filename
- * @param {string} name - Name for the upload in Pinata
- * @returns {Promise<string>} - IPFS CID
- */
-async function uploadDirectoryToPinata(dirPath, name) {
-    console.log(`📁 Uploading directory to Pinata: ${dirPath}`);
+async function uploadToPinata(filePath, name) {
+    console.log(`📤 Attempting Pinata upload for ${name} (${await getFileSize(filePath)} bytes)`);
+    console.log(`Uploading to Pinata: ${filePath}`);
 
     if (!isPinataConfigured) {
         throw new Error('Pinata not configured - missing API key or secret key');
     }
 
-    // Check if this is a directory or a single file
-    const stats = await fs.stat(dirPath);
-    const isDirectory = stats.isDirectory();
-
-    // Create form data with the file(s)
+    // Create form data with the file
     const formData = new FormData();
-
-    if (isDirectory) {
-        // Read all files in the directory
-        const files = await fs.readdir(dirPath);
-        for (const file of files) {
-            const filePath = path.join(dirPath, file);
-            const fileStats = await fs.stat(filePath);
-
-            if (fileStats.isFile()) {
-                const content = await fs.readFile(filePath);
-                formData.append('file', content, { filename: file });
-            }
-        }
-    } else {
-        // It's a single file, use the basename as the filename
-        const content = await fs.readFile(dirPath);
-        const fileName = path.basename(dirPath);
-        formData.append('file', content, { filename: fileName });
-    }
+    const fileStream = await fs.readFile(filePath);
+    formData.append('file', fileStream, { filename: path.basename(filePath) });
 
     // Add metadata
     formData.append('pinataMetadata', JSON.stringify({
         name: `nft-${name}`
-    }));
-
-    // Add pinata options to preserve filenames in the directory
-    formData.append('pinataOptions', JSON.stringify({
-        wrapWithDirectory: true
     }));
 
     try {
@@ -1265,122 +1204,66 @@ async function uploadDirectoryToPinata(dirPath, name) {
         }
 
         const result = await response.json();
-        return result.IpfsHash;
+        const ipfsHash = result.IpfsHash;
+
+        console.log(`✅ Pinata upload successful: ipfs://${ipfsHash}`);
+        return `ipfs://${ipfsHash}`;
     } catch (error) {
-        console.error(`❌ Directory upload failed: ${error.message}`);
+        console.error(`Error uploading to Pinata: ${error.message}`);
         throw error;
     }
 }
 
-
-
 /**
- * Upload an image or JSON to IPFS via Pinata
+ * Upload a file to IPFS
  * @param {string} filePath - Path to the file
  * @param {string} name - Name for the upload
- * @returns {Promise<string>} - IPFS URI with filename path for JSON
+ * @returns {Promise<string>} - IPFS URL
  */
-async function uploadToPinata(filePath, name) {
-    console.log(`📤 Uploading to Pinata: ${name} (${await getFileSize(filePath)} bytes)`);
-    console.log(`   Path: ${filePath}`);
-
-    // Check if this is a metadata JSON file
-    const isMetadataFile = name.endsWith('.json');
-
-    if (isMetadataFile) {
+async function uploadToIPFS(filePath, name) {
+    // Try Pinata first if configured
+    if (isPinataConfigured) {
         try {
-            // Create a temporary directory to store metadata with proper filename
-            const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nft-metadata-'));
-            const namedFilePath = path.join(tmpDir, name);
-
-            // Copy the file with its intended name
-            await fs.copyFile(filePath, namedFilePath);
-            console.log(`📋 Created metadata file with name: ${name}`);
-
-            try {
-                // Create form data with file and directory structure
-                const formData = new FormData();
-                const fileContent = await fs.readFile(namedFilePath);
-                formData.append('file', fileContent, { filename: name });
-
-                // Add metadata for Pinata
-                formData.append('pinataMetadata', JSON.stringify({
-                    name: `nft-metadata-${name}`
-                }));
-
-                // This option preserves filenames in the directory structure
-                formData.append('pinataOptions', JSON.stringify({
-                    wrapWithDirectory: true
-                }));
-
-                // Upload to Pinata
-                const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-                    method: 'POST',
-                    headers: {
-                        'pinata_api_key': PINATA_API_KEY,
-                        'pinata_secret_api_key': PINATA_SECRET_KEY
-                    },
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Pinata API error: ${response.status} - ${errorText}`);
-                }
-
-                const result = await response.json();
-                const ipfsCid = result.IpfsHash;
-
-                // Return URI with filename in path
-                const metadataUri = `ipfs://${ipfsCid}/${name}`;
-                console.log(`✅ Metadata uploaded successfully: ${metadataUri}`);
-
-                // Clean up temp directory
-                await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => { });
-
-                return metadataUri;
-            } catch (error) {
-                await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => { });
-                throw error;
-            }
+            return await uploadToPinata(filePath, name);
         } catch (error) {
-            throw error;
+            console.warn(`⚠️ Pinata upload failed: ${error.message}`);
+            console.warn('⚠️ Falling back to local w3.storage CLI...');
         }
-    } else {
-        // Regular file upload for images
-        const formData = new FormData();
-        const fileStream = await fs.readFile(filePath);
-        formData.append('file', fileStream, { filename: path.basename(filePath) });
+    }
 
-        // Add metadata
-        formData.append('pinataMetadata', JSON.stringify({
-            name: `nft-image-${name}`
-        }));
+    // Fall back to web3.storage CLI
+    try {
+        const { stdout } = await execAsync(`npx web3.storage put "${filePath}" --name "${name}"`);
+        const ipfsCid = stdout.trim().split('\n').pop().trim();
 
-        // Upload to Pinata
-        const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-            method: 'POST',
-            headers: {
-                'pinata_api_key': PINATA_API_KEY,
-                'pinata_secret_api_key': PINATA_SECRET_KEY
-            },
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Pinata API error: ${response.status} - ${errorText}`);
+        if (!ipfsCid || ipfsCid.length < 40) {
+            throw new Error(`Invalid IPFS CID returned: ${ipfsCid}`);
         }
 
-        const result = await response.json();
-        const ipfsHash = result.IpfsHash;
+        console.log(`✅ Web3.storage upload successful: ipfs://${ipfsCid}`);
+        return `ipfs://${ipfsCid}`;
+    } catch (error) {
+        console.error(`Error uploading to IPFS: ${error.message}`);
 
-        console.log(`✅ Image uploaded successfully: ipfs://${ipfsHash}`);
-        return `ipfs://${ipfsHash}`;
+        // In case of failure, generate a local URL as last resort
+        const backupFilename = `${Date.now()}-${name}.png`;
+        const publicDir = path.join(process.cwd(), 'public', 'images');
+
+        try {
+            // Ensure the public/images directory exists
+            await fs.mkdir(publicDir, { recursive: true });
+
+            // Copy the file to the public directory
+            await fs.copyFile(filePath, path.join(publicDir, backupFilename));
+
+            // Return a URL relative to the base URL
+            return `${baseUrl}/images/${backupFilename}`;
+        } catch (err) {
+            console.error(`Final fallback failed: ${err.message}`);
+            throw new Error('All upload attempts failed');
+        }
     }
 }
-
-
 
 // Helper to get file size
 async function getFileSize(filePath) {
