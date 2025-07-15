@@ -83,13 +83,13 @@ try {
         // Create a minimal schema if file can't be found
         console.warn('⚠️ Could not load metadata schema file, using default schema');
         schema = {
-            "type": "object",
-            "required": ["name", "image", "attributes"],
-            "properties": {
-                "name": { "type": "string" },
-                "description": { "type": "string" },
-                "image": { "type": "string" },
-                "attributes": { "type": "array" }
+            'type': 'object',
+            'required': ['name', 'image', 'attributes'],
+            'properties': {
+                'name': { 'type': 'string' },
+                'description': { 'type': 'string' },
+                'image': { 'type': 'string' },
+                'attributes': { 'type': 'array' }
             }
         };
     }
@@ -1040,6 +1040,7 @@ export async function finalizeMint({
             model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
             background: backgroundTrait?.name,
             providerOptions,
+            taskId, // Include taskId in the response
             stats: {
                 totalTime: parseFloat(totalTime),
                 timestamp: Date.now()

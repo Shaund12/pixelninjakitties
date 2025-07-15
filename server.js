@@ -465,6 +465,8 @@ app.get('/api/status/:taskId', async (req, res) => {
     }
 });
 
+
+
 // API documentation endpoint
 app.get('/api/docs', (req, res) => {
     res.json({
@@ -511,6 +513,14 @@ app.get('/api/docs', (req, res) => {
                     imageProvider: 'AI provider to use (dall-e, huggingface, stability)',
                     promptExtras: 'Additional prompt instructions',
                     negativePrompt: 'Things to exclude from the image'
+                }
+            },
+            {
+                path: '/api/task-status',
+                method: 'GET',
+                description: 'Get task status by ID',
+                query: {
+                    id: 'Task ID to check status for'
                 }
             },
             {
