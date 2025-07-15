@@ -56,7 +56,7 @@ import {
     generateTraits,
     assembleMetadata,
     getBackgroundDefinitions
-} from './utils/metadata.js';
+} from '../utils/metadata.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
