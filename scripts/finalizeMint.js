@@ -68,7 +68,7 @@ const __dirname = path.dirname(__filename);
 
 // Load and set up JSON schema validation
 const schema = JSON.parse(
-    readFileSync(path.resolve(__dirname, 'docs/metadata-schema.json'), 'utf8')
+    readFileSync(path.resolve(__dirname, '../docs/metadata-schema.json'), 'utf8')
 );
 const ajv = new Ajv();
 addFormats(ajv);
