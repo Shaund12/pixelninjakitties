@@ -60,6 +60,11 @@ let allListings = [];
 let userCats = [];
 let userActiveListings = [];
 let hotItems = []; // Store the hottest items based on activity
+const rarityFloorPrices = {}; // Track floor prices by rarity
+let allListingsForPreview = []; // Store all listings for preview navigation
+let currentPreviewIndex = 0;
+const favorites = JSON.parse(localStorage.getItem('nft_favorites') || '[]');
+let hotItemsCarouselIndex = 0;
 
 // Token cache to avoid refetching metadata
 const tokenCache = {};
@@ -138,14 +143,36 @@ function getNotificationTitle(type) {
     }
 }
 
-// Show quick preview modal
+// Enhanced quick preview modal with navigation and favorites
 function showQuickPreview(token, listing = null) {
     const previewImage = document.getElementById('previewImage');
     const previewDetails = document.getElementById('previewDetails');
+    const previewCurrent = document.getElementById('previewCurrent');
+    const previewTotal = document.getElementById('previewTotal');
+    const favoriteBtn = document.getElementById('favoriteBtn');
 
     if (!previewImage || !previewDetails || !token) return;
 
+    // Set up preview data for navigation
+    if (listing) {
+        allListingsForPreview = allListings.filter(l => l.active);
+        currentPreviewIndex = allListingsForPreview.findIndex(l =>
+            Number(l.tokenId) === Number(token.id));
+
+        if (currentPreviewIndex === -1) currentPreviewIndex = 0;
+    } else {
+        allListingsForPreview = [];
+        currentPreviewIndex = 0;
+    }
+
+    // Update navigation state
+    updatePreviewNavigation();
+
     previewImage.src = token.image;
+
+    // Check if item is favorited
+    const isFavorited = favorites.includes(token.id);
+    updateFavoriteButton(isFavorited);
 
     // Prepare pricing information if available
     let pricingHtml = '';
@@ -240,6 +267,100 @@ function showQuickPreview(token, listing = null) {
 
     // Show the modal
     quickPreviewModal.classList.add('active');
+}
+
+// Update preview navigation
+function updatePreviewNavigation() {
+    const previewCurrent = document.getElementById('previewCurrent');
+    const previewTotal = document.getElementById('previewTotal');
+    const prevBtn = document.getElementById('prevPreviewBtn');
+    const nextBtn = document.getElementById('nextPreviewBtn');
+
+    if (previewCurrent && previewTotal) {
+        previewCurrent.textContent = currentPreviewIndex + 1;
+        previewTotal.textContent = allListingsForPreview.length;
+    }
+
+    if (prevBtn && nextBtn) {
+        prevBtn.disabled = currentPreviewIndex === 0;
+        nextBtn.disabled = currentPreviewIndex >= allListingsForPreview.length - 1;
+    }
+}
+
+// Navigate to previous item in preview
+async function navigatePreview(direction) {
+    if (allListingsForPreview.length === 0) return;
+
+    const newIndex = direction === 'prev' ?
+        Math.max(0, currentPreviewIndex - 1) :
+        Math.min(allListingsForPreview.length - 1, currentPreviewIndex + 1);
+
+    if (newIndex !== currentPreviewIndex) {
+        currentPreviewIndex = newIndex;
+        const listing = allListingsForPreview[currentPreviewIndex];
+        const token = await fetchTokenMetadata(Number(listing.tokenId));
+
+        if (token) {
+            showQuickPreview(token, {
+                price: listing.price,
+                currency: listing.currency,
+                seller: listing.seller
+            });
+        }
+    }
+}
+
+// Update favorite button state
+function updateFavoriteButton(isFavorited) {
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (!favoriteBtn) return;
+
+    const span = favoriteBtn.querySelector('span');
+    if (isFavorited) {
+        favoriteBtn.classList.add('favorited');
+        if (span) span.textContent = 'Remove from Favorites';
+    } else {
+        favoriteBtn.classList.remove('favorited');
+        if (span) span.textContent = 'Add to Favorites';
+    }
+}
+
+// Toggle favorite status
+function toggleFavorite(tokenId) {
+    const index = favorites.indexOf(tokenId);
+    if (index === -1) {
+        favorites.push(tokenId);
+        showEnhancedNotification('Added to Favorites', 'Item added to your favorites list', 'success');
+    } else {
+        favorites.splice(index, 1);
+        showEnhancedNotification('Removed from Favorites', 'Item removed from your favorites list', 'info');
+    }
+
+    // Save to localStorage
+    localStorage.setItem('nft_favorites', JSON.stringify(favorites));
+
+    // Update button state
+    updateFavoriteButton(favorites.includes(tokenId));
+}
+
+// Share functionality
+function shareItem(token) {
+    const shareData = {
+        title: token.name,
+        text: `Check out this ${token.rarity} ${token.breed} NFT!`,
+        url: window.location.href + `?token=${token.id}`
+    };
+
+    if (navigator.share) {
+        navigator.share(shareData);
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(shareData.url).then(() => {
+            showEnhancedNotification('Link Copied', 'Share link copied to clipboard', 'success');
+        }).catch(() => {
+            showEnhancedNotification('Share Failed', 'Could not copy link to clipboard', 'error');
+        });
+    }
 }
 
 // Determine rarity based on ID or metadata
@@ -476,9 +597,90 @@ async function applyListingFiltersAndSort() {
 // Update hot items collection for the banner
 function updateHotItems(items) {
     hotItems = items;
+    renderHotItemsCarousel();
+}
 
-    // Could update hot items banner here if needed
-    // For now we're just storing the data
+// Render hot items carousel
+async function renderHotItemsCarousel() {
+    const carousel = document.getElementById('hotlistCarousel');
+    const hotItemCount = document.getElementById('hotItemCount');
+
+    if (!carousel || !hotItems.length) return;
+
+    // Update count
+    if (hotItemCount) {
+        hotItemCount.textContent = hotItems.length;
+    }
+
+    // Clear existing items
+    carousel.innerHTML = '';
+
+    // Create carousel items
+    for (const listing of hotItems) {
+        const tokenId = Number(listing.tokenId);
+        const token = await fetchTokenMetadata(tokenId);
+
+        if (!token) continue;
+
+        const formattedPrice = formatPrice(listing.price, listing.currency);
+        const currencyName = getCurrencyName(listing.currency);
+
+        const hotItem = document.createElement('div');
+        hotItem.className = 'hotlist-item';
+        hotItem.innerHTML = `
+            <div class="hotlist-item-trending">🔥 Hot</div>
+            <img src="${token.image}" alt="${token.name}" class="hotlist-item-image" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+            <div class="hotlist-item-name">${token.name}</div>
+            <div class="hotlist-item-price">${formattedPrice} ${currencyName}</div>
+        `;
+
+        // Add click handler to show preview
+        hotItem.addEventListener('click', () => {
+            showQuickPreview(token, {
+                price: listing.price,
+                currency: listing.currency,
+                seller: listing.seller
+            });
+        });
+
+        carousel.appendChild(hotItem);
+    }
+
+    // Setup carousel navigation
+    setupHotItemsCarouselNavigation();
+}
+
+// Setup hot items carousel navigation
+function setupHotItemsCarouselNavigation() {
+    const prevBtn = document.getElementById('hotlistPrev');
+    const nextBtn = document.getElementById('hotlistNext');
+    const carousel = document.getElementById('hotlistCarousel');
+
+    if (!prevBtn || !nextBtn || !carousel) return;
+
+    prevBtn.addEventListener('click', () => {
+        hotItemsCarouselIndex = Math.max(0, hotItemsCarouselIndex - 1);
+        updateCarouselPosition();
+    });
+
+    nextBtn.addEventListener('click', () => {
+        const maxIndex = Math.max(0, hotItems.length - 3);
+        hotItemsCarouselIndex = Math.min(maxIndex, hotItemsCarouselIndex + 1);
+        updateCarouselPosition();
+    });
+
+    function updateCarouselPosition() {
+        const itemWidth = 200 + 24; // item width + gap
+        const scrollLeft = hotItemsCarouselIndex * itemWidth;
+        carousel.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+
+        // Update button states
+        prevBtn.disabled = hotItemsCarouselIndex === 0;
+        nextBtn.disabled = hotItemsCarouselIndex >= hotItems.length - 3;
+    }
+
+    // Initial state
+    updateCarouselPosition();
 }
 
 // Update renderListings to include cancel button for owner's listings and support for the quick preview
@@ -671,7 +873,7 @@ async function loadUserCats() {
         // Filter out cats that are already listed
         const availableCats = userCats.filter(id => !userActiveListings.includes(id));
 
-        // Render each available cat
+        // Render each available cat with lazy loading
         for (const tokenId of availableCats) {
             const token = await fetchTokenMetadata(tokenId);
             if (!token) continue;
@@ -684,7 +886,9 @@ async function loadUserCats() {
                 <div class="rarity-badge ${token.rarity}">${token.rarity.charAt(0).toUpperCase() + token.rarity.slice(1)}</div>
                 <div class="card-shine"></div>
                 <div class="listing-image-container">
-                    <img src="${token.image}" class="listing-image" alt="${token.name}" onerror="this.src='assets/detailed_ninja_cat_64.png'">
+                    <img data-src="${token.image}" class="listing-image lazy" alt="${token.name}" 
+                         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Crect width='100%25' height='100%25' fill='%23333'/%3E%3C/svg%3E"
+                         onerror="this.src='assets/detailed_ninja_cat_64.png'">
                 </div>
                 <div class="listing-info">
                     <h3 class="listing-name">${token.name}</h3>
@@ -698,7 +902,6 @@ async function loadUserCats() {
 
             // Add click handler for the entire card to open the quick preview
             card.addEventListener('click', (e) => {
-                // Don't trigger if the click was on a button
                 if (!e.target.closest('button')) {
                     showQuickPreview(token);
                 }
@@ -707,12 +910,18 @@ async function loadUserCats() {
             // Add list button event listener
             const listBtn = card.querySelector('.list-btn');
             listBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent card click
+                e.stopPropagation();
                 showListingForm(token);
             });
 
             userCatsGrid.appendChild(card);
         }
+
+        // Setup lazy loading for new images
+        setupLazyLoading();
+
+        // Update collection value
+        updateCollectionValueDisplay();
 
         userCatsLoading.style.display = 'none';
 
@@ -834,10 +1043,16 @@ function setupListingFormModal() {
     const listingFormModal = document.getElementById('listingFormModal');
     const closeBtn = document.getElementById('closeListingFormBtn');
     const confirmBtn = document.getElementById('confirmListingBtn');
+    const cancelBtn = document.getElementById('cancelListingForm');
 
     // Close button in header
     if (closeBtn) {
         closeBtn.addEventListener('click', hideListingForm);
+    }
+
+    // Cancel button in footer
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', hideListingForm);
     }
 
     // Confirm button in footer - properly get the price from the active modal
@@ -908,6 +1123,22 @@ function showListingForm(token) {
         listingPriceInput.value = '';
     }
 
+    // Load saved price from localStorage
+    const savedPrice = localStorage.getItem('lastListingPrice');
+    if (savedPrice && listingPriceInput) {
+        listingPriceInput.value = savedPrice;
+    }
+
+    // Show pricing context and load pricing data
+    const pricingContext = document.getElementById('pricingContext');
+    if (pricingContext) {
+        pricingContext.style.display = 'block';
+        loadPricingData(token.id);
+    }
+
+    // Setup event listeners for this modal instance
+    setupListingFormEventListeners();
+
     // Show the modal
     listingFormModal.classList.add('active');
 
@@ -919,12 +1150,265 @@ function showListingForm(token) {
     }, 100);
 }
 
+// Load pricing data from the API
+async function loadPricingData(tokenId) {
+    const pricingLoading = document.getElementById('pricingLoading');
+    const pricingData = document.getElementById('pricingData');
+
+    try {
+        // Show loading state
+        pricingLoading.style.display = 'flex';
+        pricingData.style.display = 'none';
+
+        // Fetch pricing data with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch(`/api/pricing-info/${tokenId}`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Update pricing display
+        document.getElementById('floorPrice').textContent = data.floorPrice && data.floorPrice > 0 ? `${data.floorPrice.toFixed(4)} USDC` : 'No listings';
+        document.getElementById('avgPrice').textContent = data.avgPrice && data.avgPrice > 0 ? `${data.avgPrice.toFixed(4)} USDC` : 'No data';
+        document.getElementById('lastSold').textContent = data.lastSold && data.lastSold > 0 ? `${data.lastSold.toFixed(4)} USDC` : 'No data';
+        document.getElementById('matchingListings').textContent = `${data.matchingListings} matching listings found`;
+
+        // Update trait matches
+        const traitMatches = document.getElementById('traitMatches');
+        if (data.breed) {
+            traitMatches.textContent = `${data.traitMatches} trait matches found for breed: ${data.breed}`;
+            traitMatches.style.display = 'block';
+        } else {
+            traitMatches.style.display = 'none';
+        }
+
+        // Show suggested price
+        const suggestedPriceSection = document.getElementById('suggestedPriceSection');
+        const suggestedPrice = document.getElementById('suggestedPrice');
+        if (data.suggestedPrice && data.suggestedPrice > 0) {
+            suggestedPrice.textContent = `${data.suggestedPrice.toFixed(4)} USDC`;
+            suggestedPriceSection.style.display = 'flex';
+        } else {
+            suggestedPriceSection.style.display = 'none';
+        }
+
+        // Store pricing data for validation
+        window.currentPricingData = data;
+
+        // Hide loading, show data
+        pricingLoading.style.display = 'none';
+        pricingData.style.display = 'block';
+
+    } catch (error) {
+        console.error('Error loading pricing data:', error);
+
+        // Hide loading on error
+        pricingLoading.style.display = 'none';
+
+        // Show fallback pricing data - modal still works but without market insights
+        showFallbackPricingData();
+        pricingData.style.display = 'block';
+    }
+}
+
+// Show fallback pricing data when API fails
+function showFallbackPricingData() {
+    const pricingData = document.getElementById('pricingData');
+    
+    // Set fallback values instead of breaking the modal
+    document.getElementById('floorPrice').textContent = 'No listings';
+    document.getElementById('avgPrice').textContent = 'No data';
+    document.getElementById('lastSold').textContent = 'No data';
+    document.getElementById('matchingListings').textContent = 'Market data unavailable';
+    
+    // Hide trait matches section
+    const traitMatches = document.getElementById('traitMatches');
+    traitMatches.style.display = 'none';
+    
+    // Hide suggested price section
+    const suggestedPriceSection = document.getElementById('suggestedPriceSection');
+    suggestedPriceSection.style.display = 'none';
+    
+    // Clear pricing data to prevent validation errors
+    window.currentPricingData = {
+        floorPrice: 0,
+        avgPrice: 0,
+        lastSold: 0,
+        matchingListings: 0,
+        traitMatches: 0,
+        suggestedPrice: 0
+    };
+    
+    // Add a small notice at the top of pricing data
+    const existingNotice = pricingData.querySelector('.api-notice');
+    if (!existingNotice) {
+        const notice = document.createElement('div');
+        notice.className = 'api-notice';
+        notice.style.cssText = `
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            text-align: center;
+        `;
+        notice.innerHTML = '⚠️ Market data temporarily unavailable. You can still list your item.';
+        pricingData.insertBefore(notice, pricingData.firstChild);
+    }
+}
+
+// Setup event listeners for the listing form modal
+function setupListingFormEventListeners() {
+    const listingFormModal = document.getElementById('listingFormModal');
+    const listingPriceInput = document.getElementById('listingPrice');
+    const traitMatchingCheckbox = document.getElementById('traitMatchingEnabled');
+    const useSuggestedBtn = document.getElementById('useSuggestedBtn');
+
+    // Price input validation
+    if (listingPriceInput) {
+        listingPriceInput.addEventListener('input', function() {
+            const price = parseFloat(this.value);
+            validatePrice(price);
+
+            // Save to localStorage
+            localStorage.setItem('lastListingPrice', this.value);
+        });
+
+        // Keyboard navigation
+        listingPriceInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const confirmBtn = document.getElementById('confirmListingBtn');
+                if (confirmBtn) {
+                    confirmBtn.click();
+                }
+            }
+        });
+    }
+
+    // Trait matching toggle
+    if (traitMatchingCheckbox) {
+        traitMatchingCheckbox.addEventListener('change', function() {
+            const traitMatches = document.getElementById('traitMatches');
+            if (this.checked) {
+                traitMatches.style.display = 'block';
+            } else {
+                traitMatches.style.display = 'none';
+            }
+        });
+    }
+
+    // Use suggested price button
+    if (useSuggestedBtn) {
+        useSuggestedBtn.addEventListener('click', function() {
+            const suggestedPrice = document.getElementById('suggestedPrice');
+            if (suggestedPrice && listingPriceInput) {
+                const price = parseFloat(suggestedPrice.textContent);
+                listingPriceInput.value = price.toFixed(4);
+                validatePrice(price);
+            }
+        });
+    }
+
+    // Keyboard navigation for modal
+    listingFormModal.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideListingForm();
+        }
+    });
+}
+
+// Validate price input and show visual feedback
+function validatePrice(price) {
+    const priceValidation = document.getElementById('priceValidation');
+    const priceBand = document.getElementById('priceBand');
+    const bandIndicator = document.getElementById('bandIndicator');
+
+    if (!window.currentPricingData || !priceValidation || !priceBand) return;
+
+    const { floorPrice, avgPrice } = window.currentPricingData;
+
+    // Clear previous validation
+    priceValidation.style.display = 'none';
+    priceBand.style.display = 'none';
+    priceValidation.className = 'price-validation';
+    bandIndicator.className = 'band-indicator';
+
+    if (isNaN(price) || price <= 0) return;
+
+    let message = '';
+    let level = 'success';
+    let band = 'fair';
+
+    // Check if price is too high (>2x average)
+    if (avgPrice && price > avgPrice * 2) {
+        message = '⚠️ Price is more than 2x the average - may reduce visibility';
+        level = 'warning';
+        band = 'high';
+    }
+    // Check if price is too low (<50% of floor)
+    else if (floorPrice && price < floorPrice * 0.5) {
+        message = '⚠️ Price is significantly below floor - expect quick sale';
+        level = 'error';
+        band = 'low';
+    }
+    // Check if price is above average
+    else if (avgPrice && price > avgPrice) {
+        message = '💡 Price exceeds average - good for maximizing profit';
+        level = 'warning';
+        band = 'high';
+    }
+    // Check if price is below floor
+    else if (floorPrice && price < floorPrice) {
+        message = '📉 Price is below floor - expect quick sale';
+        level = 'warning';
+        band = 'low';
+    }
+    // Price is in fair range
+    else {
+        message = '✅ Price is in fair range';
+        level = 'success';
+        band = 'fair';
+    }
+
+    // Show validation message
+    priceValidation.textContent = message;
+    priceValidation.className = `price-validation ${level}`;
+    priceValidation.style.display = 'block';
+
+    // Show price band
+    bandIndicator.textContent = band === 'fair' ? 'Fair Range' :
+                                band === 'high' ? 'Above Average' : 'Below Floor';
+    bandIndicator.className = `band-indicator ${band}`;
+    priceBand.style.display = 'block';
+}
+
 // Hide listing form
 function hideListingForm() {
     const listingFormModal = document.getElementById('listingFormModal');
     if (listingFormModal) {
         listingFormModal.classList.remove('active');
     }
+
+    // Hide pricing context
+    const pricingContext = document.getElementById('pricingContext');
+    if (pricingContext) {
+        pricingContext.style.display = 'none';
+    }
+
+    // Clear pricing data
+    window.currentPricingData = null;
+
     selectedCatForListing = null;
 }
 
@@ -1314,6 +1798,12 @@ async function init() {
         // Set up scroll to top functionality
         setupScrollToTop();
 
+        // Set up enhanced event listeners
+        setupEnhancedEventListeners();
+
+        // Set up lazy loading
+        setupLazyLoading();
+
         // Set up filters
         currencyFilter.addEventListener('change', applyListingFiltersAndSort);
         sortListings.addEventListener('change', applyListingFiltersAndSort);
@@ -1350,8 +1840,8 @@ async function init() {
                     try {
                         const signer = await browserProvider.getSigner();
                         await initContractsWithSigner(signer);
-                        loadUserCats();
-                        loadUserListings();
+                        await loadUserCats();
+                        await loadUserListings();
                     } catch (err) {
                         console.error('Error getting signer:', err);
                     }
@@ -1373,8 +1863,8 @@ async function init() {
                     try {
                         const signer = await browserProvider.getSigner();
                         await initContractsWithSigner(signer);
-                        loadUserCats();
-                        loadUserListings();
+                        await loadUserCats();
+                        await loadUserListings();
                     } catch (err) {
                         console.error('Error getting signer:', err);
                     }
@@ -1469,6 +1959,22 @@ async function init() {
                 .purchased {
                     opacity: 0.8;
                 }
+                
+                .lazy {
+                    opacity: 0.5;
+                    transition: opacity 0.3s ease;
+                }
+                
+                .lazy:not([src]) {
+                    background: linear-gradient(90deg, #333, #555, #333);
+                    background-size: 200% 100%;
+                    animation: shimmer 1.5s infinite;
+                }
+                
+                @keyframes shimmer {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
             `;
             document.head.appendChild(toastStyles);
         }
@@ -1478,6 +1984,138 @@ async function init() {
         showToast('Error initializing marketplace. Please refresh the page.', 'error');
     }
 }
+
+// Enhanced event listeners for new functionality
+function setupEnhancedEventListeners() {
+    // Hot items carousel navigation
+    const hotlistPrev = document.getElementById('hotlistPrev');
+    const hotlistNext = document.getElementById('hotlistNext');
+    const viewHotCollectionBtn = document.getElementById('viewHotCollectionBtn');
+
+    if (hotlistPrev && hotlistNext) {
+        hotlistPrev.addEventListener('click', () => {
+            hotItemsCarouselIndex = Math.max(0, hotItemsCarouselIndex - 1);
+            updateHotItemsCarouselPosition();
+        });
+
+        hotlistNext.addEventListener('click', () => {
+            const maxIndex = Math.max(0, hotItems.length - 3);
+            hotItemsCarouselIndex = Math.min(maxIndex, hotItemsCarouselIndex + 1);
+            updateHotItemsCarouselPosition();
+        });
+    }
+
+    if (viewHotCollectionBtn) {
+        viewHotCollectionBtn.addEventListener('click', () => {
+            const browseTab = document.querySelector('.tab-btn[data-tab="browse"]');
+            if (browseTab) browseTab.click();
+            sortListings.value = 'newest';
+            applyListingFiltersAndSort();
+            document.getElementById('browse-tab').scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+
+    // Preview navigation
+    const prevPreviewBtn = document.getElementById('prevPreviewBtn');
+    const nextPreviewBtn = document.getElementById('nextPreviewBtn');
+
+    if (prevPreviewBtn && nextPreviewBtn) {
+        prevPreviewBtn.addEventListener('click', () => navigatePreview('prev'));
+        nextPreviewBtn.addEventListener('click', () => navigatePreview('next'));
+    }
+
+    // Favorite and share buttons
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const shareBtn = document.getElementById('shareBtn');
+
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', () => {
+            const previewImage = document.getElementById('previewImage');
+            if (previewImage && previewImage.src) {
+                // Extract token ID from current preview
+                const currentListing = allListingsForPreview[currentPreviewIndex];
+                if (currentListing) {
+                    toggleFavorite(Number(currentListing.tokenId));
+                }
+            }
+        });
+    }
+
+    if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+            const currentListing = allListingsForPreview[currentPreviewIndex];
+            if (currentListing) {
+                fetchTokenMetadata(Number(currentListing.tokenId)).then(token => {
+                    if (token) shareItem(token);
+                });
+            }
+        });
+    }
+
+    // Wallet actions
+    const copyAddressBtn = document.getElementById('copyAddressBtn');
+    const viewOnExplorerBtn = document.getElementById('viewOnExplorerBtn');
+
+    if (copyAddressBtn) {
+        copyAddressBtn.addEventListener('click', () => {
+            if (currentAccount) {
+                navigator.clipboard.writeText(currentAccount).then(() => {
+                    showEnhancedNotification('Address Copied', 'Wallet address copied to clipboard', 'success');
+                }).catch(() => {
+                    showEnhancedNotification('Copy Failed', 'Could not copy address to clipboard', 'error');
+                });
+            }
+        });
+    }
+
+    if (viewOnExplorerBtn) {
+        viewOnExplorerBtn.addEventListener('click', () => {
+            if (currentAccount) {
+                const explorerUrl = `https://explorer.vitruveo.xyz/address/${currentAccount}`;
+                window.open(explorerUrl, '_blank');
+            }
+        });
+    }
+}
+
+// Update hot items carousel position
+function updateHotItemsCarouselPosition() {
+    const carousel = document.getElementById('hotlistCarousel');
+    const prevBtn = document.getElementById('hotlistPrev');
+    const nextBtn = document.getElementById('hotlistNext');
+
+    if (!carousel) return;
+
+    const itemWidth = 200 + 24; // item width + gap
+    const scrollLeft = hotItemsCarouselIndex * itemWidth;
+    carousel.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+
+    // Update button states
+    if (prevBtn) prevBtn.disabled = hotItemsCarouselIndex === 0;
+    if (nextBtn) nextBtn.disabled = hotItemsCarouselIndex >= hotItems.length - 3;
+}
+
+// Lazy loading implementation for images
+function setupLazyLoading() {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.classList.remove('lazy');
+                observer.unobserve(img);
+            }
+        });
+    });
+
+    // Apply lazy loading to all images with data-src
+    document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+    });
+}
+
+// Start the app when DOM is ready
+document.addEventListener('DOMContentLoaded', init);
 
 // Initialize hot items for the banner
 function initHotItems() {
@@ -1939,7 +2577,7 @@ async function getLpDetails() {
     }
 }
 
-// Modify the calculateMarketplaceStats function to include price conversion
+// Enhanced marketplace stats calculation with rarity floor prices
 async function calculateMarketplaceStats() {
     try {
         console.log('Calculating marketplace stats from blockchain data');
@@ -1956,13 +2594,21 @@ async function calculateMarketplaceStats() {
         const activeListingCount = activeListings.length;
         console.log(`Found ${activeListingCount} active listings`);
 
-        // Track floor prices by currency type
+        // Track floor prices by currency type and rarity
         let lowestNativeListing = null;
         let lowestUSDCListing = null;
-
-        // Track if we found any listings by currency
-        let hasNativeListings = false;
-        let hasUSDCListings = false;
+        const rarityFloorPrices = {
+            legendary: { native: null, usdc: null },
+            epic: { native: null, usdc: null },
+            rare: { native: null, usdc: null },
+            common: { native: null, usdc: null }
+        };
+        const rarityCounts = {
+            legendary: 0,
+            epic: 0,
+            rare: 0,
+            common: 0
+        };
 
         // Process each active listing
         for (const listing of activeListings) {
@@ -1971,87 +2617,87 @@ async function calculateMarketplaceStats() {
             const currency = listing.currency;
             const isNative = currency === ethers.ZeroAddress;
 
-            // Format the price for display in logs
-            const formattedPrice = isNative
-                ? ethers.formatEther(price) + ' VTRU'
-                : ethers.formatUnits(price, 6) + ' USDC';
+            // Get rarity for this token - try to get metadata first for accurate rarity
+            let rarity;
+            try {
+                const metadata = await fetchTokenMetadata(tokenId);
+                rarity = getRarity(tokenId, metadata);
+            } catch (error) {
+                // Fallback to ID-based rarity if metadata fetch fails
+                rarity = getRarity(tokenId);
+            }
+            rarityCounts[rarity]++;
 
-            console.log(`Listing: Token #${tokenId} - ${formattedPrice} - Currency: ${isNative ? 'Native VTRU' : 'USDC'}`);
-
+            // Track rarity floor prices
             if (isNative) {
-                hasNativeListings = true;
+                if (!rarityFloorPrices[rarity].native || price < rarityFloorPrices[rarity].native.price) {
+                    rarityFloorPrices[rarity].native = { price, tokenId };
+                }
+            } else if (currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
+                if (!rarityFloorPrices[rarity].usdc || price < rarityFloorPrices[rarity].usdc.price) {
+                    rarityFloorPrices[rarity].usdc = { price, tokenId };
+                }
+            }
+
+            // Track overall floor prices
+            if (isNative) {
                 if (lowestNativeListing === null || price < lowestNativeListing.price) {
                     lowestNativeListing = listing;
                 }
             } else if (currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
-                hasUSDCListings = true;
                 if (lowestUSDCListing === null || price < lowestUSDCListing.price) {
                     lowestUSDCListing = listing;
                 }
             }
         }
 
-        console.log(`Has native listings: ${hasNativeListings}, Has USDC listings: ${hasUSDCListings}`);
-
         // Determine the absolute floor price by comparing both currencies
         let floorPrice = null;
         let floorPriceCurrency = null;
-        let floorPriceTokenId = null;
 
-        // Get lowest VTRU price if available
-        let nativeFloorPriceUSD = Infinity;
-        if (lowestNativeListing) {
-            const nativePrice = parseFloat(ethers.formatEther(lowestNativeListing.price));
-            // Convert VTRU to USDC equivalent for comparison
-            nativeFloorPriceUSD = nativePrice * vtruPriceInUsdc;
-            console.log(`Lowest native price: ${nativePrice} VTRU (≈$${nativeFloorPriceUSD.toFixed(2)} USDC equiv.)`);
-        }
+        const nativeFloorPriceUSD = lowestNativeListing ?
+            parseFloat(ethers.formatEther(lowestNativeListing.price)) * vtruPriceInUsdc : Infinity;
+        const usdcFloorPriceUSD = lowestUSDCListing ?
+            parseFloat(ethers.formatUnits(lowestUSDCListing.price, 6)) : Infinity;
 
-        // Get lowest USDC price if available
-        let usdcFloorPriceUSD = Infinity;
-        if (lowestUSDCListing) {
-            const usdcPrice = parseFloat(ethers.formatUnits(lowestUSDCListing.price, 6));
-            usdcFloorPriceUSD = usdcPrice; // USDC is already USD equivalent
-            console.log(`Lowest USDC price: ${usdcPrice} USDC`);
-        }
-
-        // Choose the lowest price as the floor price based on USD equivalent
         if (usdcFloorPriceUSD <= nativeFloorPriceUSD && lowestUSDCListing) {
             floorPrice = parseFloat(ethers.formatUnits(lowestUSDCListing.price, 6));
             floorPriceCurrency = 'USDC';
-            floorPriceTokenId = lowestUSDCListing.tokenId;
-            console.log(`USDC is the floor price: ${floorPrice} ${floorPriceCurrency}`);
         } else if (lowestNativeListing) {
             floorPrice = parseFloat(ethers.formatEther(lowestNativeListing.price));
             floorPriceCurrency = 'VTRU';
-            floorPriceTokenId = lowestNativeListing.tokenId;
-            console.log(`VTRU is the floor price: ${floorPrice} ${floorPriceCurrency}`);
         }
 
-        // Get sales data by querying past events
+        // Get sales data
         const currentBlock = await provider.getBlockNumber();
-        const fromBlock = Math.max(0, currentBlock - 100000); // Look back ~2 weeks
-
+        const fromBlock = Math.max(0, currentBlock - 100000);
         const soldFilter = marketplace.filters.ItemSold();
         const soldEvents = await marketplace.queryFilter(soldFilter, fromBlock, 'latest');
 
-        console.log(`Found ${soldEvents.length} sales events`);
-
-        // Calculate total sales and volume
-        const totalSalesCount = soldEvents.length;
-
+        // Calculate volumes
         let totalVolumeNative = BigInt(0);
         let totalVolumeUSDC = BigInt(0);
+        let volume24hNative = BigInt(0);
+        let volume24hUSDC = BigInt(0);
+
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
 
         for (const event of soldEvents) {
             if (event.args) {
                 const price = event.args.price;
                 const currency = event.args.currency;
+                const blockTimestamp = (await provider.getBlock(event.blockNumber)).timestamp * 1000;
 
                 if (currency === ethers.ZeroAddress) {
                     totalVolumeNative += price;
+                    if (blockTimestamp >= oneDayAgo) {
+                        volume24hNative += price;
+                    }
                 } else if (currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
                     totalVolumeUSDC += price;
+                    if (blockTimestamp >= oneDayAgo) {
+                        volume24hUSDC += price;
+                    }
                 }
             }
         }
@@ -2059,28 +2705,48 @@ async function calculateMarketplaceStats() {
         // Convert volumes to human-readable format
         const volumeNative = parseFloat(ethers.formatEther(totalVolumeNative));
         const volumeUSDC = parseFloat(ethers.formatUnits(totalVolumeUSDC, 6));
+        const volume24hNativeValue = parseFloat(ethers.formatEther(volume24hNative));
+        const volume24hUSDCValue = parseFloat(ethers.formatUnits(volume24hUSDC, 6));
 
-        // Calculate total volume in USDC equivalent
+        // Calculate total volumes in USDC equivalent
         const nativeVolumeInUsdc = volumeNative * vtruPriceInUsdc;
         const totalVolumeInUsdc = nativeVolumeInUsdc + volumeUSDC;
+        const total24hVolumeInUsdc = (volume24hNativeValue * vtruPriceInUsdc) + volume24hUSDCValue;
 
-        console.log(`Native volume: ${volumeNative} VTRU (≈${nativeVolumeInUsdc.toFixed(2)} USDC)`);
-        console.log(`USDC volume: ${volumeUSDC} USDC`);
-        console.log(`Combined volume: ≈${totalVolumeInUsdc.toFixed(2)} USDC`);
+        // Calculate total value locked (all active listings)
+        let totalValueLockedNative = BigInt(0);
+        let totalValueLockedUSDC = BigInt(0);
 
-        // Construct stats object with all real data
+        for (const listing of activeListings) {
+            if (listing.currency === ethers.ZeroAddress) {
+                totalValueLockedNative += listing.price;
+            } else if (listing.currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
+                totalValueLockedUSDC += listing.price;
+            }
+        }
+
+        const tvlNative = parseFloat(ethers.formatEther(totalValueLockedNative));
+        const tvlUSDC = parseFloat(ethers.formatUnits(totalValueLockedUSDC, 6));
+        const totalValueLocked = (tvlNative * vtruPriceInUsdc) + tvlUSDC;
+
+        // Calculate average listing duration (placeholder for now)
+        const avgListingDuration = '3.2 days'; // This would require more complex tracking
+
+        // Construct stats object
         const stats = {
             totalVolume: volumeNative,
             volumeUSDC: volumeUSDC,
             totalVolumeInUsdc: totalVolumeInUsdc,
+            volume24hInUsdc: total24hVolumeInUsdc,
+            totalValueLocked: totalValueLocked,
             vtruPriceInUsdc: vtruPriceInUsdc,
             activeListings: activeListingCount,
             floorPrice: floorPrice,
             floorPriceCurrency: floorPriceCurrency,
-            floorPriceTokenId: floorPriceTokenId,
-            totalSales: totalSalesCount,
-            hasNativeListings: hasNativeListings,
-            hasUSDCListings: hasUSDCListings
+            totalSales: soldEvents.length,
+            rarityFloorPrices: rarityFloorPrices,
+            rarityCounts: rarityCounts,
+            avgListingDuration: avgListingDuration
         };
 
         console.log('Final marketplace stats:', stats);
@@ -2090,24 +2756,178 @@ async function calculateMarketplaceStats() {
             window.updateMarketplaceStats(stats);
         }
 
+        // Update rarity floor prices
+        updateRarityFloorPrices(stats);
+
         return stats;
     } catch (error) {
-        console.error('Error querying blockchain for marketplace stats:', error);
+        console.error('Error calculating marketplace stats:', error);
         return {
             totalVolume: 0,
             volumeUSDC: 0,
             totalVolumeInUsdc: 0,
-            vtruPriceInUsdc: 0.1, // Fallback price
+            volume24hInUsdc: 0,
+            totalValueLocked: 0,
+            vtruPriceInUsdc: 0.1,
             activeListings: 0,
             floorPrice: null,
             floorPriceCurrency: null,
-            floorPriceTokenId: null,
             totalSales: 0,
-            hasNativeListings: false,
-            hasUSDCListings: false
+            rarityFloorPrices: {},
+            rarityCounts: { legendary: 0, epic: 0, rare: 0, common: 0 },
+            avgListingDuration: '-- days'
         };
     }
 }
 
-// Start the app when DOM is ready
-document.addEventListener('DOMContentLoaded', init);
+// Update rarity floor prices display
+function updateRarityFloorPrices(stats) {
+    const rarities = ['legendary', 'epic', 'rare', 'common'];
+
+    rarities.forEach(rarity => {
+        const floorElement = document.getElementById(`${rarity}Floor`);
+        const countElement = document.getElementById(`${rarity}Count`);
+
+        if (floorElement && countElement) {
+            const rarityData = stats.rarityFloorPrices[rarity];
+            const count = stats.rarityCounts[rarity];
+
+            // Find the lowest price between native and USDC
+            let lowestPrice = null;
+            let currency = null;
+
+            if (rarityData.native && rarityData.usdc) {
+                const nativePrice = parseFloat(ethers.formatEther(rarityData.native.price));
+                const usdcPrice = parseFloat(ethers.formatUnits(rarityData.usdc.price, 6));
+                const nativePriceUSD = nativePrice * stats.vtruPriceInUsdc;
+
+                if (usdcPrice <= nativePriceUSD) {
+                    lowestPrice = usdcPrice;
+                    currency = 'USDC';
+                } else {
+                    lowestPrice = nativePrice;
+                    currency = 'VTRU';
+                }
+            } else if (rarityData.native) {
+                lowestPrice = parseFloat(ethers.formatEther(rarityData.native.price));
+                currency = 'VTRU';
+            } else if (rarityData.usdc) {
+                lowestPrice = parseFloat(ethers.formatUnits(rarityData.usdc.price, 6));
+                currency = 'USDC';
+            }
+
+            if (lowestPrice !== null) {
+                floorElement.textContent = `${lowestPrice.toFixed(2)} ${currency}`;
+            } else {
+                floorElement.textContent = 'No listings';
+            }
+
+            countElement.textContent = `${count} available`;
+        }
+    });
+
+    // Update advanced analytics
+    const volume24hElement = document.getElementById('volume24h');
+    const avgListingElement = document.getElementById('avgListingDuration');
+    const totalValueLockedElement = document.getElementById('totalValueLocked');
+
+    if (volume24hElement) {
+        volume24hElement.textContent = `$${stats.volume24hInUsdc.toFixed(2)} USDC`;
+    }
+
+    if (avgListingElement) {
+        avgListingElement.textContent = stats.avgListingDuration;
+    }
+
+    if (totalValueLockedElement) {
+        totalValueLockedElement.textContent = `$${stats.totalValueLocked.toFixed(2)} USDC`;
+    }
+}
+
+// Calculate collection value based on user's cats and floor prices
+async function calculateCollectionValue(userCats, stats) {
+    if (!userCats || userCats.length === 0) return { total: 0, currency: 'USDC', breakdown: {} };
+
+    let totalValueInUsdc = 0;
+    const breakdown = {
+        legendary: { count: 0, value: 0 },
+        epic: { count: 0, value: 0 },
+        rare: { count: 0, value: 0 },
+        common: { count: 0, value: 0 }
+    };
+
+    for (const tokenId of userCats) {
+        let rarity;
+        try {
+            const metadata = await fetchTokenMetadata(tokenId);
+            rarity = getRarity(tokenId, metadata);
+        } catch (error) {
+            // Fallback to ID-based rarity if metadata fetch fails
+            rarity = getRarity(tokenId);
+        }
+        breakdown[rarity].count++;
+
+        // Get floor price for this rarity
+        const rarityFloor = stats.rarityFloorPrices[rarity];
+        if (rarityFloor) {
+            let floorValueInUsdc = 0;
+
+            if (rarityFloor.native && rarityFloor.usdc) {
+                const nativePrice = parseFloat(ethers.formatEther(rarityFloor.native.price));
+                const usdcPrice = parseFloat(ethers.formatUnits(rarityFloor.usdc.price, 6));
+                const nativePriceUSD = nativePrice * stats.vtruPriceInUsdc;
+
+                floorValueInUsdc = Math.min(usdcPrice, nativePriceUSD);
+            } else if (rarityFloor.native) {
+                const nativePrice = parseFloat(ethers.formatEther(rarityFloor.native.price));
+                floorValueInUsdc = nativePrice * stats.vtruPriceInUsdc;
+            } else if (rarityFloor.usdc) {
+                floorValueInUsdc = parseFloat(ethers.formatUnits(rarityFloor.usdc.price, 6));
+            }
+
+            breakdown[rarity].value += floorValueInUsdc;
+            totalValueInUsdc += floorValueInUsdc;
+        }
+    }
+
+    return {
+        total: totalValueInUsdc,
+        currency: 'USDC',
+        breakdown: breakdown
+    };
+}
+
+// Update collection value display
+async function updateCollectionValueDisplay() {
+    const collectionValueElement = document.getElementById('collectionValue');
+    const collectionValueSubtextElement = document.getElementById('collectionValueSubtext');
+
+    if (!collectionValueElement || !currentAccount) return;
+
+    try {
+        // Get current marketplace stats
+        const stats = await calculateMarketplaceStats();
+
+        // Calculate collection value
+        const collectionValue = await calculateCollectionValue(userCats, stats);
+
+        if (collectionValue.total > 0) {
+            collectionValueElement.textContent = `$${collectionValue.total.toFixed(2)} USDC`;
+
+            // Create breakdown tooltip
+            const breakdown = Object.entries(collectionValue.breakdown)
+                .filter(([_, data]) => data.count > 0)
+                .map(([rarity, data]) => `${data.count} ${rarity}: $${data.value.toFixed(2)}`)
+                .join(' • ');
+
+            collectionValueSubtextElement.textContent = breakdown || 'Based on floor prices';
+        } else {
+            collectionValueElement.textContent = '$0.00 USDC';
+            collectionValueSubtextElement.textContent = 'No floor prices available';
+        }
+    } catch (error) {
+        console.error('Error calculating collection value:', error);
+        collectionValueElement.textContent = 'Error calculating';
+        collectionValueSubtextElement.textContent = 'Please try again';
+    }
+}
