@@ -1162,6 +1162,11 @@ async function loadPricingData(tokenId) {
 
         // Fetch pricing data
         const response = await fetch(`/api/pricing-info/${tokenId}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
 
         // Update pricing display
