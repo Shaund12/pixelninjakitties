@@ -33,7 +33,17 @@ export const traitCategories = {
         { value: 'Twin Blades', rarity: 'Epic', rarityScore: 10, keywords: ['dual', 'daggers', 'fast'] },
         { value: 'Kusarigama', rarity: 'Epic', rarityScore: 8, keywords: ['chain', 'sickle', 'weight'] },
         { value: 'War Fan', rarity: 'Legendary', rarityScore: 5, keywords: ['metal', 'bladed', 'elegant'] },
-        { value: 'Ghost Dagger', rarity: 'Legendary', rarityScore: 3, keywords: ['ethereal', 'translucent', 'glowing'] }
+        { value: 'Ghost Dagger', rarity: 'Legendary', rarityScore: 3, keywords: ['ethereal', 'translucent', 'glowing'] },
+        { value: 'Chakram', rarity: 'Common', rarityScore: 28, keywords: ['ring', 'throwing', 'circular'] },
+        { value: 'Dragon Spear', rarity: 'Epic', rarityScore: 9, keywords: ['dragon', 'long', 'powerful'] },
+        { value: 'Electro Tonfa', rarity: 'Rare', rarityScore: 14, keywords: ['electric', 'baton', 'defensive'] },
+        { value: 'Flame Whip', rarity: 'Rare', rarityScore: 13, keywords: ['fire', 'flexible', 'burning'] },
+        { value: 'Ice Needles', rarity: 'Uncommon', rarityScore: 19, keywords: ['frozen', 'sharp', 'multiple'] },
+        { value: 'Shadow Claws', rarity: 'Epic', rarityScore: 11, keywords: ['darkness', 'claws', 'stealth'] },
+        { value: 'Wind Blades', rarity: 'Rare', rarityScore: 16, keywords: ['air', 'cutting', 'invisible'] },
+        { value: 'Mystic Orb', rarity: 'Legendary', rarityScore: 4, keywords: ['magic', 'floating', 'energy'] },
+        { value: 'Thunder Hammer', rarity: 'Epic', rarityScore: 7, keywords: ['lightning', 'heavy', 'crushing'] },
+        { value: 'Void Blade', rarity: 'Legendary', rarityScore: 2, keywords: ['emptiness', 'dark', 'cutting'] }
     ],
     stances: [
         { value: 'Attack', rarity: 'Common', rarityScore: 30, keywords: ['aggressive', 'forward', 'striking'] },
@@ -45,7 +55,15 @@ export const traitCategories = {
         { value: 'Berserker', rarity: 'Epic', rarityScore: 8, keywords: ['rage', 'fury', 'wild'] },
         { value: 'Crane', rarity: 'Epic', rarityScore: 10, keywords: ['balanced', 'one-leg', 'patient'] },
         { value: 'Dragon', rarity: 'Legendary', rarityScore: 5, keywords: ['powerful', 'mythical', 'flowing'] },
-        { value: 'Void', rarity: 'Legendary', rarityScore: 3, keywords: ['emptiness', 'formless', 'transcendent'] }
+        { value: 'Void', rarity: 'Legendary', rarityScore: 3, keywords: ['emptiness', 'formless', 'transcendent'] },
+        { value: 'Lotus Stance', rarity: 'Rare', rarityScore: 14, keywords: ['meditation', 'peaceful', 'centered'] },
+        { value: 'Falcon Dive', rarity: 'Uncommon', rarityScore: 19, keywords: ['aerial', 'diving', 'swift'] },
+        { value: 'Iron Wall', rarity: 'Common', rarityScore: 27, keywords: ['defensive', 'immovable', 'solid'] },
+        { value: 'Lightning Flash', rarity: 'Epic', rarityScore: 9, keywords: ['speed', 'electric', 'instant'] },
+        { value: 'Tiger Prowl', rarity: 'Uncommon', rarityScore: 17, keywords: ['predatory', 'stalking', 'feline'] },
+        { value: 'Phoenix Rising', rarity: 'Legendary', rarityScore: 4, keywords: ['rebirth', 'fire', 'ascending'] },
+        { value: 'Serpent Coil', rarity: 'Rare', rarityScore: 13, keywords: ['flexible', 'binding', 'flowing'] },
+        { value: 'Mountain Guard', rarity: 'Common', rarityScore: 26, keywords: ['sturdy', 'enduring', 'protective'] }
     ],
     elements: [
         { value: 'Fire', rarity: 'Common', rarityScore: 30, keywords: ['flames', 'burning', 'red'] },
@@ -57,7 +75,11 @@ export const traitCategories = {
         { value: 'Shadow', rarity: 'Epic', rarityScore: 8, keywords: ['darkness', 'black', 'stealth'] },
         { value: 'Light', rarity: 'Epic', rarityScore: 10, keywords: ['bright', 'white', 'blinding'] },
         { value: 'Void', rarity: 'Legendary', rarityScore: 5, keywords: ['empty', 'nothingness', 'purple'] },
-        { value: 'Cosmic', rarity: 'Legendary', rarityScore: 3, keywords: ['stars', 'space', 'universal'] }
+        { value: 'Cosmic', rarity: 'Legendary', rarityScore: 3, keywords: ['stars', 'space', 'universal'] },
+        { value: 'Ether', rarity: 'Rare', rarityScore: 14, keywords: ['mystical', 'ethereal', 'ghostly'] },
+        { value: 'Storm', rarity: 'Epic', rarityScore: 9, keywords: ['tempest', 'chaos', 'powerful'] },
+        { value: 'Magma', rarity: 'Rare', rarityScore: 13, keywords: ['molten', 'volcanic', 'intense'] },
+        { value: 'Aurora', rarity: 'Legendary', rarityScore: 4, keywords: ['northern lights', 'colorful', 'mystical'] }
     ],
     ranks: [
         { value: 'Novice', rarity: 'Common', rarityScore: 30, keywords: ['beginner', 'training', 'inexperienced'] },
@@ -81,7 +103,43 @@ export const traitCategories = {
         { value: 'Enchanted Amulet', rarity: 'Epic', rarityScore: 10, keywords: ['glowing', 'magical', 'powerful'] },
         { value: 'Spirit Companion', rarity: 'Epic', rarityScore: 8, keywords: ['floating', 'ethereal', 'helper'] },
         { value: 'Ancient Scroll', rarity: 'Legendary', rarityScore: 5, keywords: ['knowledge', 'power', 'secret'] },
-        { value: 'Celestial Mark', rarity: 'Legendary', rarityScore: 3, keywords: ['glowing', 'divine', 'blessed'] }
+        { value: 'Celestial Mark', rarity: 'Legendary', rarityScore: 3, keywords: ['glowing', 'divine', 'blessed'] },
+        { value: 'Smoke Bomb', rarity: 'Common', rarityScore: 28, keywords: ['concealment', 'escape', 'tactical'] },
+        { value: 'Spirit Flute', rarity: 'Uncommon', rarityScore: 22, keywords: ['music', 'spiritual', 'calming'] },
+        { value: 'Ninja Pouch', rarity: 'Common', rarityScore: 26, keywords: ['storage', 'utility', 'leather'] },
+        { value: 'Claw Guards', rarity: 'Rare', rarityScore: 14, keywords: ['protection', 'claws', 'metal'] },
+        { value: 'Shadow Cloak', rarity: 'Epic', rarityScore: 9, keywords: ['stealth', 'darkness', 'flowing'] },
+        { value: 'Mystic Beads', rarity: 'Rare', rarityScore: 13, keywords: ['meditation', 'spiritual', 'prayer'] },
+        { value: 'Wind Chimes', rarity: 'Uncommon', rarityScore: 19, keywords: ['sound', 'wind', 'harmony'] }
+    ],
+    origin: [
+        { value: 'Skyfang Plateau', rarity: 'Common', rarityScore: 30, keywords: ['mountain', 'high', 'windy'] },
+        { value: 'Sunken Shrine', rarity: 'Uncommon', rarityScore: 20, keywords: ['underwater', 'ancient', 'mystical'] },
+        { value: 'Crimson Valley', rarity: 'Rare', rarityScore: 15, keywords: ['red', 'dangerous', 'volcanic'] },
+        { value: 'Moonlight Forest', rarity: 'Common', rarityScore: 25, keywords: ['night', 'trees', 'silver'] },
+        { value: 'Thunder Peak', rarity: 'Epic', rarityScore: 10, keywords: ['lightning', 'storm', 'peak'] },
+        { value: 'Whispering Caves', rarity: 'Uncommon', rarityScore: 18, keywords: ['echo', 'dark', 'secret'] },
+        { value: 'Starfall Mesa', rarity: 'Legendary', rarityScore: 5, keywords: ['stars', 'mesa', 'cosmic'] },
+        { value: 'Jade Gardens', rarity: 'Rare', rarityScore: 12, keywords: ['green', 'peaceful', 'zen'] }
+    ],
+    battletechnique: [
+        { value: 'Shadow Step', rarity: 'Common', rarityScore: 30, keywords: ['stealth', 'movement', 'darkness'] },
+        { value: 'Iron Fist', rarity: 'Uncommon', rarityScore: 20, keywords: ['power', 'strength', 'metal'] },
+        { value: 'Wind Slash', rarity: 'Rare', rarityScore: 15, keywords: ['cutting', 'air', 'blade'] },
+        { value: 'Fire Burst', rarity: 'Common', rarityScore: 25, keywords: ['flames', 'explosion', 'heat'] },
+        { value: 'Lightning Strike', rarity: 'Epic', rarityScore: 10, keywords: ['electric', 'speed', 'power'] },
+        { value: 'Water Flow', rarity: 'Uncommon', rarityScore: 18, keywords: ['fluid', 'adaptable', 'flowing'] },
+        { value: 'Earth Slam', rarity: 'Rare', rarityScore: 12, keywords: ['ground', 'impact', 'solid'] },
+        { value: 'Void Technique', rarity: 'Legendary', rarityScore: 5, keywords: ['emptiness', 'advanced', 'mystical'] }
+    ],
+    artstyle: [
+        { value: 'Ink Wash', rarity: 'Common', rarityScore: 30, keywords: ['traditional', 'flowing', 'artistic'] },
+        { value: 'Cel-Shaded', rarity: 'Common', rarityScore: 25, keywords: ['cartoon', 'bright', 'outlined'] },
+        { value: 'Pixel Art', rarity: 'Uncommon', rarityScore: 20, keywords: ['retro', 'digital', 'blocky'] },
+        { value: 'Watercolor', rarity: 'Rare', rarityScore: 15, keywords: ['soft', 'blended', 'painting'] },
+        { value: 'Neon Glow', rarity: 'Epic', rarityScore: 10, keywords: ['bright', 'electric', 'futuristic'] },
+        { value: 'Shadow Play', rarity: 'Uncommon', rarityScore: 18, keywords: ['contrast', 'dramatic', 'silhouette'] },
+        { value: 'Cosmic Render', rarity: 'Legendary', rarityScore: 5, keywords: ['space', 'dimensional', 'otherworldly'] }
     ]
 };
 
@@ -236,7 +294,14 @@ export const synergyPairs = [
     { type1: 'Background', value1: 'Cosmic Dimension', type2: 'Element', value2: 'Cosmic', bonus: 16 },
     { type1: 'Background', value1: 'Lava Cavern', type2: 'Element', value2: 'Fire', bonus: 13 },
     { type1: 'Background', value1: 'Ancient Scroll', type2: 'Rank', value2: 'Legendary', bonus: 17 },
-    { type1: 'Background', value1: 'Spirit Realm', type2: 'Element', value2: 'Void', bonus: 18 }
+    { type1: 'Background', value1: 'Spirit Realm', type2: 'Element', value2: 'Void', bonus: 18 },
+
+    // New synergy pairs involving new categories
+    { type1: 'Origin', value1: 'Skyfang Plateau', type2: 'Element', value2: 'Wind', bonus: 12 },
+    { type1: 'Origin', value1: 'Crimson Valley', type2: 'Element', value2: 'Magma', bonus: 14 },
+    { type1: 'BattleTechnique', value1: 'Shadow Step', type2: 'Stance', value2: 'Stealth', bonus: 16 },
+    { type1: 'BattleTechnique', value1: 'Lightning Strike', type2: 'Element', value2: 'Lightning', bonus: 18 },
+    { type1: 'ArtStyle', value1: 'Cosmic Render', type2: 'Element', value2: 'Cosmic', bonus: 20 }
 ];
 
 /* ─── Background definitions for all providers ─── */
@@ -348,6 +413,51 @@ export const backgroundDefinitions = [
         keywords: ['spiritual', 'glowing', 'magical'],
         affinityBreeds: ['Shadow', 'Nyan'],
         statBonus: { stealth: 1, intelligence: 1, agility: 1 }
+    },
+    {
+        name: 'Frozen Wasteland',
+        description: 'in a harsh frozen wasteland with ice crystals and howling winds',
+        rarity: 'Rare',
+        rarityScore: 14,
+        keywords: ['cold', 'harsh', 'desolate'],
+        affinityBreeds: ['Maine Coon', 'Sphynx'],
+        statBonus: { power: 1, stealth: 1 }
+    },
+    {
+        name: 'Celestial Observatory',
+        description: 'in an ancient observatory with star charts and mystical instruments',
+        rarity: 'Epic',
+        rarityScore: 9,
+        keywords: ['stars', 'mystical', 'ancient'],
+        affinityBreeds: ['Persian', 'Sphynx'],
+        statBonus: { intelligence: 2 }
+    },
+    {
+        name: 'Underwater Temple',
+        description: 'in a sunken temple beneath the waves with coral formations',
+        rarity: 'Rare',
+        rarityScore: 16,
+        keywords: ['underwater', 'temple', 'coral'],
+        affinityBreeds: ['Siamese', 'Calico'],
+        statBonus: { agility: 1, intelligence: 1 }
+    },
+    {
+        name: 'Lightning Fields',
+        description: 'on a plain where lightning constantly strikes the ground',
+        rarity: 'Epic',
+        rarityScore: 11,
+        keywords: ['electric', 'dangerous', 'energetic'],
+        affinityBreeds: ['Bengal', 'Nyan'],
+        statBonus: { power: 1, agility: 1 }
+    },
+    {
+        name: 'Mystic Garden',
+        description: 'in a magical garden where flowers glow and plants move on their own',
+        rarity: 'Uncommon',
+        rarityScore: 17,
+        keywords: ['magical', 'glowing', 'plants'],
+        affinityBreeds: ['Calico', 'Persian'],
+        statBonus: { intelligence: 1 }
     }
 ];
 
@@ -392,7 +502,12 @@ export const backgroundFlavorText = {
     'Cosmic Dimension': 'where reality bends to their will',
     'Lava Cavern': 'where they temper their spirit in extreme heat',
     'Ancient Scroll': 'where their legend is preserved for eternity',
-    'Spirit Realm': 'where they commune with ancestral spirits'
+    'Spirit Realm': 'where they commune with ancestral spirits',
+    'Frozen Wasteland': 'where they endure the harshest conditions',
+    'Celestial Observatory': 'where they study the movements of the stars',
+    'Underwater Temple': 'where they master the flowing arts',
+    'Lightning Fields': 'where they channel raw electrical energy',
+    'Mystic Garden': 'where they find peace among magical flora'
 };
 
 /* ─── Base rarityScore mapping by rarity level ─── */
