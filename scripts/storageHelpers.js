@@ -1,47 +1,102 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { supabase } from './supabaseClient.js';
 
 /**
- * Creates a simple file-based storage system
- * @param {string} filename - The filename to use for storage
+ * Load provider preferences from Supabase
+ * @returns {Promise<Object>} Provider preferences object
+ */
+export async function loadProviderPreferences() {
+    try {
+        const { data, error } = await supabase
+            .from('provider_preferences')
+            .select('*')
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                // No data found, return empty object
+                return {};
+            }
+            throw error;
+        }
+
+        return data?.preferences || {};
+    } catch (error) {
+        console.error('Error loading provider preferences:', error);
+        // Return empty object as fallback
+        return {};
+    }
+}
+
+/**
+ * Save provider preferences to Supabase
+ * @param {Object} prefs - Provider preferences object
+ * @returns {Promise<void>}
+ */
+export async function saveProviderPreferences(prefs) {
+    try {
+        const { error } = await supabase
+            .from('provider_preferences')
+            .upsert({
+                id: 'default',
+                preferences: prefs,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+
+        if (error) {
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error saving provider preferences:', error);
+        throw error;
+    }
+}
+
+/**
+ * Creates a Supabase-based storage system
+ * @param {string} _tableName - The table name to use for storage (for compatibility, currently ignored)
  * @returns {Object} Storage API
  */
-export function createStorage(filename) {
-    const filePath = path.join(process.cwd(), filename);
-
-    // Initialize storage
+export function createStorage(_tableName) {
+    // Initialize cache
     let cache = {};
+    let isInitialized = false;
 
     // Load initial data
-    (async () => {
+    const initialize = async () => {
+        if (isInitialized) return;
+
         try {
-            const data = await fs.readFile(filePath, 'utf8');
-            cache = JSON.parse(data);
-            console.log(`Storage loaded: ${Object.keys(cache).length} items from ${filename}`);
-        } catch (err) {
-            // File doesn't exist or other error
-            console.log(`Creating new storage file: ${filename}`);
-            await fs.writeFile(filePath, '{}', 'utf8');
+            cache = await loadProviderPreferences();
+            console.log(`Storage loaded: ${Object.keys(cache).length} items from Supabase`);
+            isInitialized = true;
+        } catch (error) {
+            console.log('Creating new storage in Supabase');
+            cache = {};
+            isInitialized = true;
         }
-    })();
+    };
 
     return {
         async get(key) {
+            await initialize();
             return cache[key];
         },
 
         async set(key, value) {
+            await initialize();
             cache[key] = value;
-            await fs.writeFile(filePath, JSON.stringify(cache, null, 2), 'utf8');
+            await saveProviderPreferences(cache);
             return value;
         },
 
         async delete(key) {
+            await initialize();
             delete cache[key];
-            await fs.writeFile(filePath, JSON.stringify(cache, null, 2), 'utf8');
+            await saveProviderPreferences(cache);
         },
 
         async getAll() {
+            await initialize();
             return { ...cache };
         }
     };
