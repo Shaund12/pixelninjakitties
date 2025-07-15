@@ -74,7 +74,7 @@ function getRarity(id, metadata) {
     else if (numId % 10 === 0) calculatedRarity = 'epic';
     else if (numId % 2 === 0) calculatedRarity = 'rare';
     else calculatedRarity = 'common';
-    
+
     console.log(`Token ${id} rarity from ID calculation: ${calculatedRarity} (${numId} % 2 = ${numId % 2})`);
     return calculatedRarity;
 }
@@ -105,7 +105,7 @@ export default async function handler(req, res) {
     try {
         // Get VTRU/USDC price for conversion
         const vtruPriceInUsdc = await getVtruUsdcPrice();
-        
+
         // Get the token's metadata and rarity
         let metadata;
         if (metadataCache[tokenId]) {
@@ -165,12 +165,12 @@ export default async function handler(req, res) {
                 const priceInEth = listing.currency === ethers.ZeroAddress ?
                     parseFloat(ethers.formatEther(listing.price)) :
                     parseFloat(ethers.formatUnits(listing.price, 6)); // USDC has 6 decimals
-                
+
                 // Convert to USDC for consistent comparison
                 const priceInUsdc = listing.currency === ethers.ZeroAddress ?
                     priceInEth * vtruPriceInUsdc : // VTRU to USDC
                     priceInEth; // Already in USDC
-                
+
                 enhancedListings.push({
                     ...listing,
                     metadata: listingMetadata,
@@ -185,12 +185,12 @@ export default async function handler(req, res) {
                 const priceInEth = listing.currency === ethers.ZeroAddress ?
                     parseFloat(ethers.formatEther(listing.price)) :
                     parseFloat(ethers.formatUnits(listing.price, 6));
-                
+
                 // Convert to USDC for consistent comparison
                 const priceInUsdc = listing.currency === ethers.ZeroAddress ?
                     priceInEth * vtruPriceInUsdc : // VTRU to USDC
                     priceInEth; // Already in USDC
-                
+
                 enhancedListings.push({
                     ...listing,
                     metadata: null,
@@ -209,13 +209,13 @@ export default async function handler(req, res) {
         console.log(`Token ${tokenId} rarity: ${rarity}`);
         console.log(`Total enhanced listings: ${enhancedListings.length}`);
         console.log(`Same rarity listings: ${sameRarityListings.length}`);
-        console.log(`Rarity distribution:`, enhancedListings.reduce((acc, l) => {
+        console.log('Rarity distribution:', enhancedListings.reduce((acc, l) => {
             acc[l.rarity] = (acc[l.rarity] || 0) + 1;
             return acc;
         }, {}));
 
         // DEBUG: Show detailed listing information for debugging
-        console.log(`Enhanced listings details:`);
+        console.log('Enhanced listings details:');
         enhancedListings.forEach((listing, index) => {
             console.log(`  Listing ${index + 1}:`);
             console.log(`    Token ID: ${listing.tokenId}`);
@@ -272,7 +272,7 @@ export default async function handler(req, res) {
         res.json(pricingInfo);
     } catch (error) {
         console.error(`Error fetching pricing info for token #${req.query.tokenId}:`, error);
-        
+
         // Return fallback data instead of 500 error
         res.json({
             rarity: 'common',
