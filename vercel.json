@@ -4,6 +4,9 @@
   "functions": {
     "api/cron.js": {
       "maxDuration": 300
+    },
+    "api/pricing-info/[tokenId].js": {
+      "maxDuration": 30
     }
   },
   "crons": [

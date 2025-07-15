@@ -56,19 +56,30 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    const tokenId = req.query.tokenId;
+
+    if (!tokenId) {
+        return res.status(400).json({ error: 'Token ID is required' });
+    }
+
+    // Return fallback data if marketplace is not configured
     if (!MARKETPLACE_ADDRESS) {
-        return res.status(404).json({ error: 'Marketplace not configured' });
+        return res.json({
+            rarity: 'common',
+            floorPrice: null,
+            avgPrice: null,
+            lastSold: null,
+            matchingListings: 0,
+            traitMatches: 0,
+            suggestedPrice: null,
+            breed: null,
+            error: 'Marketplace not configured'
+        });
     }
 
     const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, marketplaceAbi, provider);
 
     try {
-        const tokenId = req.query.tokenId;
-
-        if (!tokenId) {
-            return res.status(400).json({ error: 'Token ID is required' });
-        }
-
         // Get the token's metadata and rarity
         let metadata;
         if (metadataCache[tokenId]) {
@@ -88,8 +99,26 @@ export default async function handler(req, res) {
 
         const rarity = getRarity(tokenId, metadata);
 
-        // Get all active listings
-        const listings = await marketplace.getListings();
+        // Get all active listings with timeout
+        let listings;
+        try {
+            listings = await marketplace.getListings();
+        } catch (error) {
+            console.error('Error fetching listings:', error);
+            // Return fallback data if blockchain call fails
+            return res.json({
+                rarity: rarity,
+                floorPrice: null,
+                avgPrice: null,
+                lastSold: null,
+                matchingListings: 0,
+                traitMatches: 0,
+                suggestedPrice: null,
+                breed: metadata?.attributes?.find(attr => attr.trait_type === 'Breed')?.value || null,
+                error: 'Unable to fetch marketplace data'
+            });
+        }
+
         const activeListings = listings.filter(listing => listing.active);
 
         // Enhance listings with metadata for filtering
@@ -166,6 +195,18 @@ export default async function handler(req, res) {
         res.json(pricingInfo);
     } catch (error) {
         console.error(`Error fetching pricing info for token #${req.query.tokenId}:`, error);
-        res.status(500).json({ error: error.message });
+        
+        // Return fallback data instead of 500 error
+        res.json({
+            rarity: 'common',
+            floorPrice: null,
+            avgPrice: null,
+            lastSold: null,
+            matchingListings: 0,
+            traitMatches: 0,
+            suggestedPrice: null,
+            breed: null,
+            error: error.message
+        });
     }
 }

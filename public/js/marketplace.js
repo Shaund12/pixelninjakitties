@@ -1160,8 +1160,14 @@ async function loadPricingData(tokenId) {
         pricingLoading.style.display = 'flex';
         pricingData.style.display = 'none';
 
-        // Fetch pricing data
-        const response = await fetch(`/api/pricing-info/${tokenId}`);
+        // Fetch pricing data with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch(`/api/pricing-info/${tokenId}`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -1170,9 +1176,9 @@ async function loadPricingData(tokenId) {
         const data = await response.json();
 
         // Update pricing display
-        document.getElementById('floorPrice').textContent = data.floorPrice ? `${data.floorPrice.toFixed(4)} USDC` : 'No data';
-        document.getElementById('avgPrice').textContent = data.avgPrice ? `${data.avgPrice.toFixed(4)} USDC` : 'No data';
-        document.getElementById('lastSold').textContent = data.lastSold ? `${data.lastSold.toFixed(4)} USDC` : 'No data';
+        document.getElementById('floorPrice').textContent = data.floorPrice ? `${data.floorPrice.toFixed(4)} USDC` : 'Unknown';
+        document.getElementById('avgPrice').textContent = data.avgPrice ? `${data.avgPrice.toFixed(4)} USDC` : 'Unknown';
+        document.getElementById('lastSold').textContent = data.lastSold ? `${data.lastSold.toFixed(4)} USDC` : 'Unknown';
         document.getElementById('matchingListings').textContent = `${data.matchingListings} matching listings found`;
 
         // Update trait matches
@@ -1207,13 +1213,57 @@ async function loadPricingData(tokenId) {
         // Hide loading on error
         pricingLoading.style.display = 'none';
 
-        // Show error message
-        pricingData.innerHTML = `
-            <div style="text-align: center; color: #dc3545; font-size: 0.9rem;">
-                ⚠️ Unable to load market data. Please try again.
-            </div>
-        `;
+        // Show fallback pricing data - modal still works but without market insights
+        showFallbackPricingData();
         pricingData.style.display = 'block';
+    }
+}
+
+// Show fallback pricing data when API fails
+function showFallbackPricingData() {
+    const pricingData = document.getElementById('pricingData');
+    
+    // Set fallback values instead of breaking the modal
+    document.getElementById('floorPrice').textContent = 'Unknown';
+    document.getElementById('avgPrice').textContent = 'Unknown';
+    document.getElementById('lastSold').textContent = 'Unknown';
+    document.getElementById('matchingListings').textContent = 'Market data unavailable';
+    
+    // Hide trait matches section
+    const traitMatches = document.getElementById('traitMatches');
+    traitMatches.style.display = 'none';
+    
+    // Hide suggested price section
+    const suggestedPriceSection = document.getElementById('suggestedPriceSection');
+    suggestedPriceSection.style.display = 'none';
+    
+    // Clear pricing data to prevent validation errors
+    window.currentPricingData = {
+        floorPrice: null,
+        avgPrice: null,
+        lastSold: null,
+        matchingListings: 0,
+        traitMatches: 0,
+        suggestedPrice: null
+    };
+    
+    // Add a small notice at the top of pricing data
+    const existingNotice = pricingData.querySelector('.api-notice');
+    if (!existingNotice) {
+        const notice = document.createElement('div');
+        notice.className = 'api-notice';
+        notice.style.cssText = `
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            text-align: center;
+        `;
+        notice.innerHTML = '⚠️ Market data temporarily unavailable. You can still list your item.';
+        pricingData.insertBefore(notice, pricingData.firstChild);
     }
 }
 
