@@ -169,10 +169,21 @@ function initializePreviewSystem() {
     const generatePreviewBtn = document.getElementById('generatePreview');
     const previewContainer = document.getElementById('traitPreview');
     const previewImageContainer = document.querySelector('.preview-image-container');
+    const closePreviewBtn = document.getElementById('closePreview');
+
+    // Handle close button
+    if (closePreviewBtn) {
+        closePreviewBtn.addEventListener('click', () => {
+            previewContainer.style.display = 'none';
+        });
+    }
 
     if (generatePreviewBtn && previewContainer) {
         generatePreviewBtn.addEventListener('click', async () => {
             try {
+                // Show the preview container first
+                previewContainer.style.display = 'flex';
+                
                 // Show loading state with enhanced animation
                 previewImageContainer.innerHTML = `
                     <div class="preview-loading">
