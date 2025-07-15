@@ -1272,29 +1272,7 @@ async function uploadDirectoryToPinata(dirPath, name) {
     }
 }
 
-/**
- * Upload a file to IPFS (Pinata only)
- * @param {string} filePath - Path to the file
- * @param {string} name - Name for the upload
- * @returns {Promise<string>} - IPFS URL with proper filename path for JSON
- */
-async function uploadToIPFS(filePath, name) {
-    const isMetadataFile = name.endsWith('.json');
-    console.log(`📤 Uploading ${isMetadataFile ? 'metadata' : 'image'} to IPFS via Pinata: ${name}`);
 
-    if (!isPinataConfigured) {
-        throw new Error('Pinata credentials not configured. Please set PINATA_API_KEY and PINATA_SECRET_KEY in your .env file.');
-    }
-
-    try {
-        // Use Pinata exclusively - no fallbacks
-        const result = await uploadToPinata(filePath, name);
-        return result;
-    } catch (error) {
-        console.error(`❌ Pinata upload failed: ${error.message}`);
-        throw new Error(`IPFS upload failed: ${error.message}`);
-    }
-}
 
 /**
  * Upload an image or JSON to IPFS via Pinata
