@@ -130,7 +130,6 @@ function initializePreviewSystem() {
     // Update breed rarity display when selection changes
     const breedSelector = document.getElementById('breed');
     const breedRarityDisplay = document.getElementById('breedRarity');
-    const rarityBadgesContainer = document.querySelector('.rarity-badges');
 
     function updateBreedRarity() {
         const selectedBreed = breedSelector.value;
@@ -150,223 +149,39 @@ function initializePreviewSystem() {
                 });
             }
         }
-
-        // Update rarity badges in preview
-        if (rarityBadgesContainer) {
-            rarityBadgesContainer.innerHTML = `
-                <div class="rarity-badge ${rarityInfo.rarity.toLowerCase()}">
-                    ${rarityInfo.emoji} ${selectedBreed} (${rarityInfo.rarity})
-                </div>
-            `;
-        }
     }
 
     // Initialize breed rarity display
     updateBreedRarity();
     breedSelector.addEventListener('change', updateBreedRarity);
-
-    // Set up trait preview generation
-    const generatePreviewBtn = document.getElementById('generatePreview');
-    const previewContainer = document.getElementById('traitPreview');
-    const previewImageContainer = document.querySelector('.preview-image-container');
-    const closePreviewBtn = document.getElementById('closePreview');
-
-    // Handle close button
-    if (closePreviewBtn) {
-        closePreviewBtn.addEventListener('click', () => {
-            previewContainer.style.display = 'none';
-        });
-    }
-
-    if (generatePreviewBtn && previewContainer) {
-        generatePreviewBtn.addEventListener('click', async () => {
-            try {
-                // Show the preview container first
-                previewContainer.style.display = 'flex';
-                
-                // Show loading state with enhanced animation
-                previewImageContainer.innerHTML = `
-                    <div class="preview-loading">
-                        <div class="preview-spinner"></div>
-                        <p>🎨 Generating preview...</p>
-                    </div>
-                `;
-
-                // Add loading animation
-                if (window.gsap) {
-                    gsap.to('.preview-spinner', {
-                        rotation: 360,
-                        duration: 1,
-                        repeat: -1,
-                        ease: 'linear'
-                    });
-                }
-
-                // Get current selections
-                const breed = breedSelector.value;
-                const imageProvider = document.getElementById('imageProvider')?.value || 'dall-e';
-                const promptExtras = document.getElementById('promptExtras')?.value || '';
-
-                // Simulate preview generation with sample traits
-                const sampleTraits = [
-                    { type: 'Weapon', value: 'Katana', rarity: 'Rare', emoji: '🔷' },
-                    { type: 'Stance', value: 'Stealth', rarity: 'Uncommon', emoji: '🔷' },
-                    { type: 'Element', value: 'Lightning', rarity: 'Epic', emoji: '🔶' }
-                ];
-
-                // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                // Display preview with enhanced animation
-                previewImageContainer.innerHTML = `
-                    <div class="preview-result">
-                        <div class="preview-placeholder">
-                            <div class="preview-emoji">🥷</div>
-                            <p>Preview Generated!</p>
-                            <small>Actual NFT will have unique traits</small>
-                        </div>
-                    </div>
-                `;
-
-                // Update trait badges
-                if (rarityBadgesContainer) {
-                    const selectedBreed = breedSelector.value;
-                    const rarityInfo = breedRarities[selectedBreed];
-
-                    const traitsHTML = [
-                        `<div class="rarity-badge ${rarityInfo.rarity.toLowerCase()}">
-                            ${rarityInfo.emoji} ${selectedBreed} (${rarityInfo.rarity})
-                        </div>`,
-                        ...sampleTraits.map(trait =>
-                            `<div class="rarity-badge ${trait.rarity.toLowerCase()}">
-                                ${trait.emoji} ${trait.value} (${trait.rarity})
-                            </div>`
-                        )
-                    ].join('');
-
-                    rarityBadgesContainer.innerHTML = traitsHTML;
-                }
-
-                // Animate the preview result
-                if (window.gsap) {
-                    gsap.from('.preview-result', {
-                        scale: 0.8,
-                        opacity: 0,
-                        duration: 0.6,
-                        ease: 'back.out(1.7)'
-                    });
-
-                    gsap.from('.rarity-badge', {
-                        y: 20,
-                        opacity: 0,
-                        duration: 0.4,
-                        stagger: 0.1,
-                        delay: 0.3
-                    });
-                }
-
-                // Show success toast
-                showToast('Preview generated! This is a sample of how your NFT might look.', 'success');
-
-            } catch (error) {
-                console.error('Preview generation failed:', error);
-                previewImageContainer.innerHTML = `
-                    <div class="preview-error">
-                        <div class="error-emoji">🫠</div>
-                        <p>Preview failed to generate</p>
-                        <small>Try again or proceed with mint</small>
-                    </div>
-                `;
-
-                showToast('Preview generation failed. You can still mint your NFT!', 'warning');
-            }
-        });
-    }
 }
 
 /* --- show current price with live updates -------------------------------- */
 async function initializePricing() {
     try {
-        // Add shimmer effect during loading
-        priceEl.innerHTML = '<div class="price-shimmer"></div> Loading price...';
+        priceEl.innerHTML = '<span class="spinner"></span> Fetching price…';
 
         // Get USDC price
         const rawPrice = await nftRead.price();
         const formattedPrice = ethers.formatUnits(rawPrice, 6);
 
-        // Update price display with animation
-        if (window.gsap) {
-            gsap.to(priceEl, {
-                opacity: 0,
-                duration: 0.3,
-                onComplete: () => {
-                    priceEl.innerHTML = `💰 Price: <span class="price-value">${formattedPrice}</span> USDC`;
-                    gsap.to(priceEl, {
-                        opacity: 1,
-                        duration: 0.3
-                    });
-                }
-            });
-        } else {
-            priceEl.innerHTML = `💰 Price: <span class="price-value">${formattedPrice}</span> USDC`;
-        }
-
-        // Trigger VTRU conversion if that function exists
-        if (window.updateVtruConversion) {
-            const exchangeRate = await window.getExchangeRate();
-            window.updateVtruConversion(formattedPrice, exchangeRate);
-        }
-
-        // Set up live price updates every 30 seconds
-        setInterval(async () => {
-            try {
-                const newRawPrice = await nftRead.price();
-                const newFormattedPrice = ethers.formatUnits(newRawPrice, 6);
-
-                if (newFormattedPrice !== formattedPrice) {
-                    // Show shimmer effect during update
-                    if (window.gsap) {
-                        gsap.to('.price-value', {
-                            opacity: 0,
-                            scale: 0.9,
-                            duration: 0.2,
-                            onComplete: () => {
-                                document.querySelector('.price-value').textContent = newFormattedPrice;
-                                gsap.to('.price-value', {
-                                    opacity: 1,
-                                    scale: 1,
-                                    duration: 0.2
-                                });
-                            }
-                        });
-                    } else {
-                        document.querySelector('.price-value').textContent = newFormattedPrice;
-                    }
-
-                    // Update VTRU conversion
-                    if (window.updateVtruConversion) {
-                        const exchangeRate = await window.getExchangeRate();
-                        window.updateVtruConversion(newFormattedPrice, exchangeRate);
-                    }
-
-                    showToast('Price updated!', 'info', 2000);
-                }
-            } catch (error) {
-                console.warn('Failed to update price:', error);
-            }
-        }, 30000);
-
+        // Update price display in the simple format that works with VTRU conversion
+        priceEl.textContent = `Price: ${formattedPrice} USDC`;
+        
+        mintBtn.textContent = `Pay ${formattedPrice} USDC & Mint`;
         mintBtn.disabled = false;
+        showStatus('Ready to mint!', 'success');
 
-        // Initialize the preview system
+        // Initialize the preview system (breed rarity display)
         initializePreviewSystem();
 
-        // Initialize advanced visuals
+        // Initialize advanced visuals (particle effects, etc.)
         initializeAdvancedVisuals();
 
-    } catch (err) {
-        console.error('Failed to get price:', err);
-        priceEl.innerHTML = `❌ Error loading price: ${err.message}`;
+    } catch (error) {
+        console.error('Error loading price:', error);
+        priceEl.textContent = 'Error loading price. Please refresh.';
+        showStatus('Error loading price. Please refresh.', 'error');
     }
 }
 
@@ -2071,13 +1886,6 @@ document.addEventListener('keydown', (e) => {
     if (e.altKey && e.key === 'm' && !mintBtn.disabled) {
         e.preventDefault();
         mintBtn.click();
-    }
-
-    // Alt+P to open preview (if button exists)
-    if (e.altKey && e.key === 'p') {
-        e.preventDefault();
-        const previewBtn = document.getElementById('generatePreviewBtn');
-        if (previewBtn) previewBtn.click();
     }
 });
 
