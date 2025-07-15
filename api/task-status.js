@@ -4,7 +4,7 @@ import { sanitizeForLogging, createSafeErrorResponse } from '../scripts/security
 
 export default async function handler(req, res) {
     setCorsHeaders(res);
-    
+
     if (handleOptions(req, res)) return;
 
     try {
