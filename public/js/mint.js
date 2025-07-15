@@ -1337,8 +1337,8 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
             console.log(`📊 Polling attempt ${pollAttempts}/${maxPolls} for task ${taskId}`);
 
             try {
-                // Use the new /api/taskStatus endpoint
-                const response = await fetch(`/api/taskStatus?id=${taskId}`);
+                // Use the serverless API endpoint
+                const response = await fetch(`/api/task-status?id=${taskId}`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
