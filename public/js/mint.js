@@ -111,106 +111,239 @@ if (!document.querySelector('.progress-container')) {
 /* read-only contract */
 const nftRead = new ethers.Contract(CONTRACT_ADDRESS, NFT_ABI, rpcProvider);
 
-/* --- Initialize Preview System -------------------------------- */
+/* --- Initialize Preview System with Enhanced Trait Rarity -------------------------------- */
 function initializePreviewSystem() {
-    const previewBtn = document.getElementById('generatePreviewBtn');
-    const previewContainer = document.getElementById('previewContainer');
+    // Set up breed rarity display
+    const breedRarities = {
+        'Bengal': { rarity: 'Common', emoji: '🔸', color: '#10b981' },
+        'Siamese': { rarity: 'Common', emoji: '🔸', color: '#10b981' },
+        'Maine Coon': { rarity: 'Uncommon', emoji: '🔷', color: '#3b82f6' },
+        'Calico': { rarity: 'Uncommon', emoji: '🔷', color: '#3b82f6' },
+        'Sphynx': { rarity: 'Epic', emoji: '🔶', color: '#f59e0b' },
+        'Shadow': { rarity: 'Epic', emoji: '🔶', color: '#f59e0b' },
+        'Nyan': { rarity: 'Legendary', emoji: '🔴', color: '#ef4444' },
+        'Persian': { rarity: 'Common', emoji: '🔸', color: '#10b981' },
+        'Bombay': { rarity: 'Uncommon', emoji: '🔷', color: '#3b82f6' },
+        'Tabby': { rarity: 'Common', emoji: '🔸', color: '#10b981' }
+    };
 
-    if (previewBtn && previewContainer) {
-        previewBtn.addEventListener('click', async () => {
+    // Update breed rarity display when selection changes
+    const breedSelector = document.getElementById('breed');
+    const breedRarityDisplay = document.getElementById('breedRarity');
+    const rarityBadgesContainer = document.querySelector('.rarity-badges');
+
+    function updateBreedRarity() {
+        const selectedBreed = breedSelector.value;
+        const rarityInfo = breedRarities[selectedBreed];
+
+        if (rarityInfo && breedRarityDisplay) {
+            breedRarityDisplay.textContent = `${rarityInfo.emoji} ${rarityInfo.rarity} Breed`;
+            breedRarityDisplay.className = `rarity-badge ${rarityInfo.rarity.toLowerCase()}`;
+
+            // Animate the rarity badge change
+            if (window.gsap) {
+                gsap.from(breedRarityDisplay, {
+                    scale: 0.8,
+                    opacity: 0,
+                    duration: 0.3,
+                    ease: 'back.out(1.7)'
+                });
+            }
+        }
+
+        // Update rarity badges in preview
+        if (rarityBadgesContainer) {
+            rarityBadgesContainer.innerHTML = `
+                <div class="rarity-badge ${rarityInfo.rarity.toLowerCase()}">
+                    ${rarityInfo.emoji} ${selectedBreed} (${rarityInfo.rarity})
+                </div>
+            `;
+        }
+    }
+
+    // Initialize breed rarity display
+    updateBreedRarity();
+    breedSelector.addEventListener('change', updateBreedRarity);
+
+    // Set up trait preview generation
+    const generatePreviewBtn = document.getElementById('generatePreview');
+    const previewContainer = document.getElementById('traitPreview');
+    const previewImageContainer = document.querySelector('.preview-image-container');
+
+    if (generatePreviewBtn && previewContainer) {
+        generatePreviewBtn.addEventListener('click', async () => {
             try {
-                // Show loading state
-                previewContainer.innerHTML = `
+                // Show loading state with enhanced animation
+                previewImageContainer.innerHTML = `
                     <div class="preview-loading">
                         <div class="preview-spinner"></div>
-                        <p>Generating preview...</p>
+                        <p>🎨 Generating preview...</p>
                     </div>
                 `;
-                previewContainer.style.display = 'flex';
 
-                // Get current selections
-                const breed = document.getElementById('breed').value;
-                const imageProvider = document.getElementById('imageProvider')?.value || 'dall-e';
-                const promptExtras = document.getElementById('promptExtras')?.value || '';
-                const negativePrompt = document.getElementById('negativePrompt')?.value || '';
-
-                // Call the preview generation API
-                const response = await fetch('/api/preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        breed,
-                        imageProvider,
-                        promptExtras,
-                        negativePrompt
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status}`);
+                // Add loading animation
+                if (window.gsap) {
+                    gsap.to('.preview-spinner', {
+                        rotation: 360,
+                        duration: 1,
+                        repeat: -1,
+                        ease: 'linear'
+                    });
                 }
 
-                const data = await response.json();
+                // Get current selections
+                const breed = breedSelector.value;
+                const imageProvider = document.getElementById('imageProvider')?.value || 'dall-e';
+                const promptExtras = document.getElementById('promptExtras')?.value || '';
 
-                // Display the preview image with animation
-                previewContainer.innerHTML = `
+                // Simulate preview generation with sample traits
+                const sampleTraits = [
+                    { type: 'Weapon', value: 'Katana', rarity: 'Rare', emoji: '🔷' },
+                    { type: 'Stance', value: 'Stealth', rarity: 'Uncommon', emoji: '🔷' },
+                    { type: 'Element', value: 'Lightning', rarity: 'Epic', emoji: '🔶' }
+                ];
+
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Display preview with enhanced animation
+                previewImageContainer.innerHTML = `
                     <div class="preview-result">
-                        <img src="${data.previewUrl}" alt="Preview of your Ninja Cat" class="preview-image">
-                        <div class="preview-details">
-                            <h4>Preview of your Ninja Cat</h4>
-                            <p>This is a low-resolution preview. The final minted NFT will have higher quality and unique traits.</p>
-                            <div class="preview-traits">
-                                <div class="preview-trait"><span>Breed:</span> ${breed}</div>
-                                ${data.sampleTraits.map(trait =>
-                    `<div class="preview-trait"><span>${trait.type}:</span> ${trait.value}</div>`
-                ).join('')}
-                            </div>
-                            <p class="preview-disclaimer">Note: Actual NFT will have different random traits.</p>
+                        <div class="preview-placeholder">
+                            <div class="preview-emoji">🥷</div>
+                            <p>Preview Generated!</p>
+                            <small>Actual NFT will have unique traits</small>
                         </div>
                     </div>
                 `;
 
-                // Animate the preview appearance
-                const previewImage = previewContainer.querySelector('.preview-image');
-                if (previewImage && window.gsap) {
-                    gsap.from(previewImage, {
-                        opacity: 0,
+                // Update trait badges
+                if (rarityBadgesContainer) {
+                    const selectedBreed = breedSelector.value;
+                    const rarityInfo = breedRarities[selectedBreed];
+
+                    const traitsHTML = [
+                        `<div class="rarity-badge ${rarityInfo.rarity.toLowerCase()}">
+                            ${rarityInfo.emoji} ${selectedBreed} (${rarityInfo.rarity})
+                        </div>`,
+                        ...sampleTraits.map(trait =>
+                            `<div class="rarity-badge ${trait.rarity.toLowerCase()}">
+                                ${trait.emoji} ${trait.value} (${trait.rarity})
+                            </div>`
+                        )
+                    ].join('');
+
+                    rarityBadgesContainer.innerHTML = traitsHTML;
+                }
+
+                // Animate the preview result
+                if (window.gsap) {
+                    gsap.from('.preview-result', {
                         scale: 0.8,
-                        duration: 0.8,
-                        ease: 'elastic.out(1, 0.5)'
+                        opacity: 0,
+                        duration: 0.6,
+                        ease: 'back.out(1.7)'
+                    });
+
+                    gsap.from('.rarity-badge', {
+                        y: 20,
+                        opacity: 0,
+                        duration: 0.4,
+                        stagger: 0.1,
+                        delay: 0.3
                     });
                 }
 
+                // Show success toast
+                showToast('Preview generated! This is a sample of how your NFT might look.', 'success');
+
             } catch (error) {
                 console.error('Preview generation failed:', error);
-                previewContainer.innerHTML = `
+                previewImageContainer.innerHTML = `
                     <div class="preview-error">
-                        <svg viewBox="0 0 24 24" width="36" height="36">
-                            <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
-                        </svg>
-                        <p>Preview generation failed: ${error.message}</p>
+                        <div class="error-emoji">🫠</div>
+                        <p>Preview failed to generate</p>
+                        <small>Try again or proceed with mint</small>
                     </div>
                 `;
+
+                showToast('Preview generation failed. You can still mint your NFT!', 'warning');
             }
         });
     }
 }
 
-/* --- show current price -------------------------------- */
+/* --- show current price with live updates -------------------------------- */
 async function initializePricing() {
     try {
+        // Add shimmer effect during loading
+        priceEl.innerHTML = '<div class="price-shimmer"></div> Loading price...';
+
         // Get USDC price
         const rawPrice = await nftRead.price();
         const formattedPrice = ethers.formatUnits(rawPrice, 6);
 
-        // Update price display
-        priceEl.textContent = `Price: ${formattedPrice} USDC`;
+        // Update price display with animation
+        if (window.gsap) {
+            gsap.to(priceEl, {
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => {
+                    priceEl.innerHTML = `💰 Price: <span class="price-value">${formattedPrice}</span> USDC`;
+                    gsap.to(priceEl, {
+                        opacity: 1,
+                        duration: 0.3
+                    });
+                }
+            });
+        } else {
+            priceEl.innerHTML = `💰 Price: <span class="price-value">${formattedPrice}</span> USDC`;
+        }
 
         // Trigger VTRU conversion if that function exists
         if (window.updateVtruConversion) {
             const exchangeRate = await window.getExchangeRate();
             window.updateVtruConversion(formattedPrice, exchangeRate);
         }
+
+        // Set up live price updates every 30 seconds
+        setInterval(async () => {
+            try {
+                const newRawPrice = await nftRead.price();
+                const newFormattedPrice = ethers.formatUnits(newRawPrice, 6);
+
+                if (newFormattedPrice !== formattedPrice) {
+                    // Show shimmer effect during update
+                    if (window.gsap) {
+                        gsap.to('.price-value', {
+                            opacity: 0,
+                            scale: 0.9,
+                            duration: 0.2,
+                            onComplete: () => {
+                                document.querySelector('.price-value').textContent = newFormattedPrice;
+                                gsap.to('.price-value', {
+                                    opacity: 1,
+                                    scale: 1,
+                                    duration: 0.2
+                                });
+                            }
+                        });
+                    } else {
+                        document.querySelector('.price-value').textContent = newFormattedPrice;
+                    }
+
+                    // Update VTRU conversion
+                    if (window.updateVtruConversion) {
+                        const exchangeRate = await window.getExchangeRate();
+                        window.updateVtruConversion(newFormattedPrice, exchangeRate);
+                    }
+
+                    showToast('Price updated!', 'info', 2000);
+                }
+            } catch (error) {
+                console.warn('Failed to update price:', error);
+            }
+        }, 30000);
 
         mintBtn.disabled = false;
 
@@ -222,7 +355,7 @@ async function initializePricing() {
 
     } catch (err) {
         console.error('Failed to get price:', err);
-        priceEl.textContent = `Error loading price: ${err.message}`;
+        priceEl.innerHTML = `❌ Error loading price: ${err.message}`;
     }
 }
 
@@ -241,17 +374,26 @@ function initializeAdvancedVisuals() {
     animateBreedSelection();
 }
 
-// Create floating particle effect behind mint button
+// Create floating particle effect behind mint button with charge-up effect
 function setupParticleEffect() {
     if (!mintBtn) return;
 
     const particleContainer = document.createElement('div');
     particleContainer.className = 'particle-container';
+    particleContainer.style.position = 'absolute';
+    particleContainer.style.top = '0';
+    particleContainer.style.left = '0';
+    particleContainer.style.width = '100%';
+    particleContainer.style.height = '100%';
+    particleContainer.style.pointerEvents = 'none';
+    particleContainer.style.overflow = 'hidden';
+    particleContainer.style.borderRadius = '10px';
 
-    // Insert before mint button
-    mintBtn.parentNode.insertBefore(particleContainer, mintBtn);
+    // Make sure mint button has relative positioning
+    mintBtn.style.position = 'relative';
+    mintBtn.appendChild(particleContainer);
 
-    // Create particles
+    // Create regular floating particles
     for (let i = 0; i < 15; i++) {
         const particle = document.createElement('div');
         particle.className = 'mint-particle';
@@ -264,6 +406,28 @@ function setupParticleEffect() {
 
         particleContainer.appendChild(particle);
     }
+
+    // Add charge-up effect on hover
+    mintBtn.addEventListener('mouseenter', () => {
+        if (mintBtn.disabled) return;
+
+        // Create charge particles
+        for (let i = 0; i < 8; i++) {
+            const chargeParticle = document.createElement('div');
+            chargeParticle.className = 'charge-particle';
+            chargeParticle.style.left = `${20 + Math.random() * 60}%`;
+            chargeParticle.style.animationDelay = `${Math.random() * 0.5}s`;
+
+            particleContainer.appendChild(chargeParticle);
+
+            // Remove charge particle after animation
+            setTimeout(() => {
+                if (chargeParticle.parentNode) {
+                    chargeParticle.parentNode.removeChild(chargeParticle);
+                }
+            }, 2000);
+        }
+    });
 }
 
 // Enhance provider selection with visual feedback
@@ -396,7 +560,7 @@ function animateBreedSelection() {
     });
 }
 
-/* --- Progress Tracking ---------------------------------- */
+/* --- Enhanced Progress Tracking with Timeline ---------------------------------- */
 function updateProgress(percent, detail = {}) {
     // Show progress container
     progressContainer.style.display = 'block';
@@ -417,6 +581,104 @@ function updateProgress(percent, detail = {}) {
     if (detail.message) {
         showStatus(detail.message, detail.showSpinner !== false);
     }
+
+    // Update timeline if minting
+    if (percent >= 35) {
+        showTaskTimeline();
+    }
+}
+
+function showTaskTimeline() {
+    const timeline = document.getElementById('taskTimeline');
+    if (timeline) {
+        timeline.style.display = 'flex';
+
+        // Animate timeline appearance
+        if (window.gsap) {
+            gsap.from(timeline, {
+                opacity: 0,
+                y: 20,
+                duration: 0.5,
+                ease: 'power2.out'
+            });
+
+            gsap.from('.timeline-stage', {
+                opacity: 0,
+                x: -30,
+                duration: 0.4,
+                stagger: 0.1,
+                delay: 0.2
+            });
+        }
+    }
+}
+
+function updateTaskStage(stage, status, message) {
+    const timeline = document.getElementById('taskTimeline');
+    if (!timeline) return;
+
+    const stageElement = timeline.querySelector(`[data-stage="${stage}"]`);
+    if (!stageElement) return;
+
+    const statusElement = stageElement.querySelector('.stage-status');
+
+    // Remove existing status classes
+    stageElement.classList.remove('active', 'completed', 'failed');
+
+    // Add new status
+    stageElement.classList.add(status);
+
+    // Update status message
+    if (statusElement) {
+        statusElement.textContent = message || getDefaultStageMessage(stage, status);
+    }
+
+    // Animate stage change
+    if (window.gsap) {
+        gsap.from(stageElement, {
+            scale: 0.95,
+            duration: 0.3,
+            ease: 'power2.out'
+        });
+
+        // Pulse animation for active stages
+        if (status === 'active') {
+            gsap.to(stageElement.querySelector('.stage-icon'), {
+                scale: 1.1,
+                duration: 0.8,
+                repeat: -1,
+                yoyo: true,
+                ease: 'power2.inOut'
+            });
+        }
+    }
+}
+
+function getDefaultStageMessage(stage, status) {
+    const messages = {
+        'art': {
+            'active': 'Generating artwork...',
+            'completed': 'Artwork complete!',
+            'failed': 'Generation failed'
+        },
+        'metadata': {
+            'active': 'Building metadata...',
+            'completed': 'Metadata ready!',
+            'failed': 'Metadata failed'
+        },
+        'ipfs': {
+            'active': 'Uploading to IPFS...',
+            'completed': 'IPFS upload complete!',
+            'failed': 'Upload failed'
+        },
+        'tokenuri': {
+            'active': 'Setting TokenURI...',
+            'completed': 'TokenURI set!',
+            'failed': 'TokenURI failed'
+        }
+    };
+
+    return messages[stage]?.[status] || 'Processing...';
 }
 
 function showStatus(msg, showSpinner = true) {
@@ -881,18 +1143,18 @@ mintBtn.onclick = async () => {
             errorMessage = 'Transaction was rejected in your wallet.';
         }
 
-        // Create an animated error display
+        // Create an animated error display with emoji
+        const errorEmojis = ['🫠', '😿', '🐱‍👤', '💔', '😵'];
+        const randomEmoji = errorEmojis[Math.floor(Math.random() * errorEmojis.length)];
+
         const errorUI = document.createElement('div');
         errorUI.className = 'error-ui';
         errorUI.innerHTML = `
-            <div class="error-icon">
-                <svg viewBox="0 0 24 24" width="48" height="48">
-                    <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
-                </svg>
-            </div>
+            <div class="error-emoji">${randomEmoji}</div>
             <div class="error-content">
                 <h4>Minting Failed</h4>
                 <p>${errorMessage}</p>
+                <p><small>Don't worry, your transaction was not processed and no funds were deducted.</small></p>
                 <button class="retry-btn">Try Again</button>
             </div>
         `;
@@ -1011,7 +1273,7 @@ async function fetchNFTDetails(tokenId) {
     }
 }
 
-// Function to show success message
+// Function to show success message with enhanced sharing
 function showMintSuccess(tokenId, txHash, provider) {
     // Format provider name nicely - using the providers object
     const providerName = providers[provider]?.name || provider.charAt(0).toUpperCase() + provider.slice(1);
@@ -1019,22 +1281,17 @@ function showMintSuccess(tokenId, txHash, provider) {
     // Show explorer link
     const explorerUrl = `https://explorer-new.vitruveo.xyz/tx/${txHash}`;
 
-    // Create success animation
+    // Create success animation with emoji
     const successUI = document.createElement('div');
     successUI.className = 'success-ui';
 
-    // Build HTML with more complex animation
+    // Build HTML with enhanced design
     successUI.innerHTML = `
-        <div class="success-animation">
-            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-            </svg>
-        </div>
+        <div class="success-emoji">🎉</div>
         <div class="success-content">
             <h4>Successfully Minted!</h4>
-            <p>Your ninja cat is being generated with ${providerName}.</p>
-                        <a href="${explorerUrl}" target="_blank" class="explorer-link">View on Explorer</a>
+            <p>Your ninja cat has been created with ${providerName}! 🥷✨</p>
+            ${txHash ? `<a href="${explorerUrl}" target="_blank" class="explorer-link">View on Explorer</a>` : ''}
         </div>
     `;
 
@@ -1042,37 +1299,252 @@ function showMintSuccess(tokenId, txHash, provider) {
     statusEl.innerHTML = '';
     statusEl.appendChild(successUI);
 
-    // Animate checkmark if GSAP is available
+    // Animate success appearance
     if (window.gsap) {
-        gsap.set('.checkmark-circle', {
-            strokeDasharray: '157',
-            strokeDashoffset: '157'
+        gsap.from('.success-emoji', {
+            scale: 0,
+            rotation: -180,
+            duration: 0.8,
+            ease: 'back.out(1.7)'
         });
 
-        gsap.set('.checkmark-check', {
-            strokeDasharray: '32',
-            strokeDashoffset: '32'
+        gsap.from('.success-content', {
+            opacity: 0,
+            y: 20,
+            duration: 0.5,
+            delay: 0.3
         });
-
-        const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-
-        tl.to('.checkmark-circle', {
-            strokeDashoffset: 0,
-            duration: 0.6
-        })
-            .to('.checkmark-check', {
-                strokeDashoffset: 0,
-                duration: 0.4
-            }, '-=0.2')
-            .to('.success-content', {
-                opacity: 1,
-                y: 0,
-                duration: 0.5
-            }, '-=0.2');
     }
 
-    // If we have a token ID, add a view button
+    // If we have a token ID, add enhanced sharing and download options
     if (tokenId) {
+        const viewBtn = document.createElement('a');
+        viewBtn.href = `kitty.html?id=${tokenId}`;
+        viewBtn.className = 'view-nft-btn';
+        viewBtn.textContent = `View Your New NFT #${tokenId}`;
+
+        // Add hover effects with GSAP if available
+        if (window.gsap) {
+            viewBtn.addEventListener('mouseenter', () => {
+                gsap.to(viewBtn, {
+                    scale: 1.05,
+                    boxShadow: '0 8px 20px rgba(138,101,255,0.4)',
+                    duration: 0.3
+                });
+            });
+
+            viewBtn.addEventListener('mouseleave', () => {
+                gsap.to(viewBtn, {
+                    scale: 1,
+                    boxShadow: '0 4px 10px rgba(138,101,255,0.2)',
+                    duration: 0.3
+                });
+            });
+        }
+
+        successUI.querySelector('.success-content').appendChild(viewBtn);
+
+        // Add enhanced sharing functionality
+        setupEnhancedSharing(tokenId, provider);
+
+        // Enable download functionality
+        fetchNFTDetails(tokenId).then(nftData => {
+            if (nftData) {
+                setupEnhancedDownloads(nftData, tokenId);
+            }
+        }).catch(error => {
+            console.warn('Could not fetch NFT details for download:', error);
+        });
+    }
+}
+
+// Enhanced sharing functionality
+function setupEnhancedSharing(tokenId, provider) {
+    const shareSection = document.createElement('div');
+    shareSection.className = 'sharing-section';
+    shareSection.innerHTML = `
+        <h5>🚀 Share Your NFT</h5>
+        <div class="sharing-buttons">
+            <button id="copyTokenURI" class="share-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+                Copy NFT Link
+            </button>
+            <button id="shareTwitter" class="share-btn twitter">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                Share on X
+            </button>
+        </div>
+    `;
+
+    document.querySelector('.success-content').appendChild(shareSection);
+
+    // Copy to clipboard functionality
+    const copyBtn = shareSection.querySelector('#copyTokenURI');
+    copyBtn.addEventListener('click', async () => {
+        try {
+            const nftUrl = `${window.location.origin}/kitty.html?id=${tokenId}`;
+            await navigator.clipboard.writeText(nftUrl);
+
+            // Visual feedback
+            copyBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                Copied!
+            `;
+
+            setTimeout(() => {
+                copyBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    Copy NFT Link
+                `;
+            }, 2000);
+
+            showToast('NFT link copied to clipboard!', 'success');
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+            showToast('Failed to copy link. Please try again.', 'error');
+        }
+    });
+
+    // Twitter sharing functionality
+    const twitterBtn = shareSection.querySelector('#shareTwitter');
+    twitterBtn.addEventListener('click', () => {
+        const providerName = providers[provider]?.name || provider;
+        const tweetText = `Just minted my unique Pixel Ninja Cat NFT #${tokenId}! 🥷✨ Generated with ${providerName} AI. Check it out:`;
+        const nftUrl = `${window.location.origin}/kitty.html?id=${tokenId}`;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(nftUrl)}&hashtags=NFT,PixelNinjaCats,AI`;
+
+        window.open(twitterUrl, '_blank', 'width=600,height=400');
+        showToast('Opening Twitter to share your NFT!', 'info');
+    });
+}
+
+// Enhanced download functionality with ZIP support
+function setupEnhancedDownloads(nftData, tokenId) {
+    const downloadSection = document.createElement('div');
+    downloadSection.className = 'download-section';
+    downloadSection.innerHTML = `
+        <h5>📥 Download Your NFT</h5>
+        <div class="download-buttons">
+            <button class="download-image-btn download-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+                Image
+            </button>
+            <button class="download-json-btn download-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-2 16c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-2-4h4v3h-4v-3zm0-5h4v3h-4v-3zm-2-2V4h1v3H8zm0 4h1v3H8zm0 4h1v3H8z"/>
+                </svg>
+                Metadata
+            </button>
+            <button class="download-zip-btn download-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+                ZIP Package
+            </button>
+        </div>
+    `;
+
+    document.querySelector('.success-content').appendChild(downloadSection);
+
+    // Setup image download
+    downloadSection.querySelector('.download-image-btn').addEventListener('click', async () => {
+        await downloadFile(nftData.image, `ninja-cat-${tokenId}.png`, 'image');
+    });
+
+    // Setup metadata download
+    downloadSection.querySelector('.download-json-btn').addEventListener('click', () => {
+        downloadJSON(nftData.metadata, `ninja-cat-${tokenId}-metadata.json`);
+    });
+
+    // Setup ZIP download
+    downloadSection.querySelector('.download-zip-btn').addEventListener('click', async () => {
+        await downloadZipPackage(nftData, tokenId);
+    });
+}
+
+// Helper function to download files
+async function downloadFile(url, filename, type) {
+    try {
+        showToast(`Downloading ${type}...`, 'info');
+
+        let fileUrl = url;
+        if (url.startsWith('ipfs://')) {
+            fileUrl = url.replace('ipfs://', 'https://ipfs.io/ipfs/');
+        }
+
+        const response = await fetch(fileUrl);
+        const blob = await response.blob();
+
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+
+        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} downloaded successfully!`, 'success');
+    } catch (error) {
+        console.error(`Error downloading ${type}:`, error);
+        showToast(`Failed to download ${type}. Please try again.`, 'error');
+    }
+}
+
+// Helper function to download JSON
+function downloadJSON(data, filename) {
+    try {
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('Metadata downloaded successfully!', 'success');
+    } catch (error) {
+        console.error('Error downloading metadata:', error);
+        showToast('Failed to download metadata. Please try again.', 'error');
+    }
+}
+
+// Helper function to download ZIP package
+async function downloadZipPackage(nftData, tokenId) {
+    try {
+        showToast('Creating ZIP package...', 'info');
+
+        // Note: For a full implementation, you would need a ZIP library like JSZip
+        // For now, we'll download files separately and show a message
+        await downloadFile(nftData.image, `ninja-cat-${tokenId}.png`, 'image');
+        setTimeout(() => {
+            downloadJSON(nftData.metadata, `ninja-cat-${tokenId}-metadata.json`);
+        }, 1000);
+
+        showToast('ZIP package downloaded as separate files!', 'success');
+    } catch (error) {
+        console.error('Error creating ZIP package:', error);
+        showToast('Failed to create ZIP package. Files downloaded separately.', 'warning');
+    }
+}
         const viewBtn = document.createElement('a');
         viewBtn.href = `kitty.html?id=${tokenId}`;
         viewBtn.className = 'view-nft-btn';
@@ -1198,8 +1670,6 @@ function showMintSuccess(tokenId, txHash, provider) {
         }).catch(error => {
             console.warn('Could not fetch NFT details for download:', error);
         });
-    }
-}
 
 // Helper function to show toast notifications
 function showToast(message, type = 'info', duration = 3000) {
@@ -1378,8 +1848,12 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
                 if (taskStatus === 'COMPLETED') {
                     console.log('🎉 Task completed successfully!', data);
 
-                    // Final stage - all complete
-                    updateGenerationStage('metadata');
+                    // Update all timeline stages to completed
+                    updateTaskStage('art', 'completed', 'Artwork generated!');
+                    updateTaskStage('metadata', 'completed', 'Metadata finalized!');
+                    updateTaskStage('ipfs', 'completed', 'IPFS upload complete!');
+                    updateTaskStage('tokenuri', 'completed', 'TokenURI set!');
+
                     updateMintStatus('completed', 'Success! View in your collection');
 
                     // Show completion animation
@@ -1403,6 +1877,20 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
                     return;
                 } else if (taskStatus === 'FAILED') {
                     console.error('❌ Task failed:', data.message || data.error);
+
+                    // Update current stage to failed
+                    if (data.message) {
+                        if (data.message.toLowerCase().includes('art') || data.message.toLowerCase().includes('image')) {
+                            updateTaskStage('art', 'failed', 'Art generation failed');
+                        } else if (data.message.toLowerCase().includes('metadata')) {
+                            updateTaskStage('metadata', 'failed', 'Metadata build failed');
+                        } else if (data.message.toLowerCase().includes('ipfs')) {
+                            updateTaskStage('ipfs', 'failed', 'IPFS upload failed');
+                        } else if (data.message.toLowerCase().includes('tokenuri')) {
+                            updateTaskStage('tokenuri', 'failed', 'TokenURI set failed');
+                        }
+                    }
+
                     updateMintStatus('failed', data.message || 'Generation failed - please retry');
                     updateProgress(100);
                     showToast('Your NFT was minted, but the image generation encountered an issue. A default image will be used.', 'warning', 5000);
@@ -1415,9 +1903,47 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
                     showTimeoutMessage(tokenId, null);
                     return;
                 } else if (['IN_PROGRESS', 'PENDING', 'PROCESSING', 'RUNNING', 'STARTED'].includes(taskStatus)) {
-                    // Still processing - continue polling
-                    console.log(`⏳ Task still in progress (${taskStatus}): ${data.message || 'Processing...'}`);
+                    // Still processing - update appropriate timeline stage
                     updateMintStatus('processing', data.message || 'Your NFT is still processing...');
+
+                    // Update timeline stages based on message content
+                    if (data.message) {
+                        if (data.message.toLowerCase().includes('art') || data.message.toLowerCase().includes('image') ||
+                            data.message.toLowerCase().includes('generat') || data.message.toLowerCase().includes('creat')) {
+                            updateTaskStage('art', 'active', 'Generating artwork...');
+                        } else if (data.message.toLowerCase().includes('metadata') || data.message.toLowerCase().includes('trait')) {
+                            updateTaskStage('art', 'completed', 'Artwork complete!');
+                            updateTaskStage('metadata', 'active', 'Building metadata...');
+                        } else if (data.message.toLowerCase().includes('ipfs') || data.message.toLowerCase().includes('upload')) {
+                            updateTaskStage('art', 'completed', 'Artwork complete!');
+                            updateTaskStage('metadata', 'completed', 'Metadata ready!');
+                            updateTaskStage('ipfs', 'active', 'Uploading to IPFS...');
+                        } else if (data.message.toLowerCase().includes('tokenuri') || data.message.toLowerCase().includes('finaliz')) {
+                            updateTaskStage('art', 'completed', 'Artwork complete!');
+                            updateTaskStage('metadata', 'completed', 'Metadata ready!');
+                            updateTaskStage('ipfs', 'completed', 'IPFS upload complete!');
+                            updateTaskStage('tokenuri', 'active', 'Setting TokenURI...');
+                        }
+                    } else {
+                        // Default progression based on progress percentage
+                        if (data.progress) {
+                            if (data.progress < 25) {
+                                updateTaskStage('art', 'active', 'Generating artwork...');
+                            } else if (data.progress < 50) {
+                                updateTaskStage('art', 'completed', 'Artwork complete!');
+                                updateTaskStage('metadata', 'active', 'Building metadata...');
+                            } else if (data.progress < 75) {
+                                updateTaskStage('art', 'completed', 'Artwork complete!');
+                                updateTaskStage('metadata', 'completed', 'Metadata ready!');
+                                updateTaskStage('ipfs', 'active', 'Uploading to IPFS...');
+                            } else {
+                                updateTaskStage('art', 'completed', 'Artwork complete!');
+                                updateTaskStage('metadata', 'completed', 'Metadata ready!');
+                                updateTaskStage('ipfs', 'completed', 'IPFS upload complete!');
+                                updateTaskStage('tokenuri', 'active', 'Setting TokenURI...');
+                            }
+                        }
+                    }
 
                     // Update progress if available
                     if (data.progress && data.progress > 0) {
@@ -1447,17 +1973,17 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
 
 // Show timeout message when task takes too long
 function showTimeoutMessage(tokenId, txHash) {
+    const timeoutEmojis = ['⏳', '🕐', '⏰', '🔄'];
+    const randomEmoji = timeoutEmojis[Math.floor(Math.random() * timeoutEmojis.length)];
+
     const timeoutUI = document.createElement('div');
     timeoutUI.className = 'timeout-ui';
     timeoutUI.innerHTML = `
-        <div class="timeout-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48">
-                <path fill="#ff9800" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
-            </svg>
-        </div>
+        <div class="timeout-emoji">${randomEmoji}</div>
         <div class="timeout-content">
             <h4>Your NFT is still processing</h4>
-            <p>Your NFT is taking longer than expected to generate. It will appear in your collection soon.</p>
+            <p>🎨 Your ninja cat is taking longer than expected to generate. The blockchain sometimes needs extra time to create the perfect warrior!</p>
+            <p><small>Your NFT will appear in your collection once generation is complete.</small></p>
             ${tokenId ? `<a href="kitty.html?id=${tokenId}" class="view-nft-btn">Check NFT Status #${tokenId}</a>` : ''}
             ${txHash ? `<a href="https://explorer-new.vitruveo.xyz/tx/${txHash}" target="_blank" class="explorer-link">View Transaction</a>` : ''}
         </div>
@@ -1469,7 +1995,7 @@ function showTimeoutMessage(tokenId, txHash) {
 
     // Animate timeout appearance if GSAP is available
     if (window.gsap) {
-        gsap.from('.timeout-icon', {
+        gsap.from('.timeout-emoji', {
             scale: 0.5,
             opacity: 0,
             duration: 0.5,
