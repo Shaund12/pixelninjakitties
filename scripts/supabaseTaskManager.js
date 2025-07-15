@@ -32,7 +32,7 @@ export const TASK_STATES = {
 export async function createTask(tokenId, provider, options = {}) {
     const idStr = tokenId.toString();
 
-    // Check for an existing non-terminal task
+    // Look for an existing non-terminal task to avoid duplicates
     const { data: existing, error: fetchErr } = await supabase
         .from('tasks')
         .select('id,status')
@@ -50,11 +50,12 @@ export async function createTask(tokenId, provider, options = {}) {
         return existing.id;
     }
 
-    // Otherwise, create a new one
+    // Generate unique task ID
     const timestamp = Date.now();
     const randomPart = crypto.randomBytes(8).toString('hex');
     const taskId = `task_${timestamp}_${randomPart}`;
 
+    // Build metadata payload
     const metadata = {
         ...(options.blockNumber && { blockNumber: options.blockNumber }),
         ...(options.transactionHash && { transactionHash: options.transactionHash }),
@@ -99,10 +100,12 @@ export async function createTask(tokenId, provider, options = {}) {
 
 /**
  * Update an existing task.
- * If you report progress > 0 && < 100, status auto-upgrades to IN_PROGRESS.
+ * If you report progress > 0 && < 100, status auto‑upgrades to IN_PROGRESS.
  */
 export async function updateTask(taskId, update) {
     const now = new Date().toISOString();
+
+    // Build update payload
     const updateData = {
         updated_at: now,
         ...(update.status && { status: update.status }),
@@ -116,7 +119,7 @@ export async function updateTask(taskId, update) {
         ...(update.failed_at && { failed_at: update.failed_at }),
     };
 
-    // Auto-set IN_PROGRESS if midway
+    // Auto‑bump to IN_PROGRESS if progress is in (0,100) and no explicit status
     if (
         update.progress !== undefined &&
         update.progress > 0 &&
@@ -126,7 +129,7 @@ export async function updateTask(taskId, update) {
         updateData.status = TASK_STATES.IN_PROGRESS;
     }
 
-    // Estimate remaining time if asked
+    // Estimate remaining time if appropriate
     if (
         update.progress !== undefined &&
         update.progress > 0 &&
@@ -137,12 +140,13 @@ export async function updateTask(taskId, update) {
             .select('created_at, progress')
             .eq('id', taskId)
             .single();
+
         if (orig && orig.progress < update.progress) {
-            const createdAt = new Date(orig.created_at).getTime();
-            const elapsed = Date.now() - createdAt;
+            const createdMs = new Date(orig.created_at).getTime();
+            const elapsed = Date.now() - createdMs;
             const totalEstimate = (elapsed / update.progress) * 100;
-            const remain = totalEstimate - elapsed;
-            updateData.estimated_completion_time = new Date(Date.now() + remain).toISOString();
+            const remaining = totalEstimate - elapsed;
+            updateData.estimated_completion_time = new Date(Date.now() + remaining).toISOString();
         }
     }
 
@@ -162,7 +166,7 @@ export async function updateTask(taskId, update) {
 
 /**
  * Fetch the latest status for a task.
- * Supports a `minimal` option to return only the key fields.
+ * Supports an optional `minimal` mode.
  */
 export async function getTaskStatus(taskId, options = {}) {
     const { data, error } = await supabase
@@ -172,6 +176,7 @@ export async function getTaskStatus(taskId, options = {}) {
         .single();
 
     if (error) {
+        // Not found → treat as failure
         if (error.code === 'PGRST116') {
             return { status: TASK_STATES.FAILED, message: 'Task not found', taskId };
         }
@@ -179,7 +184,7 @@ export async function getTaskStatus(taskId, options = {}) {
         throw error;
     }
 
-    // Timeout handling
+    // Timeout check
     if (
         data.timeout_at &&
         new Date() > new Date(data.timeout_at) &&
@@ -253,15 +258,23 @@ export async function getTasks(filters = {}) {
 }
 
 /**
- * Compute metrics (counts, avg times)
+ * Compute metrics (counts, average times)
  */
 export async function getTaskMetrics() {
     const { data: all, error } = await supabase
         .from('tasks')
         .select('status, created_at, updated_at');
+
     if (error) {
         console.error('❌ getTaskMetrics error:', error);
-        return { totalTasks: 0, pendingTasks: 0, inProgressTasks: 0, completedTasks: 0, failedTasks: 0, averageCompletionTimeSeconds: 0 };
+        return {
+            totalTasks: 0,
+            pendingTasks: 0,
+            inProgressTasks: 0,
+            completedTasks: 0,
+            failedTasks: 0,
+            averageCompletionTimeSeconds: 0,
+        };
     }
 
     const total = all.length;
@@ -297,6 +310,7 @@ export async function cleanupTasks(maxAge = 24 * 60 * 60 * 1000) {
         .delete()
         .in('status', [TASK_STATES.COMPLETED, TASK_STATES.FAILED, TASK_STATES.TIMEOUT])
         .lt('updated_at', cutoff);
+
     if (error) {
         console.error('❌ cleanupTasks error:', error);
         throw error;
