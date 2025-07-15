@@ -159,11 +159,22 @@ function initializePreviewSystem() {
 /* --- show current price with live updates -------------------------------- */
 async function initializePricing() {
     try {
+        console.log('Starting price initialization...');
+        
+        if (!priceEl) {
+            console.error('Price element not found!');
+            return;
+        }
+        
         priceEl.innerHTML = '<span class="spinner"></span> Fetching price…';
 
         // Get USDC price
+        console.log('Fetching price from contract...');
         const rawPrice = await nftRead.price();
+        console.log('Raw price from contract:', rawPrice);
+        
         const formattedPrice = ethers.formatUnits(rawPrice, 6);
+        console.log('Formatted price:', formattedPrice);
 
         // Update price display in the simple format that works with VTRU conversion
         priceEl.textContent = `Price: ${formattedPrice} USDC`;
@@ -1837,8 +1848,15 @@ function showTimeoutMessage(tokenId, txHash) {
     }
 }
 
-// Initialize the page
-initializePricing();
+// Initialize the page when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        initializePricing();
+    });
+} else {
+    // DOM is already ready
+    initializePricing();
+}
 
 // Add event listener for provider change
 const imageProviderSelect = document.getElementById('imageProvider');
