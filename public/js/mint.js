@@ -1281,7 +1281,7 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
             // Try multiple URL formats for resilience
             let response = null;
             let error = null;
-            
+
             // Try different endpoint formats
             const endpoints = [
                 `/api/task-status?id=${taskId}`,
@@ -1289,7 +1289,7 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
                 `/api/tasks/${taskId}`,
                 `/api/status/${taskId}`
             ];
-            
+
             for (const endpoint of endpoints) {
                 try {
                     console.log(`Trying endpoint: ${endpoint}`);
@@ -1304,7 +1304,7 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
                     console.warn(`Endpoint ${endpoint} failed:`, err);
                 }
             }
-            
+
             if (!response) {
                 throw error || new Error('All status endpoints failed');
             }
@@ -1314,7 +1314,7 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
 
             // Make status check case-insensitive
             const taskStatus = (data.status || data.state || '').toUpperCase();
-            
+
             // Update progress based on task progress
             if (data.progress) {
                 const progressPercent = Math.min(Math.max(data.progress, 80), 99);
@@ -1326,11 +1326,11 @@ function pollSupabaseTaskStatus(taskId, tokenId, provider) {
                 if (data.message) {
                     if (data.message.toLowerCase().includes('trait')) {
                         updateGenerationStage('traits');
-                    } else if (data.message.toLowerCase().includes('image') || 
-                               data.message.toLowerCase().includes('generat') || 
+                    } else if (data.message.toLowerCase().includes('image') ||
+                               data.message.toLowerCase().includes('generat') ||
                                data.message.toLowerCase().includes('creat')) {
                         updateGenerationStage('image');
-                    } else if (data.message.toLowerCase().includes('metadata') || 
+                    } else if (data.message.toLowerCase().includes('metadata') ||
                                data.message.toLowerCase().includes('finaliz')) {
                         updateGenerationStage('metadata');
                     }

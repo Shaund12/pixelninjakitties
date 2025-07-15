@@ -2232,9 +2232,9 @@ async function handleRegenerateConfirm() {
         await tx.wait();
 
         // 5. Get the breed from UI
-        const cardElement = document.querySelector(`.kitty-card[data-token-id="${regeneratingTokenId}"]`) || 
+        const cardElement = document.querySelector(`.kitty-card[data-token-id="${regeneratingTokenId}"]`) ||
                           document.querySelector(`.detailed-card[data-token-id="${regeneratingTokenId}"]`);
-        
+
         let breed = 'Unknown';
         if (cardElement) {
             const breedEl = cardElement.querySelector('.kitty-breed span');
@@ -2269,7 +2269,7 @@ async function handleRegenerateConfirm() {
         }
 
         const result = await response.json();
-        
+
         // 7. Poll for status if we have a task ID
         if (result.taskId) {
             statusTextEl.innerHTML = '<div class="loading-spinner"></div>Monitoring regeneration progress...';
@@ -2296,7 +2296,7 @@ async function pollForTaskCompletion(taskId, tokenId) {
 
     let attempts = 0;
     const maxAttempts = 120; // 10 minutes at 5-second intervals
-    
+
     const checkStatus = async () => {
         attempts++;
         if (attempts > maxAttempts) {
@@ -2311,7 +2311,7 @@ async function pollForTaskCompletion(taskId, tokenId) {
             // Try multiple URL formats to be more resilient
             let response = null;
             let error = null;
-            
+
             // Try different endpoint formats
             const endpoints = [
                 `/api/task-status?id=${taskId}`,
@@ -2319,7 +2319,7 @@ async function pollForTaskCompletion(taskId, tokenId) {
                 `/api/tasks/${taskId}`,
                 `/api/status/${taskId}`
             ];
-            
+
             for (const endpoint of endpoints) {
                 try {
                     console.log(`Trying to fetch status from: ${endpoint}`);
@@ -2333,40 +2333,40 @@ async function pollForTaskCompletion(taskId, tokenId) {
                     // Continue to next endpoint
                 }
             }
-            
+
             if (!response) {
                 throw error || new Error('All status endpoints failed');
             }
-            
+
             const task = await response.json();
             console.log('Task status update:', task);
-            
+
             // Make status check case-insensitive
             const taskStatus = (task.status || task.state || '').toUpperCase();
-            
+
             // Handle different status values with case-insensitive comparison
             if (taskStatus === 'COMPLETED') {
                 console.log('✅ Regeneration task completed successfully, updating UI...');
                 statusTextEl.innerHTML = '<div class="success-icon">✓</div>Regeneration completed successfully!';
                 statusEl.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
-                
+
                 // If we have a token_uri in the response, fetch the new metadata
                 if (task.token_uri) {
                     try {
                         // Get the updated IPFS metadata
                         const tokenUri = task.token_uri;
                         console.log(`New token URI: ${tokenUri}`);
-                        
+
                         // Extract CID from IPFS URI
                         const cid = tokenUri.replace('ipfs://', '');
-                        
+
                         // Try fetching from multiple IPFS gateways
                         const gateways = [
                             'https://ipfs.io/ipfs/',
                             'https://gateway.pinata.cloud/ipfs/',
                             'https://cloudflare-ipfs.com/ipfs/'
                         ];
-                        
+
                         let metadata = null;
                         for (const gateway of gateways) {
                             try {
@@ -2381,7 +2381,7 @@ async function pollForTaskCompletion(taskId, tokenId) {
                                 console.warn(`Failed to fetch from ${gateway}:`, err);
                             }
                         }
-                        
+
                         if (metadata && metadata.image) {
                             // Get the new image URL
                             let newImageUrl = metadata.image;
@@ -2389,9 +2389,9 @@ async function pollForTaskCompletion(taskId, tokenId) {
                                 const imageCid = newImageUrl.replace('ipfs://', '');
                                 newImageUrl = `https://ipfs.io/ipfs/${imageCid}`;
                             }
-                            
+
                             console.log(`New image URL: ${newImageUrl}`);
-                            
+
                             // Show the new image in the modal
                             const previewImage = document.createElement('div');
                             previewImage.innerHTML = `
@@ -2402,7 +2402,7 @@ async function pollForTaskCompletion(taskId, tokenId) {
                                 </div>
                             `;
                             statusEl.appendChild(previewImage);
-                            
+
                             // Update the NFT cards with new image
                             setTimeout(() => {
                                 const modal = document.getElementById('regenerateModal');
@@ -2410,24 +2410,24 @@ async function pollForTaskCompletion(taskId, tokenId) {
                                     console.log('Closing regenerate modal...');
                                     modal.style.display = 'none';
                                 }
-                                
+
                                 // Update both grid and detailed view with new image
                                 const gridCard = document.querySelector(`.kitty-card[data-token-id="${tokenId}"]`);
                                 const detailedCard = document.querySelector(`.detailed-card[data-token-id="${tokenId}"]`);
-                                
+
                                 if (gridCard) {
                                     const img = gridCard.querySelector('.kitty-image');
                                     if (img) img.src = newImageUrl;
                                 }
-                                
+
                                 if (detailedCard) {
                                     const img = detailedCard.querySelector('.detailed-image');
                                     if (img) img.src = newImageUrl;
                                 }
-                                
+
                                 showToast('NFT image updated successfully!', 'success');
                             }, 5000); // Give user time to see the new image
-                            
+
                             return;
                         }
                     } catch (metadataError) {
@@ -2435,7 +2435,7 @@ async function pollForTaskCompletion(taskId, tokenId) {
                         // Fall back to regular refresh
                     }
                 }
-                
+
                 // Fallback if we can't get the new image directly
                 setTimeout(() => {
                     const modal = document.getElementById('regenerateModal');
@@ -2447,34 +2447,34 @@ async function pollForTaskCompletion(taskId, tokenId) {
                     refreshNFTDisplay(tokenId);
                 }, 3000);
                 return;
-            } 
+            }
             else if (taskStatus === 'FAILED') {
                 console.log('❌ Regeneration task failed');
                 statusTextEl.innerHTML = `<div class="error-icon">❌</div>Failed: ${task.error || task.message || 'Unknown error'}`;
                 statusEl.style.backgroundColor = 'rgba(255, 87, 34, 0.1)';
                 return;
-            } 
+            }
             else {
                 // Still processing - show progress
                 const progress = task.progress || 0;
                 const message = task.message || 'Processing...';
                 statusTextEl.innerHTML = `<div class="loading-spinner"></div>${message} (${progress}%)`;
-                
+
                 if (progress > 0) {
                     // Update status background to show progress
                     statusEl.style.background = `linear-gradient(to right, rgba(76, 175, 80, 0.1) ${progress}%, transparent ${progress}%)`;
                 }
-                
+
                 // Continue polling
                 setTimeout(checkStatus, 5000);
             }
         } catch (error) {
             console.error('Error checking task status:', error);
-            statusTextEl.innerHTML = `<div class="warning-icon">⚠️</div>Status check error. Retrying in 8s...`;
+            statusTextEl.innerHTML = '<div class="warning-icon">⚠️</div>Status check error. Retrying in 8s...';
             setTimeout(checkStatus, 8000);
         }
     };
-    
+
     // Start the polling process
     await checkStatus();
 }

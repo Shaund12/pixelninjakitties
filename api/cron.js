@@ -61,7 +61,7 @@ async function ensureSystemStateTable() {
                 WITH CHECK (true);
             `);
             return false;
-        } 
+        }
         // Other errors (permissions, etc.)
         else if (error) {
             console.error('❌ Error checking system_state table:', error);
@@ -181,7 +181,7 @@ async function saveCronState(state) {
 async function processSingleTask(nft, taskInfo, state) {
     const { tokenId, breed, buyer, taskId } = taskInfo;
     const id = Number(tokenId);
-    
+
     // Extract regeneration-specific parameters
     const isRegeneration = taskInfo.isRegeneration || false;
     const promptExtras = taskInfo.promptExtras || '';
@@ -189,7 +189,7 @@ async function processSingleTask(nft, taskInfo, state) {
     const forceProcess = taskInfo.forceProcess || isRegeneration;
 
     console.log(`⚙️ Processing task ${taskId} for token #${id} (${breed}) by ${buyer}`);
-    
+
     try {
         // Update task status
         await updateTask(taskId, {

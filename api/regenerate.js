@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     // Get parameters from query or body
     const data = req.method === 'POST' ? req.body : req.query;
     const { tokenId, breed, imageProvider, promptExtras, negativePrompt, paymentTx, payer } = data;
-    
+
     if (!tokenId || !breed) {
       return res.status(400).json({
         error: 'Missing required parameters: tokenId and breed are required'
@@ -29,13 +29,13 @@ export default async function handler(req, res) {
     }
 
     console.log(`🔄 Regeneration request received for token #${tokenId}`);
-    
+
     // Create a task in Supabase
     const taskId = await createTask(tokenId, imageProvider || 'dall-e', {
       breed,
       buyer: payer, // For regeneration, the buyer is the current payer
       isRegeneration: true,
-      forceProcess: true, 
+      forceProcess: true,
       promptExtras: promptExtras || undefined,
       negativePrompt: negativePrompt || undefined,
       paymentTx,
@@ -48,21 +48,21 @@ export default async function handler(req, res) {
     // CRITICAL: Add this task to the cron state's pendingTasks array
     try {
       console.log('📝 Adding task to cron state...');
-      
+
       // 1. Fetch current pendingTasks from system_state
       const { data: stateData, error } = await supabase
         .from('system_state')
         .select('value')
         .eq('key', PENDING_TASKS_KEY)
         .single();
-        
+
       if (error && error.code !== 'PGRST116') {
         throw new Error(`Failed to get pendingTasks: ${error.message}`);
       }
-      
+
       // 2. Get existing tasks or create empty array
       const pendingTasks = stateData?.value || [];
-      
+
       // 3. Add our new task to the pending tasks array
       pendingTasks.push({
         tokenId: Number(tokenId),
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         isRegeneration: true,
         forceProcess: true
       });
-      
+
       // 4. Save the updated pendingTasks back to system_state
       const { error: saveError } = await supabase
         .from('system_state')
@@ -84,11 +84,11 @@ export default async function handler(req, res) {
         }, {
           onConflict: 'key'
         });
-        
+
       if (saveError) {
         throw new Error(`Failed to save pendingTasks: ${saveError.message}`);
       }
-      
+
       console.log(`✅ Successfully added task to cron state (${pendingTasks.length} tasks pending)`);
     } catch (stateError) {
       console.error('⚠️ Failed to update cron state:', stateError);
@@ -104,7 +104,7 @@ export default async function handler(req, res) {
         status: (code) => ({ json: (data) => console.log(`Cron returned status ${code}:`, data) }),
         json: (data) => console.log('Cron completed:', data)
       };
-      
+
       await cronHandler(cronReq, cronRes);
     } catch (cronError) {
       console.error('⚠️ Failed to trigger immediate processing:', cronError);
