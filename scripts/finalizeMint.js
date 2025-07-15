@@ -59,13 +59,12 @@ import {
 } from './utils/metadata.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 const execAsync = promisify(exec);
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 // Load and set up JSON schema validation
 const schema = JSON.parse(
