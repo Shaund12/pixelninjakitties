@@ -2861,15 +2861,21 @@
 
         // Initialize VTRU conversion and navbar price display
         document.addEventListener('DOMContentLoaded', async function () {
-            // Initially hide conversion
+            console.log('DOM loaded, initializing VTRU conversion...');
+            
+            // Don't hide conversion initially - let's see if it helps
             const vtruConversionEl = document.getElementById('vtruConversion');
-            if (vtruConversionEl) {
-                vtruConversionEl.style.display = 'none';
-            }
+            const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
+            
+            console.log('Elements found on DOM load:', {
+                vtruConversionEl: !!vtruConversionEl,
+                exchangeRateDisplayEl: !!exchangeRateDisplayEl
+            });
 
             try {
                 // Get the current exchange rate
                 const exchangeRate = await window.getExchangeRate();
+                console.log('Exchange rate retrieved:', exchangeRate);
 
                 // Update navbar price indicator
                 updateNavbarPrice(exchangeRate);
@@ -2883,21 +2889,31 @@
                 // Setup price observer to convert prices in the mint card
                 const priceElement = document.getElementById('price');
                 if (priceElement) {
+                    // Function to check and update VTRU conversion
+                    const checkAndUpdateVtruConversion = () => {
+                        const priceText = priceElement.innerText || priceElement.textContent;
+                        console.log('Checking price text:', priceText);
+                        const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
+                        console.log('Price match result:', priceMatch);
+                        if (priceMatch && priceMatch[1]) {
+                            console.log('Calling updateVtruConversion with price:', priceMatch[1], 'exchange rate:', exchangeRate);
+                            updateVtruConversion(priceMatch[1], exchangeRate);
+                        }
+                    };
+                    
                     // Initial check of existing price
-                    const priceText = priceElement.innerText || priceElement.textContent;
-                    const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
-                    if (priceMatch && priceMatch[1]) {
-                        updateVtruConversion(priceMatch[1], exchangeRate);
-                    }
+                    checkAndUpdateVtruConversion();
+                    
+                    // Check again after a short delay in case the price loads later
+                    setTimeout(checkAndUpdateVtruConversion, 1000);
+                    setTimeout(checkAndUpdateVtruConversion, 3000);
+                    setTimeout(checkAndUpdateVtruConversion, 5000);
 
                     // Monitor for price changes
                     const observer = new MutationObserver(function (mutations) {
                         mutations.forEach(function (mutation) {
-                            const priceText = priceElement.innerText || priceElement.textContent;
-                            const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
-                            if (priceMatch && priceMatch[1]) {
-                                updateVtruConversion(priceMatch[1], exchangeRate);
-                            }
+                            console.log('Price element mutation detected');
+                            checkAndUpdateVtruConversion();
                         });
                     });
 
@@ -2926,18 +2942,29 @@
 
         // Function to update VTRU price conversion in the mint card
         function updateVtruConversion(usdcPrice, exchangeRate) {
+            console.log('updateVtruConversion called with:', { usdcPrice, exchangeRate });
+            
             const vtruElement = document.getElementById('vtruValue');
             const vtruConversionEl = document.getElementById('vtruConversion');
             const exchangeRateEl = document.getElementById('exchangeRate');
             const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
+
+            console.log('Elements found:', { 
+                vtruElement: !!vtruElement, 
+                vtruConversionEl: !!vtruConversionEl,
+                exchangeRateEl: !!exchangeRateEl,
+                exchangeRateDisplayEl: !!exchangeRateDisplayEl
+            });
 
             // Set the exchange rate display
             if (exchangeRateEl && exchangeRateDisplayEl) {
                 if (exchangeRate && !isNaN(exchangeRate)) {
                     exchangeRateEl.textContent = exchangeRate.toFixed(4);
                     exchangeRateDisplayEl.style.display = 'block';
+                    console.log('Exchange rate display set to:', exchangeRate.toFixed(4));
                 } else {
                     exchangeRateDisplayEl.style.display = 'none';
+                    console.log('Exchange rate display hidden - invalid rate');
                 }
             }
 
@@ -2949,14 +2976,17 @@
                     const vtruValue = (parseFloat(usdcPrice) / exchangeRate).toFixed(2);
                     vtruElement.textContent = vtruValue;
                     vtruConversionEl.style.display = 'block';
+                    console.log('VTRU conversion set to:', vtruValue, 'VTRU');
                 } else {
                     // No valid exchange rate
                     vtruElement.textContent = "N/A - Unable to retrieve exchange rate";
                     vtruConversionEl.style.display = 'block';
+                    console.log('VTRU conversion set to N/A - no exchange rate');
                 }
             } else {
                 // No valid price
                 vtruConversionEl.style.display = 'none';
+                console.log('VTRU conversion hidden - no valid price');
             }
         }
     </script>
