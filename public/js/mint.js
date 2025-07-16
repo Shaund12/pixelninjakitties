@@ -109,7 +109,7 @@ if (!document.querySelector('.progress-container')) {
 }
 
 /* read-only contract */
-const nftRead = new ethers.Contract(CONTRACT_ADDRESS, NFT_ABI, rpcProvider);
+const                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              nftRead = new ethers.Contract(CONTRACT_ADDRESS, NFT_ABI, rpcProvider);
 
 /* --- Initialize Preview System with Enhanced Trait Rarity -------------------------------- */
 function initializePreviewSystem() {
