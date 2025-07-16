@@ -860,39 +860,28 @@ async function performClaiming(tokenIds) {
         logMessage(`Claiming rewards for ${tokenIds.length} cats...`);
 
         try {
-            // Check if the claim would fail by estimating gas first
-            try {
-                logMessage('Estimating transaction gas...', 'info');
-                await stakingContract.claim.estimateGas(tokenIds);
-                logMessage('Gas estimation successful, proceeding with claim', 'info');
-            } catch (gasError) {
-                // Gas estimation failed, check for specific errors
-                console.error('Gas estimation failed:', gasError);
+            // Skip gas estimation to avoid potential EIP-1559 issues
+            logMessage('Preparing transaction...', 'info');
 
-                // Get the error message
-                const errorMessage = gasError.message || String(gasError);
-                logMessage(`Gas estimation error: ${errorMessage}`, 'error');
+            // Create transaction with explicit gas parameters to avoid EIP-1559 issues
+            const txOptions = {
+                // Use legacy gas price format to ensure compatibility
+                gasLimit: 500000, // Set a reasonable gas limit
+                type: 0          // Force legacy transaction type
+            };
 
-                // Check for common issues
-                if (errorMessage.toLowerCase().includes('not enough time')) {
-                    logMessage('⚠️ Cannot claim yet: Minimum staking period not met', 'warning');
-                } else if (errorMessage.toLowerCase().includes('no rewards') ||
-                    errorMessage.toLowerCase().includes('zero amount')) {
-                    logMessage('⚠️ No rewards available to claim yet', 'warning');
-                } else {
-                    logMessage('Contract would reject this transaction. Please try again later.', 'warning');
-                }
+            logMessage('Sending claim transaction...', 'info');
+            const tx = await stakingContract.claim(tokenIds, txOptions);
 
-                return; // Exit early since the transaction would fail
-            }
-
-            // If we get here, gas estimation succeeded
-            const tx = await stakingContract.claim(tokenIds);
             logMessage('Claim transaction sent. Waiting for confirmation...', 'info');
             logMessage(`Transaction hash: ${tx.hash}`, 'info');
 
             await tx.wait();
             logMessage('✅ Successfully claimed rewards!', 'success');
+
+            // Show success notification
+            showClaimSuccessNotification(tokenIds.length);
+
         } catch (error) {
             // Extract revert reason if possible
             console.error('Claim transaction failed:', error);
@@ -912,12 +901,29 @@ async function performClaiming(tokenIds) {
             const errorStr = error.toString().toLowerCase();
             if (errorStr.includes('not enough time') || errorStr.includes('minimum period')) {
                 logMessage('⚠️ Cannot claim yet: Minimum staking period not met', 'warning');
-                logMessage('The contract requires tokens to be staked for a minimum period', 'info');
+                logMessage('The contract requires tokens to be staked for at least 24 hours', 'info');
             } else if (errorStr.includes('no rewards') || errorStr.includes('zero amount')) {
                 logMessage('⚠️ No rewards available to claim yet', 'warning');
-                logMessage('Rewards may take time to accumulate', 'info');
+                logMessage('Rewards accumulate over time based on rarity tier', 'info');
             } else if (errorStr.includes('user denied') || errorStr.includes('user rejected')) {
                 logMessage('Transaction was rejected in your wallet', 'warning');
+            } else if (errorStr.includes('eip-1559')) {
+                logMessage('Transaction format incompatible with this network', 'error');
+                logMessage('Trying alternate transaction format...', 'info');
+
+                // Try again with explicit legacy transaction format
+                try {
+                    const legacyTx = await stakingContract.claim(tokenIds, {
+                        gasLimit: 500000,
+                        type: 0  // Force legacy transaction type
+                    });
+
+                    logMessage('Alternate transaction sent. Waiting for confirmation...', 'info');
+                    await legacyTx.wait();
+                    logMessage('✅ Successfully claimed rewards!', 'success');
+                } catch (legacyError) {
+                    logMessage(`Alternate transaction also failed: ${legacyError.message}`, 'error');
+                }
             } else {
                 logMessage(`Error claiming: ${error.message}`, 'error');
                 logMessage("This could be because the minimum staking period hasn't passed, or there are no rewards yet", 'info');
@@ -936,6 +942,38 @@ async function performClaiming(tokenIds) {
     } finally {
         if (claimBtn) claimBtn.disabled = false;
     }
+}
+
+// Add a notification function for claim success
+function showClaimSuccessNotification(count) {
+    // Create notification if container exists
+    const container = document.getElementById('notification-container');
+    if (!container) return;
+
+    const notification = document.createElement('div');
+    notification.className = 'notification success-notification';
+    notification.innerHTML = `
+        <div class="notification-icon"><i class="bi bi-coin"></i></div>
+        <div class="notification-content">
+            <h4>Rewards Claimed Successfully!</h4>
+            <p>You've claimed rewards from ${count} cat${count > 1 ? 's' : ''}.</p>
+        </div>
+        <button class="notification-close">&times;</button>
+    `;
+
+    container.appendChild(notification);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        notification.classList.add('notification-hiding');
+        setTimeout(() => notification.remove(), 500);
+    }, 5000);
+
+    // Manual dismiss
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        notification.classList.add('notification-hiding');
+        setTimeout(() => notification.remove(), 500);
+    });
 }
 
 // Load owned NFTs
