@@ -16,7 +16,7 @@ class FavoritesManager {
         try {
             // Get current user
             const { data: { user } } = await supabase.auth.getUser();
-            
+
             if (!user) {
                 // Sign in anonymously if no user
                 const { data: { user: anonUser } } = await supabase.auth.signInAnonymously();
@@ -49,7 +49,12 @@ class FavoritesManager {
                 return;
             }
 
-            this.favorites = new Set(data.map(item => item.token_id));
+            // Handle null/undefined data gracefully
+            if (data && Array.isArray(data)) {
+                this.favorites = new Set(data.map(item => item.token_id));
+            } else {
+                this.favorites = new Set();
+            }
         } catch (error) {
             console.error('Error loading favorites:', error);
         }
@@ -82,7 +87,7 @@ class FavoritesManager {
     // Add token to favorites
     async addFavorite(tokenId) {
         const tokenIdStr = tokenId.toString();
-        
+
         if (this.useFallback) {
             this.favorites.add(tokenIdStr);
             this.saveFallbackFavorites();
@@ -114,7 +119,7 @@ class FavoritesManager {
     // Remove token from favorites
     async removeFavorite(tokenId) {
         const tokenIdStr = tokenId.toString();
-        
+
         if (this.useFallback) {
             this.favorites.delete(tokenIdStr);
             this.saveFallbackFavorites();
@@ -194,7 +199,7 @@ class FavoritesManager {
                 return [];
             }
 
-            return data;
+            return data || [];
         } catch (error) {
             console.error('Error getting favorites with metadata:', error);
             return [];

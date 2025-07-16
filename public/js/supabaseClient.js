@@ -34,6 +34,9 @@ try {
                     single: () => Promise.resolve({ data: null, error: { code: 'PGRST116' } }),
                     order: (column, options) => ({
                         limit: (count) => Promise.resolve({ data: [], error: null })
+                    }),
+                    gte: (column, value) => ({
+                        order: (column, options) => Promise.resolve({ data: [], error: null })
                     })
                 }),
                 gte: (column, value) => ({

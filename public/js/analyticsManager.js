@@ -16,7 +16,7 @@ class AnalyticsManager {
         try {
             // Get current user
             const { data: { user } } = await supabase.auth.getUser();
-            
+
             if (!user) {
                 // Sign in anonymously if no user
                 const { data: { user: anonUser } } = await supabase.auth.signInAnonymously();
@@ -162,7 +162,7 @@ class AnalyticsManager {
                 return [];
             }
 
-            return data;
+            return data || [];
         } catch (error) {
             console.error('Error getting analytics data:', error);
             return [];
@@ -186,6 +186,11 @@ class AnalyticsManager {
                 return {};
             }
 
+            // Handle null/undefined data gracefully
+            if (!data || !Array.isArray(data)) {
+                return {};
+            }
+
             // Process the data to extract performance metrics
             const stats = {
                 totalEvents: data.length,
@@ -200,7 +205,7 @@ class AnalyticsManager {
             const loadTimes = data
                 .filter(d => d.event_type === 'page_load' && d.event_data.load_time)
                 .map(d => d.event_data.load_time);
-            
+
             if (loadTimes.length > 0) {
                 stats.averageLoadTime = loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length;
             }
@@ -208,7 +213,7 @@ class AnalyticsManager {
             const rpcLatencies = data
                 .filter(d => d.event_type === 'rpc_latency' && d.event_data.latency)
                 .map(d => d.event_data.latency);
-            
+
             if (rpcLatencies.length > 0) {
                 stats.averageRPCLatency = rpcLatencies.reduce((a, b) => a + b, 0) / rpcLatencies.length;
             }
