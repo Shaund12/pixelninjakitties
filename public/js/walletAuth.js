@@ -18,7 +18,7 @@ class WalletAuth {
      */
     async init() {
         if (this.initialized) return this.walletAddress;
-        
+
         // If already initializing, wait for that to complete
         if (this.initializationPromise) {
             return this.initializationPromise;
@@ -32,7 +32,7 @@ class WalletAuth {
         try {
             // First, try to get existing wallet address
             this.walletAddress = await getAddress();
-            
+
             // If no wallet address, prompt user to connect
             if (!this.walletAddress) {
                 console.log('🔗 No wallet connected, prompting user to connect...');
