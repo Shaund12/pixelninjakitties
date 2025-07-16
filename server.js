@@ -112,34 +112,7 @@ app.use(sanitizeInput);
 app.use(secureLogging);
 
 // Middleware to inject environment variables into HTML
-app.use((req, res, next) => {
-    if (req.path.endsWith('.html') || req.path === '/all-kitties' || req.path === '/all-kitties/') {
-        const htmlPath = req.path.endsWith('.html') ? req.path : '/all-kitties.html';
-        const filePath = path.join(process.cwd(), 'public', htmlPath);
-        
-        fs.readFile(filePath, 'utf8')
-            .then(html => {
-                // Inject environment variables into the HTML
-                const envScript = `
-                    <script>
-                        window.SUPABASE_URL = '${process.env.SUPABASE_URL || ''}';
-                        window.SUPABASE_ANON_KEY = '${process.env.SUPABASE_ANON_KEY || ''}';
-                    </script>
-                `;
-                
-                // Insert the script before the closing head tag
-                const modifiedHtml = html.replace('</head>', `${envScript}</head>`);
-                res.setHeader('Content-Type', 'text/html');
-                res.send(modifiedHtml);
-            })
-            .catch(error => {
-                console.error('Error reading HTML file:', error);
-                next();
-            });
-    } else {
-        next();
-    }
-});
+// Static file serving - removed HTML injection middleware, now using /api/config endpoint
 
 app.use(express.static('public'));                // index.html, mint.js …
 

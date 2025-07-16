@@ -3,7 +3,7 @@
  * Handles logging of user interactions and gallery events
  */
 
-import { initializeSupabase } from './supabaseClient.js';
+import { initializeSupabase } from './supabase.js';
 
 class AnalyticsManager {
     constructor() {

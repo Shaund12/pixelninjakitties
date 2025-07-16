@@ -3,7 +3,7 @@
  * Handles user preferences storage and retrieval via Supabase
  */
 
-import { initializeSupabase } from './supabaseClient.js';
+import { initializeSupabase } from './supabase.js';
 
 class UserPreferencesManager {
     constructor() {

@@ -3,7 +3,7 @@
  * Handles favorite tokens storage and retrieval via Supabase
  */
 
-import { initializeSupabase } from './supabaseClient.js';
+import { initializeSupabase } from './supabase.js';
 
 class FavoritesManager {
     constructor() {
