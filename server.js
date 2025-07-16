@@ -79,8 +79,10 @@ if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY || !PLACEHOLDER_URI) {
 }
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error('❌  Missing Supabase env vars – SUPABASE_URL and SUPABASE_ANON_KEY are required');
-    process.exit(1);
+    console.warn('⚠️  Supabase env vars not set – some features may be disabled');
+    // Continue without Supabase for development
+} else {
+    console.log('✅ Supabase configured');
 }
 
 /* ───── Static site (front-end) ──────────────────────────────── */
@@ -108,6 +110,9 @@ app.use((req, res, next) => {
 app.use(requestTimeout(30000)); // 30 second timeout
 app.use(sanitizeInput);
 app.use(secureLogging);
+
+// Middleware to inject environment variables into HTML
+// Static file serving - removed HTML injection middleware, now using /api/config endpoint
 
 app.use(express.static('public'));                // index.html, mint.js …
 
@@ -535,7 +540,7 @@ async function checkForEvents() {
                 // Use the default IMAGE_PROVIDER from environment
                 // Note: User provider selection should be handled on the client side during mint
                 const selectedProvider = IMAGE_PROVIDER;
-                
+
                 console.log(`📝 Queueing token #${id} (${breed}) from buyer ${buyer}`);
                 console.log(`🎨 Using image provider: ${selectedProvider}`);
 

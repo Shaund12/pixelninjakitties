@@ -11,13 +11,37 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <script type="module" src="js/navbar.js"></script>
     <style>
+        :root {
+            --primary-bg: #23263a;
+            --secondary-bg: #181a20;
+            --accent-color: #8a65ff;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --border-color: #2d2d3a;
+            --card-bg: linear-gradient(120deg, rgba(138,101,255,0.10) 0%, rgba(39,117,202,0.08) 100%);
+            --skeleton-bg: linear-gradient(90deg, #2d2d3a 25%, #3a3a4a 50%, #2d2d3a 75%);
+        }
+
+        [data-theme="light"] {
+            --primary-bg: #f8f9fa;
+            --secondary-bg: #ffffff;
+            --accent-color: #6c5ce7;
+            --text-primary: #2d3436;
+            --text-secondary: #636e72;
+            --border-color: #e9ecef;
+            --card-bg: linear-gradient(120deg, rgba(108,92,231,0.10) 0%, rgba(116,185,255,0.08) 100%);
+            --skeleton-bg: linear-gradient(90deg, #e9ecef 25%, #f1f3f4 50%, #e9ecef 75%);
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
-            background: radial-gradient(ellipse at 60% 10%, #23263a 0%, #121212 100%);
-            color: #e0e0e0;
+            background: var(--primary-bg);
+            background: radial-gradient(ellipse at 60% 10%, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+            color: var(--text-primary);
             min-height: 100vh;
             margin: 0;
             letter-spacing: 0.01em;
+            transition: all 0.3s ease;
         }
 
         .wrapper {
@@ -33,6 +57,49 @@
             margin-bottom: 2rem;
             flex-wrap: wrap;
             gap: 1rem;
+        }
+
+        .gallery-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .theme-toggle {
+            background: var(--primary-bg);
+            border: 1.5px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .debug-toggle {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .debug-toggle.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
         }
 
             .gallery-header h1 {
@@ -57,12 +124,65 @@
         }
 
         .filter-container {
-            background: linear-gradient(90deg, #23263a 0%, #181a20 100%);
+            background: var(--card-bg);
             border-radius: 14px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            border: 1.5px solid #2d2d3a;
-            box-shadow: 0 4px 16px #8a65ff22;
+            border: 1.5px solid var(--border-color);
+            box-shadow: 0 4px 16px rgba(138,101,255,0.1);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-bar {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.8rem 1rem;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .search-bar:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 8px rgba(138,101,255,0.2);
+        }
+
+        .search-bar::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .favorites-filter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--secondary-bg);
+            padding: 0.8rem 1rem;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .favorites-filter.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .favorites-filter:hover {
+            border-color: var(--accent-color);
         }
 
         .filter-header {
@@ -196,23 +316,260 @@
                 gap: 1rem;
             }
 
-        /* Cat Card Styles */
-        .cat-card {
-            background: linear-gradient(120deg, rgba(138,101,255,0.10) 0%, rgba(39,117,202,0.08) 100%);
+        /* Skeleton loading styles */
+        .skeleton-card {
+            background: var(--card-bg);
             border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 8px 25px #8a65ff22, 0 1.5px 8px #2775ca22;
+            border: 1.5px solid var(--border-color);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .skeleton-image {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--skeleton-bg);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        .skeleton-info {
+            padding: 1.5rem;
+        }
+
+        .skeleton-text {
+            height: 1rem;
+            background: var(--skeleton-bg);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-text.title {
+            height: 1.5rem;
+            width: 70%;
+            margin-bottom: 1rem;
+        }
+
+        .skeleton-text.tag {
+            height: 0.8rem;
+            width: 60px;
+            display: inline-block;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-text.owner {
+            height: 0.8rem;
+            width: 50%;
+            margin-top: 1rem;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--secondary-bg);
+            border-radius: 16px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            position: relative;
+            animation: scaleIn 0.3s ease;
+            border: 1.5px solid var(--border-color);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .modal-image {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-traits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .modal-trait {
+            background: var(--primary-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .modal-trait-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-trait-value {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Favorite button styles */
+        .favorite-btn {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .favorite-btn:hover {
+            background: rgba(138, 101, 255, 0.9);
+        }
+
+        .favorite-btn.active {
+            background: rgba(255, 215, 0, 0.9);
+        }
+
+        .favorite-btn .favorite-icon {
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        /* Infinite scroll loading */
+        .infinite-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .infinite-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-left-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Debug panel */
+        .debug-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--secondary-bg);
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.8rem;
+            z-index: 999;
+            max-width: 300px;
+            display: none;
+        }
+
+        .debug-panel.show {
+            display: block;
+        }
+
+        .debug-panel h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--accent-color);
+        }
+
+        .debug-panel p {
+            margin: 0.25rem 0;
+        }
+        /* Cat Card Styles */
+        .cat-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(138,101,255,0.1), 0 1.5px 8px rgba(39,117,202,0.1);
             transition: transform 0.35s cubic-bezier(.4,2,.6,1), box-shadow 0.3s;
             position: relative;
-            border: 1.5px solid #2d2d3a;
+            border: 1.5px solid var(--border-color);
             animation: fadeInUp 0.7s;
             cursor: pointer;
         }
 
             .cat-card:hover {
                 transform: translateY(-12px) scale(1.035);
-                box-shadow: 0 16px 40px #8a65ff44, 0 0 25px #2775ca44;
-                border-color: #8a65ff;
+                box-shadow: 0 16px 40px rgba(138,101,255,0.2), 0 0 25px rgba(39,117,202,0.2);
+                border-color: var(--accent-color);
                 z-index: 2;
             }
 
@@ -246,8 +603,8 @@
 
         .cat-info {
             padding: 1.5rem;
-            background: linear-gradient(to bottom, #1e1e1e, #252525);
-            color: #fff;
+            background: var(--secondary-bg);
+            color: var(--text-primary);
         }
 
         .list-view .cat-info {
@@ -690,8 +1047,16 @@
     <div class="wrapper">
         <div class="gallery-header">
             <h1>Ninja Cat Gallery</h1>
-            <div class="stats-counter">
-                <span id="totalCount">0</span> ninja warriors discovered
+            <div class="gallery-controls">
+                <button id="themeToggle" class="theme-toggle" title="Toggle theme">
+                    <span id="themeIcon">🌙</span>
+                </button>
+                <button id="debugToggle" class="debug-toggle" title="Toggle debug mode">
+                    Debug
+                </button>
+                <div class="stats-counter">
+                    <span id="totalCount">0</span> ninja warriors discovered
+                </div>
             </div>
         </div>
 
@@ -723,6 +1088,14 @@
                         </svg>
                     </button>
                 </div>
+            </div>
+
+            <div class="search-container">
+                <input type="text" id="searchBar" class="search-bar" placeholder="Search by name, token ID, or owner...">
+                <button id="favoritesFilter" class="favorites-filter" title="Show favorites only">
+                    <span>⭐</span>
+                    <span>Favorites Only</span>
+                </button>
             </div>
 
             <div class="filter-controls">
@@ -844,7 +1217,32 @@
 
         <div id="kittiesGrid"></div>
 
-        <div class="pagination" id="pagination"></div>
+        <div class="infinite-loading" id="infiniteLoading" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Modal for card details -->
+        <div id="cardModal" class="modal" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
+            <div class="modal-content">
+                <button class="modal-close" id="modalClose" aria-label="Close modal">&times;</button>
+                <div id="modalContent">
+                    <!-- Modal content will be dynamically populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug panel -->
+        <div id="debugPanel" class="debug-panel">
+            <h4>Debug Information</h4>
+            <p><strong>Items loaded:</strong> <span id="debugItemsLoaded">0</span></p>
+            <p><strong>Average RPC latency:</strong> <span id="debugRPCLatency">0ms</span></p>
+            <p><strong>Favorites count:</strong> <span id="debugFavoritesCount">0</span></p>
+            <p><strong>Current theme:</strong> <span id="debugCurrentTheme">dark</span></p>
+            <p><strong>Current view:</strong> <span id="debugCurrentView">grid</span></p>
+            <p><strong>Active filters:</strong> <span id="debugActiveFilters">none</span></p>
+        </div>
+
+        <div class="pagination" id="pagination" style="display: none;"></div>
     </div>
     <script type="module">
         // Import wallet first to ensure it's ready before marketplace
@@ -852,7 +1250,7 @@
     </script>
 
 
-    <script type="module" src="js/all-kitties.js"></script>
+    <script type="module" src="js/all-kitties-enhanced.js"></script>
 
     <!-- Include the footer -->
     <script src="/js/audio-player.js"></script>

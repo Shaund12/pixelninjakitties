@@ -42,7 +42,7 @@ export class ProviderPreferencesManager {
      */
     async get(tokenId) {
         this.initialize();
-        
+
         try {
             const { data, error } = await this.supabase
                 .from(this.tableName)
@@ -74,7 +74,7 @@ export class ProviderPreferencesManager {
      */
     async set(tokenId, preference) {
         this.initialize();
-        
+
         try {
             const record = {
                 token_id: tokenId.toString(),
@@ -114,7 +114,7 @@ export class ProviderPreferencesManager {
      */
     async delete(tokenId) {
         this.initialize();
-        
+
         try {
             const { error } = await this.supabase
                 .from(this.tableName)
@@ -140,7 +140,7 @@ export class ProviderPreferencesManager {
      */
     async getAll() {
         this.initialize();
-        
+
         try {
             const { data, error } = await this.supabase
                 .from(this.tableName)
@@ -173,7 +173,7 @@ export class ProviderPreferencesManager {
      */
     async initializeTable() {
         this.initialize();
-        
+
         try {
             // Try to query the table to see if it exists
             const { error } = await this.supabase

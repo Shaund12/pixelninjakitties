@@ -9,9 +9,24 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
+let supabase;
+
 if (!supabaseUrl || !supabaseKey) {
-    console.error('❌ SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required');
-    process.exit(1);
+    console.warn('⚠️ SUPABASE_URL and SUPABASE_ANON_KEY environment variables not set - some features may be disabled');
+
+    // Create a mock client for development
+    supabase = {
+        from: (table) => ({
+            select: () => Promise.resolve({ data: [], error: null }),
+            insert: () => Promise.resolve({ data: [], error: null }),
+            update: () => Promise.resolve({ data: [], error: null }),
+            upsert: () => Promise.resolve({ data: [], error: null }),
+            delete: () => Promise.resolve({ data: [], error: null })
+        })
+    };
+} else {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase client initialized');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export { supabase };
