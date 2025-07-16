@@ -857,30 +857,43 @@ async function performClaiming(tokenIds) {
         }
 
         // Claim rewards
-        logMessage(`Claiming rewards for ${tokenIds.length} cats...`);
+        logMessage(`Claiming rewards for ${tokenIds.length} cats...`, 'info');
 
         try {
-            // Skip gas estimation to avoid potential EIP-1559 issues
-            logMessage('Preparing transaction...', 'info');
+            // Create a properly formatted array for the contract function
+            const formattedTokenIds = tokenIds.map(id => BigInt(id));
 
-            // Create transaction with explicit gas parameters to avoid EIP-1559 issues
-            const txOptions = {
-                // Use legacy gas price format to ensure compatibility
-                gasLimit: 500000, // Set a reasonable gas limit
-                type: 0          // Force legacy transaction type
-            };
+            // Approach 1: Try using the contract interface directly with manual gas settings
+            logMessage('Sending claim transaction with explicit parameters...', 'info');
 
-            logMessage('Sending claim transaction...', 'info');
-            const tx = await stakingContract.claim(tokenIds, txOptions);
+            // Get the gas price from the network to avoid EIP-1559 issues
+            const provider = stakingContract.runner.provider;
+            const feeData = await provider.getFeeData();
+            const gasPrice = feeData.gasPrice || ethers.parseUnits('5', 'gwei'); // Default if null
+
+            logMessage(`Using gas price: ${ethers.formatUnits(gasPrice, 'gwei')} gwei`, 'info');
+
+            // Create transaction with all parameters explicitly set
+            const tx = await stakingContract.claim(
+                formattedTokenIds,
+                {
+                    gasLimit: 300000, // Set a generous gas limit
+                    gasPrice: gasPrice // Use current network gas price
+                }
+            );
 
             logMessage('Claim transaction sent. Waiting for confirmation...', 'info');
             logMessage(`Transaction hash: ${tx.hash}`, 'info');
 
-            await tx.wait();
-            logMessage('✅ Successfully claimed rewards!', 'success');
+            const receipt = await tx.wait();
 
-            // Show success notification
-            showClaimSuccessNotification(tokenIds.length);
+            if (receipt.status === 1) {
+                logMessage('✅ Successfully claimed rewards!', 'success');
+                // Show success notification
+                showClaimSuccessNotification(tokenIds.length);
+            } else {
+                logMessage('⚠️ Transaction was processed but may have failed', 'warning');
+            }
 
         } catch (error) {
             // Extract revert reason if possible
@@ -889,11 +902,29 @@ async function performClaiming(tokenIds) {
             // Log more details about the error
             logMessage(`Transaction error type: ${error.constructor.name}`, 'error');
 
-            if (error.data) {
-                logMessage(`Contract error code: ${error.data}`, 'error');
+            // Try to get more detailed error information
+            if (error.error?.error?.error?.data || error.data) {
+                const errorData = error.error?.error?.error?.data || error.data;
+                logMessage(`Error data: ${errorData}`, 'error');
+
+                try {
+                    // Sometimes the error contains useful information
+                    const decoder = new ethers.AbiCoder();
+                    const decodedError = decoder.decode(['string'], `0x${errorData.substring(10)}`);
+                    logMessage(`Decoded error: ${decodedError[0]}`, 'error');
+                } catch (e) {
+                    // Decoding failed, just show the raw data
+                }
             }
 
-            if (error.transaction) {
+            // If the transaction was submitted but failed, show the receipt info
+            if (error.receipt) {
+                logMessage(`Gas used: ${error.receipt.gasUsed.toString()}`, 'info');
+                logMessage(`Block number: ${error.receipt.blockNumber}`, 'info');
+            }
+
+            // If we have transaction info, show the hash
+            if (error.transaction?.hash) {
                 logMessage(`Failed transaction: ${error.transaction.hash}`, 'info');
             }
 
@@ -907,22 +938,43 @@ async function performClaiming(tokenIds) {
                 logMessage('Rewards accumulate over time based on rarity tier', 'info');
             } else if (errorStr.includes('user denied') || errorStr.includes('user rejected')) {
                 logMessage('Transaction was rejected in your wallet', 'warning');
-            } else if (errorStr.includes('eip-1559')) {
-                logMessage('Transaction format incompatible with this network', 'error');
-                logMessage('Trying alternate transaction format...', 'info');
+            } else if (errorStr.includes('execution reverted')) {
+                logMessage('⚠️ Contract reverted the transaction', 'error');
+                logMessage('This usually means the contract conditions were not met', 'info');
 
-                // Try again with explicit legacy transaction format
+                // Try alternative method with an explicit function call
+                logMessage('Trying alternative claim method...', 'info');
+
                 try {
-                    const legacyTx = await stakingContract.claim(tokenIds, {
-                        gasLimit: 500000,
-                        type: 0  // Force legacy transaction type
+                    // Fallback approach: Use the low-level sendTransaction method
+                    // This will manually encode the function call
+                    const ABI = ['function claim(uint256[] calldata)'];
+                    const interface = new ethers.Interface(ABI);
+
+                    // Encode the function call with parameters
+                    const data = interface.encodeFunctionData('claim', [formattedTokenIds]);
+
+                    const signer = stakingContract.runner;
+                    const tx2 = await signer.sendTransaction({
+                        to: STAKING_ADDRESS,
+                        data: data,
+                        gasLimit: 500000
                     });
 
-                    logMessage('Alternate transaction sent. Waiting for confirmation...', 'info');
-                    await legacyTx.wait();
-                    logMessage('✅ Successfully claimed rewards!', 'success');
-                } catch (legacyError) {
-                    logMessage(`Alternate transaction also failed: ${legacyError.message}`, 'error');
+                    logMessage('Alternative transaction sent. Waiting for confirmation...', 'info');
+                    logMessage(`Transaction hash: ${tx2.hash}`, 'info');
+
+                    const receipt = await tx2.wait();
+                    if (receipt.status === 1) {
+                        logMessage('✅ Successfully claimed rewards with alternative method!', 'success');
+                        showClaimSuccessNotification(tokenIds.length);
+                    } else {
+                        logMessage('Alternative transaction also failed', 'error');
+                    }
+                } catch (alt_error) {
+                    logMessage(`Alternative claim method also failed: ${alt_error.message}`, 'error');
+                    logMessage('Please check the blockchain explorer for details', 'info');
+                    logMessage('Your tokens remain staked and safe', 'info');
                 }
             } else {
                 logMessage(`Error claiming: ${error.message}`, 'error');
@@ -930,7 +982,8 @@ async function performClaiming(tokenIds) {
             }
         }
 
-        // Refresh PIX balance and pending rewards
+        // Refresh PIX balance and pending rewards even if claim failed
+        // (in case it succeeded on-chain but had an error in the response)
         await Promise.all([
             loadPixBalance(),
             estimatePendingRewards()
