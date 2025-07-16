@@ -160,25 +160,25 @@ function initializePreviewSystem() {
 async function initializePricing() {
     try {
         console.log('Starting price initialization...');
-        
+
         if (!priceEl) {
             console.error('Price element not found!');
             return;
         }
-        
+
         priceEl.innerHTML = '<span class="spinner"></span> Fetching price…';
 
         // Get USDC price
         console.log('Fetching price from contract...');
         const rawPrice = await nftRead.price();
         console.log('Raw price from contract:', rawPrice);
-        
+
         const formattedPrice = ethers.formatUnits(rawPrice, 6);
         console.log('Formatted price:', formattedPrice);
 
         // Update price display in the simple format that works with VTRU conversion
         priceEl.textContent = `Price: ${formattedPrice} USDC`;
-        
+
         mintBtn.textContent = `Pay ${formattedPrice} USDC & Mint`;
         mintBtn.disabled = false;
         showStatus('Ready to mint!', 'success');
