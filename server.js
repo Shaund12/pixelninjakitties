@@ -20,7 +20,6 @@ import cors from 'cors';
 import compression from 'compression';
 import { ethers } from 'ethers';
 import { finalizeMint } from './scripts/finalizeMint.js';
-import { createStorage } from './scripts/storageHelpers.js'; // You'll need to create this file
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks, initializeSupabaseTables } from './scripts/supabaseTaskManager.js';
 import {
     validateTokenId,
@@ -180,7 +179,6 @@ const eventSig = nft.interface.getEvent('MintRequested').topicHash;
 const RATE_LIMIT = 5;
 const RATE_WINDOW = 60000; // 1 minute in milliseconds
 const mintQueue = [];
-const providerPreferences = createStorage('provider-preferences.json');
 let processingQueue = false;
 let lastMinuteRequests = [];
 

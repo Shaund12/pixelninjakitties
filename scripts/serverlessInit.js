@@ -5,7 +5,7 @@
 
 import 'dotenv/config';
 import { ethers } from 'ethers';
-import { createStorage } from './storageHelpers.js';
+import { providerPreferences } from './providerPreferencesManager.js';
 import { UptimeTracker } from './healthCheck.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -27,7 +27,6 @@ let provider;
 let signer;
 let nft;
 let eventSig;
-let providerPreferences;
 let processedTokens;
 let mintQueue;
 let lastBlock = 0;
@@ -61,12 +60,14 @@ export async function initializeBlockchain() {
         eventSig = nft.interface.getEvent('MintRequested').topicHash;
 
         // Initialize storage
-        providerPreferences = createStorage('provider-preferences.json');
         processedTokens = new Set();
         mintQueue = [];
 
         // Load state
         await loadState();
+
+        // Initialize provider preferences table
+        await providerPreferences.initializeTable();
     }
 
     return {
