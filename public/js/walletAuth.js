@@ -89,5 +89,10 @@ class WalletAuth {
 // Create singleton instance
 const walletAuth = new WalletAuth();
 
+// Export global helper function for easy access
+export function getWalletAddress() {
+    return walletAuth.getWalletAddress();
+}
+
 // Export both the class and singleton
 export { WalletAuth, walletAuth };
