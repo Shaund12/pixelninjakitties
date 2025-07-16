@@ -362,7 +362,7 @@
                 z-index: 999;
                 transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
                 overflow: hidden;
-                width: 380px;
+                width: 420px;
                 border: 2px solid rgba(138, 101, 255, 0.4);
                 user-select: none;
                 backdrop-filter: blur(15px);
@@ -370,13 +370,13 @@
             
             #ninja-casts-player.minimized {
                 width: 200px;
-                height: 80px;
+                height: 95px;
                 border-radius: 15px;
             }
             
             #ninja-casts-player.expanded {
-                width: 400px;
-                height: 320px;
+                width: 440px;
+                height: 340px;
             }
 
             .ninja-cat-avatar {
@@ -432,7 +432,7 @@
 
             .player-header {
                 background: linear-gradient(90deg, rgba(138, 101, 255, 0.15), transparent);
-                padding: 20px 20px 10px 75px;
+                padding: 25px 25px 15px 80px;
                 border-bottom: 1px solid rgba(138, 101, 255, 0.1);
             }
 
@@ -466,27 +466,101 @@
             .stream-carousel {
                 display: flex;
                 overflow-x: auto;
-                gap: 10px;
-                padding: 10px 15px;
-                scrollbar-width: none;
-                -ms-overflow-style: none;
+                gap: 12px;
+                padding: 15px 20px;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(138, 101, 255, 0.3) transparent;
+                scroll-behavior: smooth;
+                scroll-snap-type: x mandatory;
+                position: relative;
             }
 
             .stream-carousel::-webkit-scrollbar {
-                display: none;
+                height: 4px;
+            }
+
+            .stream-carousel::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 2px;
+            }
+
+            .stream-carousel::-webkit-scrollbar-thumb {
+                background: rgba(138, 101, 255, 0.3);
+                border-radius: 2px;
+            }
+
+            .stream-carousel::-webkit-scrollbar-thumb:hover {
+                background: rgba(138, 101, 255, 0.5);
+            }
+
+            .stream-carousel:hover::-webkit-scrollbar {
+                opacity: 1;
+            }
+
+            .carousel-container {
+                position: relative;
+                margin: 0 5px;
+            }
+
+            .carousel-nav-btn {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(138, 101, 255, 0.8);
+                border: none;
+                border-radius: 50%;
+                width: 32px;
+                height: 32px;
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                font-weight: bold;
+                z-index: 10;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .carousel-container:hover .carousel-nav-btn {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .carousel-nav-btn:hover {
+                background: rgba(138, 101, 255, 1);
+                transform: translateY(-50%) scale(1.1);
+            }
+
+            .carousel-nav-btn.prev {
+                left: 5px;
+            }
+
+            .carousel-nav-btn.next {
+                right: 5px;
+            }
+
+            .carousel-nav-btn:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
             }
 
             .stream-card {
-                min-width: 110px;
+                min-width: 140px;
                 background: rgba(255, 255, 255, 0.05);
                 border: 1px solid rgba(138, 101, 255, 0.2);
-                border-radius: 10px;
-                padding: 8px 10px;
+                border-radius: 12px;
+                padding: 12px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 text-align: center;
                 position: relative;
                 overflow: hidden;
+                flex-shrink: 0;
+                scroll-snap-align: start;
             }
 
             .stream-card:before {
@@ -516,19 +590,21 @@
             }
 
             .stream-card-name {
-                font-size: 11px;
+                font-size: 15px;
                 font-weight: 600;
                 color: white;
-                margin-bottom: 2px;
+                margin-bottom: 4px;
                 z-index: 1;
                 position: relative;
+                line-height: 1.2;
             }
 
             .stream-card-genre {
-                font-size: 9px;
+                font-size: 12px;
                 color: rgba(255, 255, 255, 0.6);
                 z-index: 1;
                 position: relative;
+                line-height: 1.2;
             }
 
             .expanded .stream-carousel {
@@ -625,10 +701,11 @@
 
             .visualizer-skin-selector {
                 display: flex;
-                gap: 12px;
-                padding: 10px 15px;
+                gap: 15px;
+                padding: 15px 20px;
                 justify-content: center;
                 align-items: center;
+                margin-top: 8px;
             }
 
             .skin-label {
@@ -681,10 +758,11 @@
             .player-controls {
                 display: flex;
                 align-items: center;
-                gap: 15px;
-                padding: 15px;
+                gap: 18px;
+                padding: 18px 20px;
                 background: rgba(0, 0, 0, 0.1);
                 border-radius: 0 0 20px 20px;
+                margin-top: 5px;
             }
 
             .ninja-control-btn {
@@ -1058,14 +1136,18 @@
                 <p class="player-subtitle">Shadow Frequencies</p>
             </div>
             
-            <div class="stream-carousel" id="streamCarousel">
-                ${streamingSources.map((stream, index) => `
-                    <div class="stream-card ${index === playerState.currentIndex ? 'active' : ''}" 
-                         data-index="${index}">
-                        <div class="stream-card-name">${stream.name}</div>
-                        <div class="stream-card-genre">${stream.genre}</div>
-                    </div>
-                `).join('')}
+            <div class="carousel-container">
+                <button class="carousel-nav-btn prev" id="carouselPrev" aria-label="Previous streams">‹</button>
+                <div class="stream-carousel" id="streamCarousel">
+                    ${streamingSources.map((stream, index) => `
+                        <div class="stream-card ${index === playerState.currentIndex ? 'active' : ''}" 
+                             data-index="${index}">
+                            <div class="stream-card-name">${stream.name}</div>
+                            <div class="stream-card-genre">${stream.genre}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="carousel-nav-btn next" id="carouselNext" aria-label="Next streams">›</button>
             </div>
             
             <div class="focus-mode-panel" id="focusModePanel">
@@ -1239,6 +1321,8 @@
         // Enhanced DOM references
         const ninjaCatAvatar = document.getElementById('ninjaCatAvatar');
         const streamCarousel = document.getElementById('streamCarousel');
+        const carouselPrev = document.getElementById('carouselPrev');
+        const carouselNext = document.getElementById('carouselNext');
         const focusModePanel = document.getElementById('focusModePanel');
         const focusTimer = document.getElementById('focusTimer');
         const focusToggle = document.getElementById('focusToggle');
@@ -1263,6 +1347,35 @@
                     selectStream(index);
                 }
             });
+
+            // Carousel navigation buttons
+            carouselPrev.addEventListener('click', () => {
+                scrollCarousel(-1);
+            });
+
+            carouselNext.addEventListener('click', () => {
+                scrollCarousel(1);
+            });
+
+            // Mouse wheel scrolling on carousel
+            streamCarousel.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                streamCarousel.scrollLeft += e.deltaY;
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' && e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    scrollCarousel(-1);
+                } else if (e.key === 'ArrowRight' && e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    scrollCarousel(1);
+                }
+            });
+
+            // Update carousel navigation state on scroll
+            streamCarousel.addEventListener('scroll', updateCarouselNavigation);
 
             // Focus mode controls
             focusToggle.addEventListener('click', toggleFocusMode);
@@ -1316,6 +1429,9 @@
 
             // Initialize expanded state UI
             updateExpandedState();
+
+            // Initialize carousel navigation state
+            updateCarouselNavigation();
         }
 
         // Enhanced stream selection
@@ -1335,6 +1451,22 @@
             if (playerState.isPlaying) {
                 loadAndPlayStream(true);
             }
+        }
+
+        // Carousel navigation functions
+        function scrollCarousel(direction) {
+            const cardWidth = 152; // 140px + 12px gap
+            const scrollAmount = cardWidth * direction;
+            streamCarousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+
+        function updateCarouselNavigation() {
+            const canScrollLeft = streamCarousel.scrollLeft > 0;
+            const canScrollRight = streamCarousel.scrollLeft < 
+                (streamCarousel.scrollWidth - streamCarousel.clientWidth);
+            
+            carouselPrev.disabled = !canScrollLeft;
+            carouselNext.disabled = !canScrollRight;
         }
 
         // Enhanced stream display update
