@@ -3,23 +3,27 @@
  * Handles favorite tokens storage and retrieval via Supabase
  */
 
-import { supabase } from './supabaseClient.js';
+import { getSupabase } from './supabaseClient.js';
 
 class FavoritesManager {
     constructor() {
         this.currentUser = null;
         this.favorites = new Set();
+        this.supabase = null;
         this.init();
     }
 
     async init() {
         try {
+            // Get Supabase client
+            this.supabase = await getSupabase();
+            
             // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await this.supabase.auth.getUser();
 
             if (!user) {
                 // Sign in anonymously if no user
-                const { data: { user: anonUser } } = await supabase.auth.signInAnonymously();
+                const { data: { user: anonUser } } = await this.supabase.auth.signInAnonymously();
                 this.currentUser = anonUser;
             } else {
                 this.currentUser = user;
@@ -36,10 +40,10 @@ class FavoritesManager {
     }
 
     async loadFavorites() {
-        if (!this.currentUser) return;
+        if (!this.currentUser || !this.supabase) return;
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await this.supabase
                 .from('favorites')
                 .select('token_id')
                 .eq('user_id', this.currentUser.id);
@@ -94,10 +98,10 @@ class FavoritesManager {
             return;
         }
 
-        if (!this.currentUser) return;
+        if (!this.currentUser || !this.supabase) return;
 
         try {
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('favorites')
                 .insert({
                     user_id: this.currentUser.id,
@@ -126,10 +130,10 @@ class FavoritesManager {
             return;
         }
 
-        if (!this.currentUser) return;
+        if (!this.currentUser || !this.supabase) return;
 
         try {
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('favorites')
                 .delete()
                 .eq('user_id', this.currentUser.id)
@@ -168,10 +172,10 @@ class FavoritesManager {
 
     // Log analytics event
     async logAnalytics(eventType, eventData) {
-        if (!this.currentUser || this.useFallback) return;
+        if (!this.currentUser || this.useFallback || !this.supabase) return;
 
         try {
-            await supabase
+            await this.supabase
                 .from('gallery_analytics')
                 .insert({
                     user_id: this.currentUser.id,
@@ -185,10 +189,10 @@ class FavoritesManager {
 
     // Get favorites with metadata (for displaying favorites page)
     async getFavoritesWithMetadata() {
-        if (!this.currentUser) return [];
+        if (!this.currentUser || !this.supabase) return [];
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await this.supabase
                 .from('favorites')
                 .select('token_id, added_at')
                 .eq('user_id', this.currentUser.id)
@@ -214,10 +218,10 @@ class FavoritesManager {
             return;
         }
 
-        if (!this.currentUser) return;
+        if (!this.currentUser || !this.supabase) return;
 
         try {
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('favorites')
                 .delete()
                 .eq('user_id', this.currentUser.id);

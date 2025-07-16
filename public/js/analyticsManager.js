@@ -3,23 +3,27 @@
  * Handles logging of user interactions and gallery events
  */
 
-import { supabase } from './supabaseClient.js';
+import { getSupabase } from './supabaseClient.js';
 
 class AnalyticsManager {
     constructor() {
         this.currentUser = null;
         this.debugMode = false;
+        this.supabase = null;
         this.init();
     }
 
     async init() {
         try {
+            // Get Supabase client
+            this.supabase = await getSupabase();
+            
             // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await this.supabase.auth.getUser();
 
             if (!user) {
                 // Sign in anonymously if no user
-                const { data: { user: anonUser } } = await supabase.auth.signInAnonymously();
+                const { data: { user: anonUser } } = await this.supabase.auth.signInAnonymously();
                 this.currentUser = anonUser;
             } else {
                 this.currentUser = user;
@@ -47,10 +51,10 @@ class AnalyticsManager {
             return;
         }
 
-        if (!this.currentUser) return;
+        if (!this.currentUser || !this.supabase) return;
 
         try {
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('gallery_analytics')
                 .insert({
                     user_id: this.currentUser.id,
@@ -147,10 +151,10 @@ class AnalyticsManager {
 
     // Get analytics data (for debug mode)
     async getAnalyticsData(limit = 100) {
-        if (!this.currentUser) return [];
+        if (!this.currentUser || !this.supabase) return [];
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await this.supabase
                 .from('gallery_analytics')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -171,10 +175,10 @@ class AnalyticsManager {
 
     // Get performance stats
     async getPerformanceStats() {
-        if (!this.currentUser) return {};
+        if (!this.currentUser || !this.supabase) return {};
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await this.supabase
                 .from('gallery_analytics')
                 .select('event_type, event_data, created_at')
                 .eq('user_id', this.currentUser.id)

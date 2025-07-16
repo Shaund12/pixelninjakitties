@@ -3,23 +3,27 @@
  * Handles user preferences storage and retrieval via Supabase
  */
 
-import { supabase } from './supabaseClient.js';
+import { getSupabase } from './supabaseClient.js';
 
 class UserPreferencesManager {
     constructor() {
         this.currentUser = null;
         this.preferences = null;
+        this.supabase = null;
         this.init();
     }
 
     async init() {
         try {
+            // Get Supabase client
+            this.supabase = await getSupabase();
+            
             // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await this.supabase.auth.getUser();
             
             if (!user) {
                 // Sign in anonymously if no user
-                const { data: { user: anonUser } } = await supabase.auth.signInAnonymously();
+                const { data: { user: anonUser } } = await this.supabase.auth.signInAnonymously();
                 this.currentUser = anonUser;
             } else {
                 this.currentUser = user;
@@ -35,10 +39,10 @@ class UserPreferencesManager {
     }
 
     async loadPreferences() {
-        if (!this.currentUser) return;
+        if (!this.currentUser || !this.supabase) return;
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await this.supabase
                 .from('user_preferences')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -69,10 +73,10 @@ class UserPreferencesManager {
     }
 
     async savePreferences() {
-        if (!this.currentUser || !this.preferences) return;
+        if (!this.currentUser || !this.preferences || !this.supabase) return;
 
         try {
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('user_preferences')
                 .upsert({
                     ...this.preferences,
