@@ -5,7 +5,7 @@ export const CONTRACT_ADDRESS = '0x2D732b0Bb33566A13E586aE83fB21d2feE34e906'; //
 export const USDC_ADDRESS = '0xbCfB3FCa16b12C7756CD6C24f1cC0AC0E38569CF'; // Vitruveo USDC
 
 export const REGENERATION_FEE_RECIPIENT = '0x0327Fab0F5A79C884b9E3fc611d490a19147D235'; // Specified fee wallet
-export const REGENERATION_FEE_AMOUNT = '.01'; // 10 USDC
+export const REGENERATION_FEE_AMOUNT = '10'; // 10 USDC
 
 /* minimal ABIs (read + mint only) */
 export const NFT_ABI = [
