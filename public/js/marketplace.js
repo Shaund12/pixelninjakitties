@@ -1,7 +1,7 @@
 ﻿import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
-import { getFavorites, toggleFavorite, isFavorite, savePreferences, loadPreferences } from '../utils/supabaseClient.js';
+import { getFavorites, toggleFavorite, isFavorite, savePreferences, loadPreferences } from './supabaseClient.js';
 import { getCurrentWalletAddress, addConnectionListener, removeConnectionListener } from './walletConnector.js';
-import { logListingView, logFavoriteAction, logPurchase, logListingCreated, logListingCancelled, logMarketplaceView, logFilterApplied } from '../utils/activityLogger.js';
+import { logListingView, logFavoriteAction, logPurchase, logListingCreated, logListingCancelled, logMarketplaceView, logFilterApplied } from './activityLogger.js';
 
 // Constants
 const MARKETPLACE_ADDRESS = '0x5031fc07293d574Ccbd4d12b0E7106A95502a299';
@@ -2334,7 +2334,7 @@ async function saveCurrentSearch(searchName) {
             sort: sortListings ? sortListings.value : 'newest'
         };
 
-        const { saveSearch } = await import('../utils/supabaseClient.js');
+        const { saveSearch } = await import('./supabaseClient.js');
         await saveSearch(walletAddress, searchName, currentFilters);
 
         showEnhancedNotification('Search Saved', `Search "${searchName}" has been saved`, 'success');
@@ -2353,7 +2353,7 @@ async function showSavedSearchesModal() {
             return;
         }
 
-        const { loadPreferences } = await import('../utils/supabaseClient.js');
+        const { loadPreferences } = await import('./supabaseClient.js');
         const preferences = await loadPreferences(walletAddress);
 
         const modal = document.getElementById('savedSearchesModal');
@@ -2392,7 +2392,7 @@ async function applySavedSearch(searchName) {
         const walletAddress = getCurrentWalletAddress();
         if (!walletAddress) return;
 
-        const { loadPreferences } = await import('../utils/supabaseClient.js');
+        const { loadPreferences } = await import('./supabaseClient.js');
         const preferences = await loadPreferences(walletAddress);
 
         const savedSearch = preferences.savedSearches.find(s => s.name === searchName);
@@ -2423,7 +2423,7 @@ async function deleteSavedSearch(searchName) {
         const walletAddress = getCurrentWalletAddress();
         if (!walletAddress) return;
 
-        const { loadPreferences, savePreferences } = await import('../utils/supabaseClient.js');
+        const { loadPreferences, savePreferences } = await import('./supabaseClient.js');
         const preferences = await loadPreferences(walletAddress);
 
         preferences.savedSearches = preferences.savedSearches.filter(s => s.name !== searchName);
@@ -2526,7 +2526,7 @@ const trendingIndex = 0;
 
 async function loadTrendingItems() {
     try {
-        const { getTrendingTokens } = await import('../utils/supabaseClient.js');
+        const { getTrendingTokens } = await import('./supabaseClient.js');
         const trendingData = await getTrendingTokens(5);
 
         trendingItems = [];
@@ -2614,7 +2614,7 @@ function scrollTrendingCarousel(direction) {
 // Real-time subscriptions
 async function setupRealtimeSubscriptions() {
     try {
-        const { subscribeToNewListings, subscribeToUserNotifications } = await import('../utils/supabaseClient.js');
+        const { subscribeToNewListings, subscribeToUserNotifications } = await import('./supabaseClient.js');
 
         // Subscribe to new listings
         await subscribeToNewListings((payload) => {
