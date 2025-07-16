@@ -10,11 +10,22 @@ import { createClient } from '@supabase/supabase-js';
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+let supabase;
 if (!supabaseUrl || !supabaseKey) {
-    console.error('❌ SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required');
-    process.exit(1);
+    console.warn('⚠️ SUPABASE_URL and SUPABASE_ANON_KEY environment variables not set - using mock client');
+    // Create mock client for development
+    supabase = {
+        from: (table) => ({
+            select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+            insert: () => Promise.resolve({ data: [{ id: 'mock-id' }], error: null }),
+            update: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
+            delete: () => ({ lt: () => Promise.resolve({ data: [], error: null }) })
+        })
+    };
+} else {
+    supabase = createClient(supabaseUrl, supabaseKey);
 }
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Task states
 export const TASK_STATES = {

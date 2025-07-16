@@ -79,8 +79,10 @@ if (!RPC_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY || !PLACEHOLDER_URI) {
 }
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error('❌  Missing Supabase env vars – SUPABASE_URL and SUPABASE_ANON_KEY are required');
-    process.exit(1);
+    console.warn('⚠️  Supabase env vars not set – some features may be disabled');
+    // Continue without Supabase for development
+} else {
+    console.log('✅ Supabase configured');
 }
 
 /* ───── Static site (front-end) ──────────────────────────────── */
