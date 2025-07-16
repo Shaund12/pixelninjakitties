@@ -147,7 +147,7 @@ function getNotificationTitle(type) {
 }
 
 // Enhanced quick preview modal with navigation and favorites
-function showQuickPreview(token, listing = null) {
+async function showQuickPreview(token, listing = null) {
     const previewImage = document.getElementById('previewImage');
     const previewDetails = document.getElementById('previewDetails');
     const previewCurrent = document.getElementById('previewCurrent');

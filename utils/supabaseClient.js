@@ -13,11 +13,11 @@ async function getSupabaseClient() {
     if (supabase) {
         return supabase;
     }
-    
+
     if (!initializationPromise) {
         initializationPromise = initializeSupabase();
     }
-    
+
     supabase = await initializationPromise;
     return supabase;
 }
@@ -27,14 +27,14 @@ async function ensureUserExists(walletAddress) {
     if (!walletAddress) {
         throw new Error('Wallet address is required');
     }
-    
+
     const client = await getSupabaseClient();
     const { data: existingUser } = await client
         .from('users')
         .select('user_id')
         .eq('user_id', walletAddress.toLowerCase())
         .single();
-    
+
     if (!existingUser) {
         await client
             .from('users')
@@ -49,7 +49,7 @@ async function ensureUserExists(walletAddress) {
 // Update user activity timestamp
 async function updateUserActivity(walletAddress) {
     if (!walletAddress) return;
-    
+
     try {
         const client = await getSupabaseClient();
         await client
@@ -70,7 +70,7 @@ export async function getFavorites(walletAddress) {
         console.warn('No wallet address provided for getFavorites');
         return [];
     }
-    
+
     try {
         const client = await getSupabaseClient();
         const { data, error } = await client
@@ -78,12 +78,12 @@ export async function getFavorites(walletAddress) {
             .select('token_id')
             .eq('user_id', walletAddress.toLowerCase())
             .order('created_at', { ascending: false });
-        
+
         if (error) {
             console.error('Error fetching favorites:', error);
             return [];
         }
-        
+
         return data ? data.map(item => item.token_id) : [];
     } catch (error) {
         console.error('Error in getFavorites:', error);
@@ -95,11 +95,11 @@ export async function toggleFavorite(walletAddress, tokenId) {
     if (!walletAddress || !tokenId) {
         throw new Error('Wallet address and token ID are required');
     }
-    
+
     try {
         await ensureUserExists(walletAddress);
         const client = await getSupabaseClient();
-        
+
         // Check if favorite already exists
         const { data: existing } = await client
             .from('favorites')
@@ -107,7 +107,7 @@ export async function toggleFavorite(walletAddress, tokenId) {
             .eq('user_id', walletAddress.toLowerCase())
             .eq('token_id', tokenId)
             .single();
-        
+
         if (existing) {
             // Remove favorite
             const { error } = await client
@@ -115,9 +115,9 @@ export async function toggleFavorite(walletAddress, tokenId) {
                 .delete()
                 .eq('user_id', walletAddress.toLowerCase())
                 .eq('token_id', tokenId);
-            
+
             if (error) throw error;
-            
+
             // Log activity
             await logActivity(walletAddress, 'unfavorite', tokenId);
             return { action: 'removed', tokenId };
@@ -130,9 +130,9 @@ export async function toggleFavorite(walletAddress, tokenId) {
                     token_id: tokenId,
                     created_at: new Date().toISOString()
                 }]);
-            
+
             if (error) throw error;
-            
+
             // Log activity
             await logActivity(walletAddress, 'favorite', tokenId);
             return { action: 'added', tokenId };
@@ -145,7 +145,7 @@ export async function toggleFavorite(walletAddress, tokenId) {
 
 export async function isFavorite(walletAddress, tokenId) {
     if (!walletAddress || !tokenId) return false;
-    
+
     try {
         const client = await getSupabaseClient();
         const { data, error } = await client
@@ -154,7 +154,7 @@ export async function isFavorite(walletAddress, tokenId) {
             .eq('user_id', walletAddress.toLowerCase())
             .eq('token_id', tokenId)
             .single();
-        
+
         return !error && data;
     } catch (error) {
         console.error('Error checking favorite:', error);
@@ -173,7 +173,7 @@ export async function loadPreferences(walletAddress) {
             savedSearches: []
         };
     }
-    
+
     try {
         const client = await getSupabaseClient();
         const { data, error } = await client
@@ -181,7 +181,7 @@ export async function loadPreferences(walletAddress) {
             .select('*')
             .eq('user_id', walletAddress.toLowerCase())
             .single();
-        
+
         if (error || !data) {
             // Return default preferences
             return {
@@ -191,7 +191,7 @@ export async function loadPreferences(walletAddress) {
                 savedSearches: []
             };
         }
-        
+
         return {
             filters: data.filters || {},
             theme: data.theme || 'dark',
@@ -213,11 +213,11 @@ export async function savePreferences(walletAddress, preferences) {
     if (!walletAddress || !preferences) {
         throw new Error('Wallet address and preferences are required');
     }
-    
+
     try {
         await ensureUserExists(walletAddress);
         const client = await getSupabaseClient();
-        
+
         const { error } = await client
             .from('preferences')
             .upsert({
@@ -228,9 +228,9 @@ export async function savePreferences(walletAddress, preferences) {
                 saved_searches: preferences.savedSearches || [],
                 last_viewed: new Date().toISOString()
             });
-        
+
         if (error) throw error;
-        
+
         // Log activity
         await logActivity(walletAddress, 'preferences_updated');
         return true;
@@ -244,21 +244,21 @@ export async function saveSearch(walletAddress, searchName, filterSettings) {
     if (!walletAddress || !searchName || !filterSettings) {
         throw new Error('Wallet address, search name, and filter settings are required');
     }
-    
+
     try {
         const preferences = await loadPreferences(walletAddress);
-        
+
         // Check if search already exists
         const existingIndex = preferences.savedSearches.findIndex(
             search => search.name === searchName
         );
-        
+
         const searchData = {
             name: searchName,
             filters: filterSettings,
             created_at: new Date().toISOString()
         };
-        
+
         if (existingIndex >= 0) {
             // Update existing search
             preferences.savedSearches[existingIndex] = searchData;
@@ -266,9 +266,9 @@ export async function saveSearch(walletAddress, searchName, filterSettings) {
             // Add new search
             preferences.savedSearches.push(searchData);
         }
-        
+
         await savePreferences(walletAddress, preferences);
-        
+
         // Log activity
         await logActivity(walletAddress, 'search_saved', null, { searchName });
         return true;
@@ -285,11 +285,11 @@ export async function logActivity(walletAddress, eventType, tokenId = null, meta
         console.warn('Insufficient data for activity logging');
         return;
     }
-    
+
     try {
         await ensureUserExists(walletAddress);
         const client = await getSupabaseClient();
-        
+
         const { error } = await client
             .from('activity_logs')
             .insert([{
@@ -299,11 +299,11 @@ export async function logActivity(walletAddress, eventType, tokenId = null, meta
                 metadata: metadata,
                 timestamp: new Date().toISOString()
             }]);
-        
+
         if (error) {
             console.error('Error logging activity:', error);
         }
-        
+
         // Update user activity timestamp
         await updateUserActivity(walletAddress);
     } catch (error) {
@@ -322,7 +322,7 @@ export async function getTopFavorites(limit = 10) {
             .groupBy('token_id')
             .order('count', { ascending: false })
             .limit(limit);
-        
+
         if (error) throw error;
         return data || [];
     } catch (error) {
@@ -335,7 +335,7 @@ export async function getTrendingTokens(limit = 10) {
     try {
         const client = await getSupabaseClient();
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        
+
         const { data, error } = await client
             .from('activity_logs')
             .select('token_id, count(*)')
@@ -345,7 +345,7 @@ export async function getTrendingTokens(limit = 10) {
             .groupBy('token_id')
             .order('count', { ascending: false })
             .limit(limit);
-        
+
         if (error) throw error;
         return data || [];
     } catch (error) {
@@ -356,7 +356,7 @@ export async function getTrendingTokens(limit = 10) {
 
 export async function getUserActivityStats(walletAddress) {
     if (!walletAddress) return null;
-    
+
     try {
         const client = await getSupabaseClient();
         const { data, error } = await client
@@ -365,7 +365,7 @@ export async function getUserActivityStats(walletAddress) {
             .eq('user_id', walletAddress.toLowerCase())
             .groupBy('event_type')
             .order('count', { ascending: false });
-        
+
         if (error) throw error;
         return data || [];
     } catch (error) {
@@ -379,15 +379,15 @@ export async function getUserActivityStats(walletAddress) {
 export async function subscribeToNewListings(callback) {
     try {
         const client = await getSupabaseClient();
-        
+
         const subscription = client
             .channel('new_listings')
-            .on('postgres_changes', 
+            .on('postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'activity_logs', filter: 'event_type=eq.listing_created' },
                 callback
             )
             .subscribe();
-        
+
         return subscription;
     } catch (error) {
         console.error('Error setting up listing subscription:', error);
@@ -397,23 +397,23 @@ export async function subscribeToNewListings(callback) {
 
 export async function subscribeToUserNotifications(walletAddress, callback) {
     if (!walletAddress) return null;
-    
+
     try {
         const client = await getSupabaseClient();
-        
+
         const subscription = client
             .channel(`user_notifications_${walletAddress.toLowerCase()}`)
-            .on('postgres_changes', 
-                { 
-                    event: 'INSERT', 
-                    schema: 'public', 
-                    table: 'activity_logs', 
-                    filter: `user_id=eq.${walletAddress.toLowerCase()}` 
+            .on('postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'activity_logs',
+                    filter: `user_id=eq.${walletAddress.toLowerCase()}`
                 },
                 callback
             )
             .subscribe();
-        
+
         return subscription;
     } catch (error) {
         console.error('Error setting up user notifications subscription:', error);
@@ -430,7 +430,7 @@ export async function healthCheck() {
             .from('users')
             .select('count(*)')
             .limit(1);
-        
+
         return !error;
     } catch (error) {
         console.error('Supabase health check failed:', error);
@@ -442,23 +442,23 @@ export async function clearUserData(walletAddress) {
     if (!walletAddress) {
         throw new Error('Wallet address is required');
     }
-    
+
     try {
         const client = await getSupabaseClient();
         const userId = walletAddress.toLowerCase();
-        
+
         // Delete favorites
         await client.from('favorites').delete().eq('user_id', userId);
-        
+
         // Delete preferences
         await client.from('preferences').delete().eq('user_id', userId);
-        
+
         // Delete activity logs
         await client.from('activity_logs').delete().eq('user_id', userId);
-        
+
         // Delete user record
         await client.from('users').delete().eq('user_id', userId);
-        
+
         return true;
     } catch (error) {
         console.error('Error clearing user data:', error);

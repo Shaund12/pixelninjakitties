@@ -15,18 +15,18 @@ export const ACTIVITY_TYPES = {
     PURCHASE: 'purchase',
     LISTING_CREATED: 'listing_created',
     LISTING_CANCELLED: 'listing_cancelled',
-    
+
     // User actions
     SEARCH: 'search',
     FILTER_APPLIED: 'filter_applied',
     SEARCH_SAVED: 'search_saved',
     PREFERENCES_UPDATED: 'preferences_updated',
-    
+
     // Page views
     PAGE_VIEW: 'page_view',
     MARKETPLACE_VIEW: 'marketplace_view',
     PROFILE_VIEW: 'profile_view',
-    
+
     // Wallet actions
     WALLET_CONNECTED: 'wallet_connected',
     WALLET_DISCONNECTED: 'wallet_disconnected'
@@ -34,17 +34,19 @@ export const ACTIVITY_TYPES = {
 
 // Queue for offline activity logging
 let activityQueue = [];
-let isOnline = navigator.onLine;
+let isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
 // Listen for online/offline events
-window.addEventListener('online', () => {
-    isOnline = true;
-    flushActivityQueue();
-});
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => {
+        isOnline = true;
+        flushActivityQueue();
+    });
 
-window.addEventListener('offline', () => {
-    isOnline = false;
-});
+    window.addEventListener('offline', () => {
+        isOnline = false;
+    });
+}
 
 // Log activity with automatic wallet address detection
 export async function logUserActivity(eventType, tokenId = null, metadata = {}) {
@@ -54,18 +56,18 @@ export async function logUserActivity(eventType, tokenId = null, metadata = {}) 
             // Don't log activities for non-connected users
             return;
         }
-        
+
         const activityData = {
             eventType,
             tokenId,
             metadata: {
                 ...metadata,
                 timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-                url: window.location.href
+                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+                url: typeof window !== 'undefined' ? window.location.href : 'unknown'
             }
         };
-        
+
         if (isOnline) {
             await logActivity(walletAddress, eventType, tokenId, activityData.metadata);
         } else {
@@ -92,12 +94,12 @@ export async function logUserActivity(eventType, tokenId = null, metadata = {}) 
 // Flush queued activities when back online
 async function flushActivityQueue() {
     if (activityQueue.length === 0) return;
-    
+
     console.log(`Flushing ${activityQueue.length} queued activities`);
-    
+
     const queue = [...activityQueue];
     activityQueue = [];
-    
+
     for (const activity of queue) {
         try {
             await logActivity(
@@ -197,7 +199,7 @@ export async function logSearchSaved(searchName, filters = {}) {
 
 export async function logWalletAction(action, walletAddress = null) {
     const eventType = action === 'connect' ? ACTIVITY_TYPES.WALLET_CONNECTED : ACTIVITY_TYPES.WALLET_DISCONNECTED;
-    
+
     // For wallet actions, we might not have a current address yet
     if (action === 'connect' && walletAddress) {
         await logActivity(walletAddress, eventType, null, {
@@ -226,39 +228,47 @@ export function isActivityLoggingOnline() {
 let currentPage = null;
 
 function autoLogPageView() {
-    const pageName = window.location.pathname.split('/').pop().replace('.html', '') || 'home';
+    if (typeof window === 'undefined') return;
     
+    const pageName = window.location.pathname.split('/').pop().replace('.html', '') || 'home';
+
     if (pageName !== currentPage) {
         currentPage = pageName;
         logPageView(pageName, {
-            referrer: document.referrer,
-            loadTime: performance.now()
+            referrer: typeof document !== 'undefined' ? document.referrer : '',
+            loadTime: typeof performance !== 'undefined' ? performance.now() : 0
         });
     }
 }
 
 // Set up automatic page view logging
-document.addEventListener('DOMContentLoaded', () => {
-    // Log initial page view
-    autoLogPageView();
-    
-    // Log page views on navigation (for SPAs)
-    window.addEventListener('popstate', autoLogPageView);
-    
-    // Log page unload
-    window.addEventListener('beforeunload', () => {
-        if (currentPage) {
-            logUserActivity('page_unload', null, {
-                pageName: currentPage,
-                timeOnPage: performance.now()
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Log initial page view
+        autoLogPageView();
+
+        // Log page views on navigation (for SPAs)
+        if (typeof window !== 'undefined') {
+            window.addEventListener('popstate', autoLogPageView);
+
+            // Log page unload
+            window.addEventListener('beforeunload', () => {
+                if (currentPage) {
+                    logUserActivity('page_unload', null, {
+                        pageName: currentPage,
+                        timeOnPage: typeof performance !== 'undefined' ? performance.now() : 0
+                    });
+                }
             });
         }
     });
-});
+}
 
 // Periodic queue flush (every 30 seconds)
-setInterval(() => {
-    if (isOnline && activityQueue.length > 0) {
-        flushActivityQueue();
-    }
-}, 30000);
+if (typeof setInterval !== 'undefined') {
+    setInterval(() => {
+        if (isOnline && activityQueue.length > 0) {
+            flushActivityQueue();
+        }
+    }, 30000);
+}

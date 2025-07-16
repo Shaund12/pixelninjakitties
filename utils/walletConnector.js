@@ -31,7 +31,7 @@ export async function initializeWalletConnection() {
                 return connection;
             }
         }
-        
+
         // Fallback to direct MetaMask check
         if (window.ethereum) {
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -42,7 +42,7 @@ export async function initializeWalletConnection() {
                 return walletConnection;
             }
         }
-        
+
         return null;
     } catch (error) {
         console.error('Error initializing wallet connection:', error);
@@ -63,7 +63,7 @@ export async function connectWallet() {
                 return result;
             }
         }
-        
+
         // Fallback to direct MetaMask connection
         if (window.ethereum) {
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -74,7 +74,7 @@ export async function connectWallet() {
                 return walletConnection;
             }
         }
-        
+
         throw new Error('No wallet found');
     } catch (error) {
         console.error('Error connecting wallet:', error);
@@ -123,7 +123,7 @@ export function setupWalletListeners() {
             }
         });
     }
-    
+
     // Listen for MetaMask account changes
     if (window.ethereum) {
         window.ethereum.on('accountsChanged', (accounts) => {
@@ -138,7 +138,7 @@ export function setupWalletListeners() {
                 disconnectWallet();
             }
         });
-        
+
         window.ethereum.on('chainChanged', (chainId) => {
             console.log('Chain changed:', chainId);
             // Optionally reload the page or update UI
