@@ -1,4 +1,7 @@
 ﻿import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
+import { getFavorites, toggleFavorite, isFavorite, savePreferences, loadPreferences } from '../utils/supabaseClient.js';
+import { getCurrentWalletAddress, addConnectionListener, removeConnectionListener } from '../utils/walletConnector.js';
+import { logListingView, logFavoriteAction, logPurchase, logListingCreated, logListingCancelled, logMarketplaceView, logFilterApplied } from '../utils/activityLogger.js';
 
 // Constants
 const MARKETPLACE_ADDRESS = '0x5031fc07293d574Ccbd4d12b0E7106A95502a299';
@@ -63,7 +66,7 @@ let hotItems = []; // Store the hottest items based on activity
 const rarityFloorPrices = {}; // Track floor prices by rarity
 let allListingsForPreview = []; // Store all listings for preview navigation
 let currentPreviewIndex = 0;
-const favorites = JSON.parse(localStorage.getItem('nft_favorites') || '[]');
+let favorites = []; // Will be loaded from Supabase
 let hotItemsCarouselIndex = 0;
 
 // Token cache to avoid refetching metadata
@@ -171,8 +174,16 @@ function showQuickPreview(token, listing = null) {
     previewImage.src = token.image;
 
     // Check if item is favorited
-    const isFavorited = favorites.includes(token.id);
+    const isFavorited = isTokenFavorited(token.id);
     updateFavoriteButton(isFavorited);
+    
+    // Log the listing view
+    await logListingView(token.id, {
+        price: listing?.price,
+        currency: listing?.currency,
+        seller: listing?.seller,
+        rarity: token.rarity
+    });
 
     // Prepare pricing information if available
     let pricingHtml = '';
@@ -327,20 +338,7 @@ function updateFavoriteButton(isFavorited) {
 
 // Toggle favorite status
 function toggleFavorite(tokenId) {
-    const index = favorites.indexOf(tokenId);
-    if (index === -1) {
-        favorites.push(tokenId);
-        showEnhancedNotification('Added to Favorites', 'Item added to your favorites list', 'success');
-    } else {
-        favorites.splice(index, 1);
-        showEnhancedNotification('Removed from Favorites', 'Item removed from your favorites list', 'info');
-    }
-
-    // Save to localStorage
-    localStorage.setItem('nft_favorites', JSON.stringify(favorites));
-
-    // Update button state
-    updateFavoriteButton(favorites.includes(tokenId));
+    toggleFavoriteStatus(tokenId);
 }
 
 // Share functionality
@@ -378,7 +376,174 @@ function getRarity(id, metadata = null) {
     return 'common';
 }
 
-// Format price based on currency
+// Load favorites from Supabase
+async function loadFavorites() {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) {
+            favorites = [];
+            return;
+        }
+        
+        favorites = await getFavorites(walletAddress);
+        console.log(`Loaded ${favorites.length} favorites from Supabase`);
+    } catch (error) {
+        console.error('Error loading favorites:', error);
+        favorites = [];
+    }
+}
+
+// Toggle favorite status with Supabase
+async function toggleFavoriteStatus(tokenId) {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) {
+            showToast('Please connect your wallet to manage favorites', 'error');
+            return;
+        }
+        
+        const result = await toggleFavorite(walletAddress, tokenId);
+        
+        if (result.action === 'added') {
+            favorites.push(tokenId);
+            showEnhancedNotification('Added to Favorites', 'Item added to your favorites list', 'success');
+            
+            // Log activity
+            await logFavoriteAction(tokenId, 'add');
+        } else {
+            favorites = favorites.filter(id => id !== tokenId);
+            showEnhancedNotification('Removed from Favorites', 'Item removed from your favorites list', 'info');
+            
+            // Log activity
+            await logFavoriteAction(tokenId, 'remove');
+        }
+        
+        // Update button state
+        updateFavoriteButton(favorites.includes(tokenId));
+        
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        showToast('Error updating favorites. Please try again.', 'error');
+    }
+}
+
+// Check if token is favorited
+function isTokenFavorited(tokenId) {
+    return favorites.includes(tokenId);
+}
+
+// Update favorite button state
+function updateFavoriteButton(isFavorited) {
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (!favoriteBtn) return;
+
+    const span = favoriteBtn.querySelector('span');
+    if (isFavorited) {
+        favoriteBtn.classList.add('favorited');
+        if (span) span.textContent = 'Remove from Favorites';
+    } else {
+        favoriteBtn.classList.remove('favorited');
+        if (span) span.textContent = 'Add to Favorites';
+    }
+}
+
+// Handle wallet connection changes
+async function handleWalletConnectionChange(walletAddress) {
+    if (walletAddress) {
+        // Wallet connected - load user data
+        await loadFavorites();
+        await loadUserPreferences();
+        
+        // Update UI
+        if (walletPrompt) walletPrompt.style.display = 'none';
+        if (sellContent) sellContent.style.display = 'block';
+        
+        // Initialize contracts and load user data
+        if (browserProvider) {
+            try {
+                const signer = await browserProvider.getSigner();
+                await initContractsWithSigner(signer);
+                await loadUserCats();
+                await loadUserListings();
+            } catch (err) {
+                console.error('Error getting signer:', err);
+            }
+        }
+    } else {
+        // Wallet disconnected - clear user data
+        favorites = [];
+        currentAccount = null;
+        
+        // Update UI
+        if (walletPrompt) walletPrompt.style.display = 'block';
+        if (sellContent) sellContent.style.display = 'none';
+    }
+}
+
+// Load user preferences from Supabase
+async function loadUserPreferences() {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) return;
+        
+        const preferences = await loadPreferences(walletAddress);
+        
+        // Apply saved filters
+        if (preferences.filters && Object.keys(preferences.filters).length > 0) {
+            applySavedFilters(preferences.filters);
+        }
+        
+        // Apply theme
+        if (preferences.theme && preferences.theme !== 'dark') {
+            document.body.classList.add(`theme-${preferences.theme}`);
+        }
+        
+        console.log('User preferences loaded:', preferences);
+    } catch (error) {
+        console.error('Error loading user preferences:', error);
+    }
+}
+
+// Apply saved filters to the UI
+function applySavedFilters(filters) {
+    try {
+        if (filters.currency && currencyFilter) {
+            currencyFilter.value = filters.currency;
+        }
+        
+        if (filters.sort && sortListings) {
+            sortListings.value = filters.sort;
+        }
+        
+        // Apply filters and refresh listings
+        applyListingFiltersAndSort();
+    } catch (error) {
+        console.error('Error applying saved filters:', error);
+    }
+}
+
+// Save current filters as user preferences
+async function saveCurrentFilters() {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) return;
+        
+        const currentFilters = {
+            currency: currencyFilter ? currencyFilter.value : 'all',
+            sort: sortListings ? sortListings.value : 'newest'
+        };
+        
+        const preferences = await loadPreferences(walletAddress);
+        preferences.filters = currentFilters;
+        
+        await savePreferences(walletAddress, preferences);
+        
+        // Log activity
+        await logFilterApplied('batch', currentFilters);
+    } catch (error) {
+        console.error('Error saving filters:', error);
+    }
+}
 function formatPrice(price, currency) {
     if (currency.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
         return ethers.formatUnits(price, 6); // USDC has 6 decimals
@@ -1453,6 +1618,14 @@ async function createListing(tokenId, price, currency) {
 
         showToast(`Listing created successfully for ${selectedCatForListing.name}!`, 'success');
 
+        // Log the listing creation activity
+        await logListingCreated(tokenId, {
+            price: price,
+            currency: currency === USDC_ADDRESS ? 'USDC' : 'VTRU',
+            rarity: selectedCatForListing?.rarity,
+            breed: selectedCatForListing?.breed
+        });
+
         // Reload user's cats and listings
         hideListingForm();
         await loadUserCats();
@@ -1478,6 +1651,9 @@ async function cancelListing(tokenId) {
         await tx.wait();
 
         showToast('Listing cancelled successfully!', 'success');
+
+        // Log the listing cancellation activity
+        await logListingCancelled(tokenId);
 
         // Reload listings
         await loadUserCats();
@@ -1590,6 +1766,14 @@ async function buyListing(tokenId, price, currency) {
         await tx.wait();
 
         showToast('Purchase successful! The NFT has been transferred to your wallet.', 'success');
+
+        // Log the purchase activity
+        await logPurchase(tokenId, {
+            price: ethers.formatUnits(price, currency === ethers.ZeroAddress ? 18 : 6),
+            currency: getCurrencyName(currency),
+            seller: currentAccount,
+            transactionHash: tx.hash
+        });
 
         // Update the buy button on the card
         const buyBtn = document.querySelector(`.buy-btn[data-token-id="${tokenId}"]`);
@@ -1784,8 +1968,14 @@ async function init() {
         // Initialize read-only contracts for browsing
         initReadOnlyContracts();
 
+        // Set up wallet connection listeners
+        addConnectionListener(handleWalletConnectionChange);
+
         // Load initial listings
         await loadListings();
+
+        // Log marketplace view
+        await logMarketplaceView();
 
         // Set up tab switching with proper animation
         setupTabs();
@@ -1801,12 +1991,27 @@ async function init() {
         // Set up enhanced event listeners
         setupEnhancedEventListeners();
 
+        // Load trending items
+        await loadTrendingItems();
+
+        // Set up real-time subscriptions
+        await setupRealtimeSubscriptions();
+
         // Set up lazy loading
         setupLazyLoading();
 
         // Set up filters
-        currencyFilter.addEventListener('change', applyListingFiltersAndSort);
-        sortListings.addEventListener('change', applyListingFiltersAndSort);
+        currencyFilter.addEventListener('change', async () => {
+            await logFilterApplied('currency', currencyFilter.value);
+            applyListingFiltersAndSort();
+            await saveCurrentFilters();
+        });
+        
+        sortListings.addEventListener('change', async () => {
+            await logFilterApplied('sort', sortListings.value);
+            applyListingFiltersAndSort();
+            await saveCurrentFilters();
+        });
 
         // Set up listing form
         createListingForm.addEventListener('submit', (e) => {
@@ -1827,54 +2032,20 @@ async function init() {
 
         document.getElementById('cancelListingForm').addEventListener('click', hideListingForm);
 
-        // Check for wallet connection using the unified wallet system
-        if (window.getWalletConnection) {
-            const connection = await window.getWalletConnection();
+        // Check for wallet connection using the wallet connector
+        const walletAddress = getCurrentWalletAddress();
+        if (walletAddress) {
+            currentAccount = walletAddress;
+            await handleWalletConnectionChange(walletAddress);
+        } else {
+            // Try to initialize wallet connection
+            const { initializeWalletConnection } = await import('../utils/walletConnector.js');
+            const connection = await initializeWalletConnection();
             if (connection && connection.address) {
                 currentAccount = connection.address;
-                walletPrompt.style.display = 'none';
-                sellContent.style.display = 'block';
-
-                // Initialize contracts with signer
-                if (browserProvider) {
-                    try {
-                        const signer = await browserProvider.getSigner();
-                        await initContractsWithSigner(signer);
-                        await loadUserCats();
-                        await loadUserListings();
-                    } catch (err) {
-                        console.error('Error getting signer:', err);
-                    }
-                }
+                await handleWalletConnectionChange(connection.address);
             }
         }
-
-        // Listen for wallet change events from the unified wallet system
-        window.addEventListener('walletChanged', async (event) => {
-            const address = event.detail?.address;
-
-            if (address) {
-                currentAccount = address;
-                walletPrompt.style.display = 'none';
-                sellContent.style.display = 'block';
-
-                // Initialize contracts with signer from browser provider
-                if (browserProvider) {
-                    try {
-                        const signer = await browserProvider.getSigner();
-                        await initContractsWithSigner(signer);
-                        await loadUserCats();
-                        await loadUserListings();
-                    } catch (err) {
-                        console.error('Error getting signer:', err);
-                    }
-                }
-            } else {
-                currentAccount = null;
-                walletPrompt.style.display = 'block';
-                sellContent.style.display = 'none';
-            }
-        });
 
         // Add toast container for notifications
         const toastContainer = document.createElement('div');
@@ -2075,6 +2246,456 @@ function setupEnhancedEventListeners() {
                 window.open(explorerUrl, '_blank');
             }
         });
+    }
+
+    // Saved searches functionality
+    const saveSearchBtn = document.getElementById('saveSearchBtn');
+    const savedSearchesBtn = document.getElementById('savedSearchesBtn');
+    const saveCurrentSearchBtn = document.getElementById('saveCurrentSearchBtn');
+    const closeSavedSearchesBtn = document.getElementById('closeSavedSearchesBtn');
+
+    if (saveSearchBtn) {
+        saveSearchBtn.addEventListener('click', () => {
+            const searchName = prompt('Enter a name for this search:');
+            if (searchName) {
+                saveCurrentSearch(searchName);
+            }
+        });
+    }
+
+    if (savedSearchesBtn) {
+        savedSearchesBtn.addEventListener('click', () => {
+            showSavedSearchesModal();
+        });
+    }
+
+    if (saveCurrentSearchBtn) {
+        saveCurrentSearchBtn.addEventListener('click', () => {
+            const searchNameInput = document.getElementById('searchNameInput');
+            const searchName = searchNameInput.value.trim();
+            if (searchName) {
+                saveCurrentSearch(searchName);
+                searchNameInput.value = '';
+            }
+        });
+    }
+
+    if (closeSavedSearchesBtn) {
+        closeSavedSearchesBtn.addEventListener('click', () => {
+            document.getElementById('savedSearchesModal').classList.remove('active');
+        });
+    }
+
+    // Notification bell functionality
+    const notificationBell = document.getElementById('notificationBell');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    const markAllRead = document.getElementById('markAllRead');
+
+    if (notificationBell) {
+        notificationBell.addEventListener('click', () => {
+            notificationDropdown.classList.toggle('show');
+        });
+    }
+
+    if (markAllRead) {
+        markAllRead.addEventListener('click', () => {
+            markAllNotificationsRead();
+        });
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!notificationBell.contains(event.target)) {
+            notificationDropdown.classList.remove('show');
+        }
+    });
+
+    // Trending carousel controls
+    const trendingPrev = document.getElementById('trendingPrev');
+    const trendingNext = document.getElementById('trendingNext');
+
+    if (trendingPrev) {
+        trendingPrev.addEventListener('click', () => {
+            scrollTrendingCarousel('prev');
+        });
+    }
+
+    if (trendingNext) {
+        trendingNext.addEventListener('click', () => {
+            scrollTrendingCarousel('next');
+        });
+    }
+
+    // Auto-hide trending carousel after 10 seconds
+    setTimeout(() => {
+        const trendingCarousel = document.getElementById('trendingCarousel');
+        if (trendingCarousel) {
+            trendingCarousel.classList.add('show');
+            setTimeout(() => {
+                trendingCarousel.classList.remove('show');
+            }, 10000);
+        }
+    }, 2000);
+}
+
+// Save current search function
+async function saveCurrentSearch(searchName) {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) {
+            showToast('Please connect your wallet to save searches', 'error');
+            return;
+        }
+
+        const currentFilters = {
+            currency: currencyFilter ? currencyFilter.value : 'all',
+            sort: sortListings ? sortListings.value : 'newest'
+        };
+
+        const { saveSearch } = await import('../utils/supabaseClient.js');
+        await saveSearch(walletAddress, searchName, currentFilters);
+        
+        showEnhancedNotification('Search Saved', `Search "${searchName}" has been saved`, 'success');
+    } catch (error) {
+        console.error('Error saving search:', error);
+        showToast('Error saving search. Please try again.', 'error');
+    }
+}
+
+// Show saved searches modal
+async function showSavedSearchesModal() {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) {
+            showToast('Please connect your wallet to view saved searches', 'error');
+            return;
+        }
+
+        const { loadPreferences } = await import('../utils/supabaseClient.js');
+        const preferences = await loadPreferences(walletAddress);
+        
+        const modal = document.getElementById('savedSearchesModal');
+        const savedSearchesList = document.getElementById('savedSearchesList');
+        
+        if (preferences.savedSearches && preferences.savedSearches.length > 0) {
+            savedSearchesList.innerHTML = preferences.savedSearches.map(search => `
+                <div class="saved-search-item">
+                    <div class="saved-search-info">
+                        <div class="saved-search-name">${search.name}</div>
+                        <div class="saved-search-filters">
+                            Currency: ${search.filters.currency || 'All'} • 
+                            Sort: ${search.filters.sort || 'Newest'}
+                        </div>
+                    </div>
+                    <div class="saved-search-actions">
+                        <button class="saved-search-btn" onclick="applySavedSearch('${search.name}')">Apply</button>
+                        <button class="saved-search-btn danger" onclick="deleteSavedSearch('${search.name}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            savedSearchesList.innerHTML = '<div class="no-notifications">No saved searches found</div>';
+        }
+        
+        modal.classList.add('active');
+    } catch (error) {
+        console.error('Error loading saved searches:', error);
+        showToast('Error loading saved searches', 'error');
+    }
+}
+
+// Apply saved search
+async function applySavedSearch(searchName) {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) return;
+
+        const { loadPreferences } = await import('../utils/supabaseClient.js');
+        const preferences = await loadPreferences(walletAddress);
+        
+        const savedSearch = preferences.savedSearches.find(s => s.name === searchName);
+        if (savedSearch) {
+            // Apply the saved filters
+            if (savedSearch.filters.currency && currencyFilter) {
+                currencyFilter.value = savedSearch.filters.currency;
+            }
+            if (savedSearch.filters.sort && sortListings) {
+                sortListings.value = savedSearch.filters.sort;
+            }
+            
+            // Apply filters and close modal
+            applyListingFiltersAndSort();
+            document.getElementById('savedSearchesModal').classList.remove('active');
+            
+            showEnhancedNotification('Search Applied', `Applied saved search "${searchName}"`, 'success');
+        }
+    } catch (error) {
+        console.error('Error applying saved search:', error);
+        showToast('Error applying saved search', 'error');
+    }
+}
+
+// Delete saved search
+async function deleteSavedSearch(searchName) {
+    try {
+        const walletAddress = getCurrentWalletAddress();
+        if (!walletAddress) return;
+
+        const { loadPreferences, savePreferences } = await import('../utils/supabaseClient.js');
+        const preferences = await loadPreferences(walletAddress);
+        
+        preferences.savedSearches = preferences.savedSearches.filter(s => s.name !== searchName);
+        await savePreferences(walletAddress, preferences);
+        
+        // Refresh the modal
+        showSavedSearchesModal();
+        
+        showEnhancedNotification('Search Deleted', `Deleted saved search "${searchName}"`, 'info');
+    } catch (error) {
+        console.error('Error deleting saved search:', error);
+        showToast('Error deleting saved search', 'error');
+    }
+}
+
+// Notification system functions
+let notifications = [];
+let notificationCount = 0;
+
+function showRealtimeNotification(title, message, type = 'info') {
+    const notification = {
+        id: Date.now(),
+        title,
+        message,
+        type,
+        timestamp: new Date(),
+        read: false
+    };
+    
+    notifications.unshift(notification);
+    notificationCount++;
+    
+    // Update notification bell
+    updateNotificationBell();
+    
+    // Show toast notification
+    showEnhancedNotification(title, message, type);
+    
+    // Update dropdown
+    updateNotificationDropdown();
+}
+
+function updateNotificationBell() {
+    const countElement = document.getElementById('notificationCount');
+    if (countElement) {
+        countElement.textContent = notificationCount;
+        countElement.classList.toggle('hidden', notificationCount === 0);
+    }
+}
+
+function updateNotificationDropdown() {
+    const listElement = document.getElementById('notificationList');
+    if (!listElement) return;
+    
+    if (notifications.length === 0) {
+        listElement.innerHTML = '<div class="no-notifications">No new notifications</div>';
+        return;
+    }
+    
+    listElement.innerHTML = notifications.slice(0, 10).map(notification => `
+        <div class="notification-item ${notification.read ? '' : 'unread'}">
+            <div class="notification-item-content">
+                <div class="notification-item-icon">
+                    ${notification.type === 'success' ? '✅' : 
+                      notification.type === 'error' ? '❌' : 'ℹ️'}
+                </div>
+                <div class="notification-item-text">
+                    <div class="notification-item-title">${notification.title}</div>
+                    <div class="notification-item-message">${notification.message}</div>
+                    <div class="notification-item-time">${timeAgo(notification.timestamp)}</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function markAllNotificationsRead() {
+    notifications.forEach(n => n.read = true);
+    notificationCount = 0;
+    updateNotificationBell();
+    updateNotificationDropdown();
+}
+
+function timeAgo(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+}
+
+// Trending carousel functions
+let trendingItems = [];
+let trendingIndex = 0;
+
+async function loadTrendingItems() {
+    try {
+        const { getTrendingTokens } = await import('../utils/supabaseClient.js');
+        const trendingData = await getTrendingTokens(5);
+        
+        trendingItems = [];
+        for (const item of trendingData) {
+            const tokenMetadata = await fetchTokenMetadata(item.token_id);
+            if (tokenMetadata) {
+                // Find the current listing for this token
+                const listing = allListings.find(l => l.tokenId === item.token_id && l.active);
+                if (listing) {
+                    trendingItems.push({
+                        ...tokenMetadata,
+                        activityCount: item.activity_count,
+                        listing
+                    });
+                }
+            }
+        }
+        
+        renderTrendingCarousel();
+    } catch (error) {
+        console.error('Error loading trending items:', error);
+    }
+}
+
+function renderTrendingCarousel() {
+    const trendingItemsContainer = document.getElementById('trendingItems');
+    if (!trendingItemsContainer || trendingItems.length === 0) return;
+    
+    trendingItemsContainer.innerHTML = trendingItems.map(item => {
+        const formattedPrice = formatPrice(item.listing.price, item.listing.currency);
+        const currencyName = getCurrencyName(item.listing.currency);
+        
+        return `
+            <div class="trending-item" data-token-id="${item.id}">
+                <img src="${item.image}" alt="${item.name}" class="trending-item-image" 
+                     onerror="this.src='assets/detailed_ninja_cat_64.png'">
+                <div class="trending-item-name">${item.name}</div>
+                <div class="trending-item-price">${formattedPrice} ${currencyName}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add click handlers
+    trendingItemsContainer.querySelectorAll('.trending-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const tokenId = item.dataset.tokenId;
+            const trendingItem = trendingItems.find(t => t.id == tokenId);
+            if (trendingItem) {
+                showQuickPreview(trendingItem, {
+                    price: trendingItem.listing.price,
+                    currency: trendingItem.listing.currency,
+                    seller: trendingItem.listing.seller
+                });
+            }
+        });
+    });
+    
+    // Show trending carousel
+    const trendingCarousel = document.getElementById('trendingCarousel');
+    if (trendingCarousel) {
+        trendingCarousel.classList.add('show');
+    }
+}
+
+function scrollTrendingCarousel(direction) {
+    const container = document.getElementById('trendingItems');
+    if (!container) return;
+    
+    const scrollAmount = 140; // width of one item plus gap
+    const currentScroll = container.scrollLeft;
+    
+    if (direction === 'prev') {
+        container.scrollTo({
+            left: currentScroll - scrollAmount,
+            behavior: 'smooth'
+        });
+    } else {
+        container.scrollTo({
+            left: currentScroll + scrollAmount,
+            behavior: 'smooth'
+        });
+    }
+}
+
+// Real-time subscriptions
+async function setupRealtimeSubscriptions() {
+    try {
+        const { subscribeToNewListings, subscribeToUserNotifications } = await import('../utils/supabaseClient.js');
+        
+        // Subscribe to new listings
+        await subscribeToNewListings((payload) => {
+            if (payload.new && payload.new.event_type === 'listing_created') {
+                showRealtimeNotification(
+                    'New Listing',
+                    `A new NFT has been listed for sale!`,
+                    'info'
+                );
+                
+                // Refresh listings
+                loadListings();
+            }
+        });
+        
+        // Subscribe to user notifications
+        const walletAddress = getCurrentWalletAddress();
+        if (walletAddress) {
+            await subscribeToUserNotifications(walletAddress, (payload) => {
+                if (payload.new) {
+                    const event = payload.new;
+                    handleRealtimeEvent(event);
+                }
+            });
+        }
+        
+        console.log('Real-time subscriptions set up successfully');
+    } catch (error) {
+        console.error('Error setting up real-time subscriptions:', error);
+    }
+}
+
+function handleRealtimeEvent(event) {
+    switch (event.event_type) {
+        case 'purchase':
+            if (event.token_id) {
+                showRealtimeNotification(
+                    'Item Sold',
+                    `Token #${event.token_id} has been sold!`,
+                    'success'
+                );
+            }
+            break;
+        case 'listing_created':
+            if (event.token_id) {
+                showRealtimeNotification(
+                    'New Listing',
+                    `Token #${event.token_id} has been listed for sale!`,
+                    'info'
+                );
+            }
+            break;
+        case 'favorite':
+            if (event.token_id) {
+                showRealtimeNotification(
+                    'Item Favorited',
+                    `Token #${event.token_id} was added to someone's favorites!`,
+                    'info'
+                );
+            }
+            break;
+        default:
+            console.log('Unknown real-time event:', event);
     }
 }
 
