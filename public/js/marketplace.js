@@ -1222,21 +1222,21 @@ async function loadPricingData(tokenId) {
 // Show fallback pricing data when API fails
 function showFallbackPricingData() {
     const pricingData = document.getElementById('pricingData');
-    
+
     // Set fallback values instead of breaking the modal
     document.getElementById('floorPrice').textContent = 'No listings';
     document.getElementById('avgPrice').textContent = 'No data';
     document.getElementById('lastSold').textContent = 'No data';
     document.getElementById('matchingListings').textContent = 'Market data unavailable';
-    
+
     // Hide trait matches section
     const traitMatches = document.getElementById('traitMatches');
     traitMatches.style.display = 'none';
-    
+
     // Hide suggested price section
     const suggestedPriceSection = document.getElementById('suggestedPriceSection');
     suggestedPriceSection.style.display = 'none';
-    
+
     // Clear pricing data to prevent validation errors
     window.currentPricingData = {
         floorPrice: 0,
@@ -1246,7 +1246,7 @@ function showFallbackPricingData() {
         traitMatches: 0,
         suggestedPrice: 0
     };
-    
+
     // Add a small notice at the top of pricing data
     const existingNotice = pricingData.querySelector('.api-notice');
     if (!existingNotice) {

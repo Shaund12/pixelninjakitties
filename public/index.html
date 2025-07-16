@@ -1128,40 +1128,269 @@
             color: #b0b0b0;
         }
 
-        /* Preview system */
-        .preview-container {
-            margin: 15px 0;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .preview-image {
-            max-width: 200px;
-            border-radius: 10px;
-            box-shadow: 0 4px 16px rgba(138,101,255,0.3);
-            border: 2px solid #2d2d3a;
-        }
-
-        .preview-traits {
+        /* Breed Preview (simplified) */
+        .breed-preview {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 10px 0;
+            align-items: center;
+            justify-content: center;
+            height: 150px;
+            margin: 1.5rem 0;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
+            border-radius: 10px;
+            font-style: italic;
+            color: #9e9e9e;
+            border: 1.5px dashed #8a65ff33;
+            box-shadow: 0 1px 4px #8a65ff11;
         }
 
-        .preview-trait {
+        .preview-placeholder {
+            text-align: center;
+            color: #9e9e9e;
+            padding: 20px;
+        }
+
+        /* Enhanced Progress Timeline */
+        .task-progress-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(120deg, rgba(138,101,255,0.07) 0%, rgba(39,117,202,0.04) 100%);
+            border-radius: 16px;
+            border: 1.5px solid #2d2d3a;
+        }
+
+        .timeline-stage {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid #2d2d3a;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .timeline-stage.active {
             background: rgba(138,101,255,0.1);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
+            border-color: rgba(138,101,255,0.3);
+            box-shadow: 0 4px 12px rgba(138,101,255,0.2);
         }
 
-            .preview-trait span {
-                color: #8a65ff;
-                font-weight: 500;
-                margin-right: 4px;
+        .timeline-stage.completed {
+            background: rgba(74,222,128,0.1);
+            border-color: rgba(74,222,128,0.3);
+        }
+
+        .timeline-stage.failed {
+            background: rgba(239,68,68,0.1);
+            border-color: rgba(239,68,68,0.3);
+        }
+
+        .stage-icon {
+            font-size: 1.5em;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(138,101,255,0.1);
+            border-radius: 50%;
+            border: 2px solid #2d2d3a;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-stage.active .stage-icon {
+            background: rgba(138,101,255,0.2);
+            border-color: rgba(138,101,255,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .timeline-stage.completed .stage-icon {
+            background: rgba(74,222,128,0.2);
+            border-color: rgba(74,222,128,0.5);
+        }
+
+        .timeline-stage.failed .stage-icon {
+            background: rgba(239,68,68,0.2);
+            border-color: rgba(239,68,68,0.5);
+        }
+
+        .stage-label {
+            font-weight: 600;
+            color: #fff;
+            flex: 1;
+            font-size: 1.1em;
+        }
+
+        .stage-status {
+            color: #9e9e9e;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        .timeline-stage.active .stage-status {
+            color: #8a65ff;
+        }
+
+        .timeline-stage.completed .stage-status {
+            color: #4ade80;
+        }
+
+        .timeline-stage.failed .stage-status {
+            color: #ef4444;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Enhanced Sharing Section */
+        .sharing-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid #2d2d3a;
+        }
+
+        .sharing-section h5 {
+            color: #fff;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .sharing-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .share-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #8a65ff, #2775ca);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(138,101,255,0.3);
+        }
+
+        .share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(138,101,255,0.4);
+        }
+
+        .share-btn.twitter {
+            background: linear-gradient(135deg, #1DA1F2, #0d8bd9);
+        }
+
+        .share-btn.twitter:hover {
+            box-shadow: 0 6px 16px rgba(29,161,242,0.4);
+        }
+
+        /* Enhanced Mobile Responsiveness */
+        @media (max-width: 480px) {
+            .task-progress-timeline {
+                padding: 15px;
+                gap: 10px;
             }
+
+            .timeline-stage {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .stage-label {
+                font-size: 1em;
+            }
+
+            .sharing-buttons {
+                flex-direction: column;
+            }
+
+            .share-btn {
+                min-width: 100%;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+            }
+
+            .download-btn {
+                min-width: 100%;
+                margin-bottom: 10px;
+            }
+
+            /* Enhanced mint button for mobile */
+            #mintBtn {
+                font-size: 1.2rem;
+                padding: 1.2rem;
+                border-radius: 12px;
+            }
+
+            /* Advanced settings drawer for mobile */
+            .advanced-options {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.9);
+                z-index: 1000;
+                padding: 20px;
+                overflow-y: auto;
+                transform: translateY(100%);
+                transition: transform 0.3s ease;
+            }
+
+            .advanced-options.show {
+                transform: translateY(0);
+            }
+
+            .advanced-options::before {
+                content: "Advanced Options";
+                display: block;
+                font-size: 1.5em;
+                font-weight: 600;
+                color: #fff;
+                text-align: center;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #8a65ff;
+            }
+
+            .advanced-options .close-drawer {
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 1.5em;
+                cursor: pointer;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(255,255,255,0.1);
+            }
+        }
 
         /* Toast notifications */
         .toast-container {
@@ -1470,6 +1699,242 @@
             opacity: 0.8;
             font-style: italic;
         }
+
+        /* Enhanced Error UI with Animated Emojis */
+        .error-ui {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(120deg, rgba(239,68,68,0.1) 0%, rgba(127,29,29,0.07) 100%);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1.5px solid rgba(220, 38, 38, 0.3);
+            box-shadow: 0 4px 16px rgba(239,68,68,0.2);
+        }
+
+        .error-icon {
+            margin-right: 20px;
+            font-size: 3em;
+            animation: errorBounce 0.6s ease-in-out;
+        }
+
+        .error-emoji {
+            font-size: 2.5em;
+            margin-right: 15px;
+            animation: emojiWobble 2s ease-in-out infinite;
+        }
+
+        @keyframes errorBounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        @keyframes emojiWobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        /* Enhanced Success Animation */
+        .success-ui {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            background: linear-gradient(120deg, rgba(74,222,128,0.1) 0%, rgba(34,197,94,0.07) 100%);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1.5px solid rgba(74,222,128,0.3);
+            box-shadow: 0 4px 16px rgba(74,222,128,0.2);
+        }
+
+        .success-emoji {
+            font-size: 3em;
+            margin-bottom: 15px;
+            animation: successCelebration 1s ease-in-out;
+        }
+
+        @keyframes successCelebration {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+            100% { transform: scale(1) rotate(360deg); opacity: 1; }
+        }
+
+        .retry-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .retry-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        /* Enhanced Particle Effects */
+        .charge-particle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: chargeUp 2s ease-in-out infinite;
+        }
+
+        @keyframes chargeUp {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translateY(-30px) scale(1.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-60px) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        .timeout-emoji {
+            font-size: 2.5em;
+            margin-right: 15px;
+            animation: emojiFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes emojiFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Price shimmer effect */
+        .price-shimmer {
+            display: inline-block;
+            width: 80px;
+            height: 20px;
+            background: linear-gradient(90deg, #3a3a3a 25%, #4a4a4a 50%, #3a3a3a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            vertical-align: middle;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .price-value {
+            font-weight: 700;
+            color: #8a65ff;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        /* Mobile drawer enhancements */
+        @media (max-width: 480px) {
+            .advanced-toggle {
+                background: linear-gradient(135deg, #8a65ff, #2775ca);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 20px;
+                font-weight: 600;
+                cursor: pointer;
+                width: 100%;
+                margin: 10px 0;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .advanced-toggle::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.5s;
+            }
+
+            .advanced-toggle:hover::before {
+                left: 100%;
+            }
+
+            .advanced-toggle::after {
+                content: '⚙️';
+                margin-left: 10px;
+                font-size: 1.2em;
+            }
+
+            .advanced-options {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+                z-index: 1000;
+                padding: 20px;
+                overflow-y: auto;
+                transform: translateY(100%);
+                transition: transform 0.3s ease;
+                border: none;
+                border-radius: 0;
+            }
+
+            .advanced-options.show {
+                transform: translateY(0);
+            }
+
+            .advanced-options::before {
+                content: "⚙️ Advanced Options";
+                display: block;
+                font-size: 1.5em;
+                font-weight: 600;
+                color: #fff;
+                text-align: center;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #8a65ff;
+            }
+
+            .advanced-options .close-drawer {
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: rgba(255,255,255,0.1);
+                border: none;
+                color: #fff;
+                font-size: 1.5em;
+                cursor: pointer;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: all 0.3s ease;
+            }
+
+            .advanced-options .close-drawer:hover {
+                background: rgba(255,255,255,0.2);
+                transform: scale(1.1);
+            }
+
+            .advanced-options .close-drawer::before {
+                content: '✕';
+            }
+        }
     </style>
 </head>
 <head>
@@ -1523,16 +1988,16 @@
         <section class="card">
             <label for="breed">Choose your cat's breed</label>
             <select id="breed">
-                <option>Bengal</option>
-                <option>Siamese</option>
-                <option>Maine Coon</option>
-                <option>Calico</option>
-                <option>Sphynx</option>
-                <option>Shadow</option>
-                <option>Nyan</option>
-                <option>Persian</option>
-                <option>Bombay</option>
-                <option>Tabby</option>
+                <option value="Bengal">Bengal</option>
+                <option value="Siamese">Siamese</option>
+                <option value="Maine Coon">Maine Coon</option>
+                <option value="Calico">Calico</option>
+                <option value="Sphynx">Sphynx</option>
+                <option value="Shadow">Shadow</option>
+                <option value="Nyan">Nyan</option>
+                <option value="Persian">Persian</option>
+                <option value="Bombay">Bombay</option>
+                <option value="Tabby">Tabby</option>
             </select>
 
             <!-- Add AI Provider Selection -->
@@ -1565,7 +2030,9 @@
             </div>
 
             <div class="breed-preview">
-                Your ninja cat will be randomly generated at minting
+                <div class="preview-placeholder">
+                    <p>Select traits to see preview</p>
+                </div>
             </div>
 
             <!-- Add info sections for each provider -->
@@ -1695,15 +2162,37 @@
             <div id="status"></div>
             <div id="mint-status"></div>
 
-            <!-- Progress bar -->
+            <!-- Enhanced Progress Timeline -->
             <div class="progress-container">
                 <div class="progress-bar"></div>
             </div>
+            <div class="task-progress-timeline" id="taskTimeline" style="display: none;">
+                <div class="timeline-stage" data-stage="art">
+                    <div class="stage-icon">🎨</div>
+                    <div class="stage-label">Art Generation</div>
+                    <div class="stage-status">Waiting...</div>
+                </div>
+                <div class="timeline-stage" data-stage="metadata">
+                    <div class="stage-icon">🧠</div>
+                    <div class="stage-label">Metadata Build</div>
+                    <div class="stage-status">Waiting...</div>
+                </div>
+                <div class="timeline-stage" data-stage="ipfs">
+                    <div class="stage-icon">🗂</div>
+                    <div class="stage-label">IPFS Upload</div>
+                    <div class="stage-status">Waiting...</div>
+                </div>
+                <div class="timeline-stage" data-stage="tokenuri">
+                    <div class="stage-icon">✅</div>
+                    <div class="stage-label">Final TokenURI Set</div>
+                    <div class="stage-status">Waiting...</div>
+                </div>
+            </div>
 
-            <!-- Download section - hidden by default -->
+            <!-- Enhanced Download + Sharing section -->
             <div id="downloadSection" class="download-section" style="display: none;">
-                <h4>Your NFT is ready!</h4>
-                <p>Download your ninja cat and metadata to keep a local copy of your digital warrior.</p>
+                <h4>🎉 Your NFT is ready!</h4>
+                <p>Download your ninja cat, share it with the world, or keep a local copy of your digital warrior.</p>
                 <div class="download-buttons">
                     <button id="downloadImage" class="download-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
@@ -1717,11 +2206,34 @@
                         </svg>
                         Download Metadata
                     </button>
+                    <button id="downloadZip" class="download-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z" />
+                        </svg>
+                        Download ZIP
+                    </button>
+                </div>
+                <div class="sharing-section">
+                    <h5>Share Your NFT</h5>
+                    <div class="sharing-buttons">
+                        <button id="copyTokenURI" class="share-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                            Copy Token URI
+                        </button>
+                        <button id="shareTwitter" class="share-btn twitter">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            Share on X
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <p class="disclaimer">By minting, you'll receive a completely unique AI-generated Ninja Cat NFT with randomly assigned traits, colors and abilities.</p>
-            <p class="disclaimer" style="font-size: 0.8rem; font-style: italic;">Keyboard shortcuts: Alt+M to mint, Alt+P to preview</p>
+            <p class="disclaimer" style="font-size: 0.8rem; font-style: italic;">Keyboard shortcuts: Alt+M to mint</p>
         </section>
 
         <!-- FUN FACTS -->
@@ -1779,14 +2291,40 @@
             }
         });
 
-        // Advanced options toggle
+        // Advanced options toggle with mobile drawer support
         const advancedToggle = document.getElementById('advancedToggle');
         const advancedOptions = document.getElementById('advancedOptions');
 
         advancedToggle.addEventListener('click', function () {
             this.classList.toggle('active');
             advancedOptions.classList.toggle('show');
+            
+            // Add close button for mobile drawer
+            if (window.innerWidth <= 480) {
+                if (advancedOptions.classList.contains('show')) {
+                    // Add close button if not exists
+                    if (!advancedOptions.querySelector('.close-drawer')) {
+                        const closeBtn = document.createElement('button');
+                        closeBtn.className = 'close-drawer';
+                        closeBtn.addEventListener('click', () => {
+                            advancedOptions.classList.remove('show');
+                            advancedToggle.classList.remove('active');
+                        });
+                        advancedOptions.appendChild(closeBtn);
+                    }
+                }
+            }
         });
+
+        // Close drawer when clicking outside on mobile
+        if (window.innerWidth <= 480) {
+            advancedOptions.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                    advancedToggle.classList.remove('active');
+                }
+            });
+        }
 
         // Download functionality
         function setupNFTDownloads(nftData) {
@@ -1796,20 +2334,34 @@
 
             if (!nftData) {
                 console.warn("No NFT data available for download");
+                // Still show the download section but with disabled buttons
+                if (downloadSection) {
+                    downloadSection.style.display = 'block';
+                }
                 return;
             }
 
             // Show the download section
             downloadSection.style.display = 'block';
 
+            // Clear any existing event listeners by cloning the elements
+            const newDownloadImage = downloadImage.cloneNode(true);
+            const newDownloadMetadata = downloadMetadata.cloneNode(true);
+            downloadImage.parentNode.replaceChild(newDownloadImage, downloadImage);
+            downloadMetadata.parentNode.replaceChild(newDownloadMetadata, downloadMetadata);
+
             // Setup image download
-            downloadImage.addEventListener('click', async function () {
+            newDownloadImage.addEventListener('click', async function () {
                 try {
                     let imageUrl = nftData.image;
 
                     // Convert IPFS URL to HTTP if needed
-                    if (imageUrl.startsWith('ipfs://')) {
+                    if (imageUrl && imageUrl.startsWith('ipfs://')) {
                         imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+                    }
+
+                    if (!imageUrl) {
+                        throw new Error('No image URL available');
                     }
 
                     // Fetch the image
@@ -1835,10 +2387,13 @@
             });
 
             // Setup metadata download
-            downloadMetadata.addEventListener('click', function () {
+            newDownloadMetadata.addEventListener('click', function () {
                 try {
+                    // Use the full NFT data or just the metadata part
+                    const metadataToDownload = nftData.metadata || nftData;
+                    
                     // Format metadata as pretty JSON
-                    const metadataStr = JSON.stringify(nftData.metadata, null, 2);
+                    const metadataStr = JSON.stringify(metadataToDownload, null, 2);
                     const blob = new Blob([metadataStr], { type: 'application/json' });
 
                     // Create a temporary link and trigger download
@@ -2222,8 +2777,8 @@
                         optionPanel.style.display = 'block';
                     }
 
-                    // Store the selected provider in localStorage for the server to use
-                    localStorage.setItem('ninjacat_provider', selectedProvider);
+                    // Store the selected provider in a data attribute for the server to use
+                    document.body.setAttribute('data-selected-provider', selectedProvider);
                     console.log(`Selected image provider: ${selectedProvider}`);
 
                     // Update generation summary if applicable
@@ -2320,18 +2875,23 @@
 
         // Initialize VTRU conversion and navbar price display
         document.addEventListener('DOMContentLoaded', async function () {
-            // Initially hide conversion
-            const vtruConversionEl = document.getElementById('vtruConversion');
-            if (vtruConversionEl) {
-                vtruConversionEl.style.display = 'none';
-            }
-
             try {
                 // Get the current exchange rate
                 const exchangeRate = await window.getExchangeRate();
 
                 // Update navbar price indicator
                 updateNavbarPrice(exchangeRate);
+                
+                // Immediately update the exchange rate display
+                const exchangeRateEl = document.getElementById('exchangeRate');
+                const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
+                if (exchangeRateEl && exchangeRateDisplayEl && exchangeRate) {
+                    exchangeRateEl.textContent = exchangeRate.toFixed(4);
+                    exchangeRateDisplayEl.style.display = 'block';
+                }
+
+                // Try to update VTRU conversion immediately if price is already available
+                updateVtruConversion(null, exchangeRate);
 
                 // Set interval to update price every 60 seconds
                 setInterval(async () => {
@@ -2342,21 +2902,27 @@
                 // Setup price observer to convert prices in the mint card
                 const priceElement = document.getElementById('price');
                 if (priceElement) {
+                    // Function to check and update VTRU conversion
+                    const checkAndUpdateVtruConversion = () => {
+                        const priceText = priceElement.innerText || priceElement.textContent;
+                        const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
+                        if (priceMatch && priceMatch[1]) {
+                            updateVtruConversion(priceMatch[1], exchangeRate);
+                        }
+                    };
+                    
                     // Initial check of existing price
-                    const priceText = priceElement.innerText || priceElement.textContent;
-                    const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
-                    if (priceMatch && priceMatch[1]) {
-                        updateVtruConversion(priceMatch[1], exchangeRate);
-                    }
+                    checkAndUpdateVtruConversion();
+                    
+                    // Check again after short delays in case the price loads later
+                    setTimeout(checkAndUpdateVtruConversion, 1000);
+                    setTimeout(checkAndUpdateVtruConversion, 3000);
+                    setTimeout(checkAndUpdateVtruConversion, 5000);
 
                     // Monitor for price changes
                     const observer = new MutationObserver(function (mutations) {
                         mutations.forEach(function (mutation) {
-                            const priceText = priceElement.innerText || priceElement.textContent;
-                            const priceMatch = priceText.match(/(\d+(\.\d+)?)/);
-                            if (priceMatch && priceMatch[1]) {
-                                updateVtruConversion(priceMatch[1], exchangeRate);
-                            }
+                            checkAndUpdateVtruConversion();
                         });
                     });
 
@@ -2390,32 +2956,32 @@
             const exchangeRateEl = document.getElementById('exchangeRate');
             const exchangeRateDisplayEl = document.getElementById('exchangeRateDisplay');
 
-            // Set the exchange rate display
+            // Set the exchange rate display - always show it if we have a rate
             if (exchangeRateEl && exchangeRateDisplayEl) {
                 if (exchangeRate && !isNaN(exchangeRate)) {
                     exchangeRateEl.textContent = exchangeRate.toFixed(4);
                     exchangeRateDisplayEl.style.display = 'block';
                 } else {
-                    exchangeRateDisplayEl.style.display = 'none';
+                    exchangeRateEl.textContent = '--';
+                    exchangeRateDisplayEl.style.display = 'block';
                 }
             }
 
             if (!vtruElement || !vtruConversionEl) return;
+
+            // Always show the VTRU conversion display
+            vtruConversionEl.style.display = 'block';
 
             if (usdcPrice && !isNaN(usdcPrice)) {
                 if (exchangeRate && !isNaN(exchangeRate)) {
                     // Calculate how many VTRU you get for the USDC price
                     const vtruValue = (parseFloat(usdcPrice) / exchangeRate).toFixed(2);
                     vtruElement.textContent = vtruValue;
-                    vtruConversionEl.style.display = 'block';
                 } else {
-                    // No valid exchange rate
-                    vtruElement.textContent = "N/A - Unable to retrieve exchange rate";
-                    vtruConversionEl.style.display = 'block';
+                    vtruElement.textContent = "N/A";
                 }
             } else {
-                // No valid price
-                vtruConversionEl.style.display = 'none';
+                vtruElement.textContent = "--";
             }
         }
     </script>
