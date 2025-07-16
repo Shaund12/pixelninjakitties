@@ -342,7 +342,7 @@ function pollForTaskCompletion(tokenId, txHash) {
                     updateTaskStage('ipfs', 'completed', 'IPFS upload complete!');
                     updateTaskStage('tokenuri', 'completed', 'TokenURI set!');
 
-                    showMintSuccess(tokenId, txHash);
+                    showMintSuccess(tokenId, txHash, data);
                     return;
                 } else if (taskStatus === 'FAILED') {
                     console.error('❌ Task failed:', data.message || data.error);
@@ -379,15 +379,20 @@ function showTimeoutMessage(tokenId, txHash) {
 }
 
 // Show mint success
-function showMintSuccess(tokenId, txHash) {
+function showMintSuccess(tokenId, txHash, nftData) {
     const link = txHash ? `https://explorer.vitruveo.xyz/tx/${txHash}` : '';
     idle(`🎉 Your Ninja Cat is ready! 
          ${link ? `<a href="${link}" target="_blank" rel="noopener noreferrer">View transaction</a>` : ''}
          ${tokenId ? `<br><a href="kitty.html?id=${tokenId}">View your NFT #${tokenId}</a>` : ''}`);
     
-    // Show download section if available
-    const downloadSection = document.getElementById('downloadSection');
-    if (downloadSection) {
-        downloadSection.style.display = 'block';
+    // Setup NFT download functionality with the data
+    if (nftData && typeof setupNFTDownloads === 'function') {
+        setupNFTDownloads(nftData);
+    } else {
+        // Show download section even without data
+        const downloadSection = document.getElementById('downloadSection');
+        if (downloadSection) {
+            downloadSection.style.display = 'block';
+        }
     }
 }

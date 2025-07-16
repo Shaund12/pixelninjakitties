@@ -1988,20 +1988,17 @@
         <section class="card">
             <label for="breed">Choose your cat's breed</label>
             <select id="breed">
-                <option value="Bengal">Bengal <span class="rarity-indicator">Common</span></option>
-                <option value="Siamese">Siamese <span class="rarity-indicator">Common</span></option>
-                <option value="Maine Coon">Maine Coon <span class="rarity-indicator">Uncommon</span></option>
-                <option value="Calico">Calico <span class="rarity-indicator">Uncommon</span></option>
-                <option value="Sphynx">Sphynx <span class="rarity-indicator">Epic</span></option>
-                <option value="Shadow">Shadow <span class="rarity-indicator">Epic</span></option>
-                <option value="Nyan">Nyan <span class="rarity-indicator">Legendary</span></option>
-                <option value="Persian">Persian <span class="rarity-indicator">Common</span></option>
-                <option value="Bombay">Bombay <span class="rarity-indicator">Uncommon</span></option>
-                <option value="Tabby">Tabby <span class="rarity-indicator">Common</span></option>
+                <option value="Bengal">Bengal</option>
+                <option value="Siamese">Siamese</option>
+                <option value="Maine Coon">Maine Coon</option>
+                <option value="Calico">Calico</option>
+                <option value="Sphynx">Sphynx</option>
+                <option value="Shadow">Shadow</option>
+                <option value="Nyan">Nyan</option>
+                <option value="Persian">Persian</option>
+                <option value="Bombay">Bombay</option>
+                <option value="Tabby">Tabby</option>
             </select>
-            <div class="trait-rarity-display">
-                <span class="rarity-badge" id="breedRarity">🔸 Common Breed</span>
-            </div>
 
             <!-- Add AI Provider Selection -->
             <label for="imageProvider">Choose AI image provider</label>
@@ -2337,20 +2334,34 @@
 
             if (!nftData) {
                 console.warn("No NFT data available for download");
+                // Still show the download section but with disabled buttons
+                if (downloadSection) {
+                    downloadSection.style.display = 'block';
+                }
                 return;
             }
 
             // Show the download section
             downloadSection.style.display = 'block';
 
+            // Clear any existing event listeners by cloning the elements
+            const newDownloadImage = downloadImage.cloneNode(true);
+            const newDownloadMetadata = downloadMetadata.cloneNode(true);
+            downloadImage.parentNode.replaceChild(newDownloadImage, downloadImage);
+            downloadMetadata.parentNode.replaceChild(newDownloadMetadata, downloadMetadata);
+
             // Setup image download
-            downloadImage.addEventListener('click', async function () {
+            newDownloadImage.addEventListener('click', async function () {
                 try {
                     let imageUrl = nftData.image;
 
                     // Convert IPFS URL to HTTP if needed
-                    if (imageUrl.startsWith('ipfs://')) {
+                    if (imageUrl && imageUrl.startsWith('ipfs://')) {
                         imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+                    }
+
+                    if (!imageUrl) {
+                        throw new Error('No image URL available');
                     }
 
                     // Fetch the image
@@ -2376,10 +2387,13 @@
             });
 
             // Setup metadata download
-            downloadMetadata.addEventListener('click', function () {
+            newDownloadMetadata.addEventListener('click', function () {
                 try {
+                    // Use the full NFT data or just the metadata part
+                    const metadataToDownload = nftData.metadata || nftData;
+                    
                     // Format metadata as pretty JSON
-                    const metadataStr = JSON.stringify(nftData.metadata, null, 2);
+                    const metadataStr = JSON.stringify(metadataToDownload, null, 2);
                     const blob = new Blob([metadataStr], { type: 'application/json' });
 
                     // Create a temporary link and trigger download
