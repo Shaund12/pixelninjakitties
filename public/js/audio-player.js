@@ -42,7 +42,7 @@
     // Player state management with localStorage for persistence
     const playerState = {
         get currentIndex() {
-            return parseInt(localStorage.getItem('ninja_audio_index') || '0');
+            return parseInt(localStorage.getItem('ninja_audio_index') || '0', 10);
         },
         set currentIndex(value) {
             localStorage.setItem('ninja_audio_index', value.toString());
