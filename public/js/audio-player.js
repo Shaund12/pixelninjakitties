@@ -1,5 +1,42 @@
 ﻿// Ninja Casts: Shadow Frequencies - Enhanced Audio Player
 (() => {
+    // Define showToast early to avoid reference errors
+    if (typeof showToast !== 'function') {
+        window.showToast = (message, type, duration = 3000) => {
+            const toast = document.createElement('div');
+            toast.className = `global-toast ${type || 'info'}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                right: 20px;
+                background: #23263a;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+                z-index: 10000;
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+                font-size: 14px;
+            `;
+            document.body.appendChild(toast);
+
+            // Show the toast
+            setTimeout(() => {
+                toast.style.opacity = '1';
+            }, 10);
+            // Hide and remove after duration
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+
+            return toast;
+        };
+    }
+
     // Collection of ninja-themed, high-quality streaming sources
     const streamingSources = [
         {
@@ -183,7 +220,7 @@
 
                 if (error) throw error;
             } catch (error) {
-                console.warn('Failed to save settings to Supabase:', error);
+                // Silently fall back to localStorage - expected if table doesn't exist
                 this.saveToLocalStorage();
             }
         },
@@ -2310,43 +2347,6 @@
         } else {
             // Update UI for initial state
             updateStreamInfo();
-        }
-
-        // Define showToast if it doesn't exist
-        if (typeof showToast !== 'function') {
-            window.showToast = (message, type, duration = 3000) => {
-                const toast = document.createElement('div');
-                toast.className = `global-toast ${type || 'info'}`;
-                toast.textContent = message;
-                toast.style.cssText = `
-                    position: fixed;
-                    bottom: 100px;
-                    right: 20px;
-                    background: #23263a;
-                    color: white;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
-                    z-index: 10000;
-                    opacity: 0;
-                    transition: opacity 0.3s;
-                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-                    font-size: 14px;
-                `;
-                document.body.appendChild(toast);
-
-                // Show the toast
-                setTimeout(() => {
-                    toast.style.opacity = '1';
-                }, 10);
-                // Hide and remove after duration
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    setTimeout(() => toast.remove(), 300);
-                }, duration);
-
-                return toast;
-            };
         }
     }
 
