@@ -808,6 +808,9 @@ async function performClaiming(tokenIds) {
         // First check eligibility for claiming
         logMessage('Checking eligibility for claiming rewards...');
 
+        // Log the token IDs we're claiming for better debugging
+        logMessage(`Token IDs to claim: ${tokenIds.join(', ')}`, 'info');
+
         // Get staking info for these tokens to display more details
         const stakingInfoPromises = tokenIds.map(id => getTokenStakingInfo(id));
         const stakingInfos = await Promise.all(stakingInfoPromises);
@@ -820,7 +823,37 @@ async function performClaiming(tokenIds) {
 
         // Display staking details to help diagnose issues
         for (const info of validInfos) {
-            logMessage(`Token #${info.tokenId}: Staked ${info.daysStaked} days ago`, 'info');
+            logMessage(`Token #${info.tokenId}: Staked ${info.daysStaked.toFixed(1)} days ago`, 'info');
+
+            // Check if we have rewards info to help diagnose issues
+            if (info.rewards) {
+                const finalReward = parseFloat(info.rewards.finalReward);
+                logMessage(`Token #${info.tokenId}: Has ${finalReward.toFixed(2)} PIX pending`, 'info');
+
+                // If reward is 0, log a warning
+                if (finalReward <= 0) {
+                    logMessage(`Token #${info.tokenId}: No rewards available yet`, 'warning');
+                }
+            }
+        }
+
+        // Check if any tokens have rewards
+        const tokensWithRewards = validInfos.filter(info =>
+            info.rewards && parseFloat(info.rewards.finalReward) > 0
+        );
+
+        if (tokensWithRewards.length === 0) {
+            logMessage('None of your staked tokens have rewards to claim yet', 'warning');
+            logMessage('Rewards accumulate over time. Please check back later.', 'info');
+            return;
+        }
+
+        // Only claim for tokens that have rewards
+        const tokenIdsWithRewards = tokensWithRewards.map(info => info.tokenId);
+
+        if (tokenIdsWithRewards.length !== tokenIds.length) {
+            logMessage(`Only ${tokenIdsWithRewards.length} of ${tokenIds.length} tokens have rewards to claim`, 'warning');
+            tokenIds = tokenIdsWithRewards; // Update to only claim tokens with rewards
         }
 
         // Claim rewards
@@ -828,31 +861,65 @@ async function performClaiming(tokenIds) {
 
         try {
             // Check if the claim would fail by estimating gas first
-            await stakingContract.claim.estimateGas(tokenIds);
+            try {
+                logMessage('Estimating transaction gas...', 'info');
+                await stakingContract.claim.estimateGas(tokenIds);
+                logMessage('Gas estimation successful, proceeding with claim', 'info');
+            } catch (gasError) {
+                // Gas estimation failed, check for specific errors
+                console.error('Gas estimation failed:', gasError);
+
+                // Get the error message
+                const errorMessage = gasError.message || String(gasError);
+                logMessage(`Gas estimation error: ${errorMessage}`, 'error');
+
+                // Check for common issues
+                if (errorMessage.toLowerCase().includes('not enough time')) {
+                    logMessage('⚠️ Cannot claim yet: Minimum staking period not met', 'warning');
+                } else if (errorMessage.toLowerCase().includes('no rewards') ||
+                    errorMessage.toLowerCase().includes('zero amount')) {
+                    logMessage('⚠️ No rewards available to claim yet', 'warning');
+                } else {
+                    logMessage('Contract would reject this transaction. Please try again later.', 'warning');
+                }
+
+                return; // Exit early since the transaction would fail
+            }
 
             // If we get here, gas estimation succeeded
             const tx = await stakingContract.claim(tokenIds);
-            logMessage('Claim transaction sent. Waiting for confirmation...');
+            logMessage('Claim transaction sent. Waiting for confirmation...', 'info');
+            logMessage(`Transaction hash: ${tx.hash}`, 'info');
+
             await tx.wait();
             logMessage('✅ Successfully claimed rewards!', 'success');
         } catch (error) {
             // Extract revert reason if possible
             console.error('Claim transaction failed:', error);
 
+            // Log more details about the error
+            logMessage(`Transaction error type: ${error.constructor.name}`, 'error');
+
             if (error.data) {
                 logMessage(`Contract error code: ${error.data}`, 'error');
             }
 
+            if (error.transaction) {
+                logMessage(`Failed transaction: ${error.transaction.hash}`, 'info');
+            }
+
             // Check for common issues
             const errorStr = error.toString().toLowerCase();
-            if (errorStr.includes('not enough time')) {
+            if (errorStr.includes('not enough time') || errorStr.includes('minimum period')) {
                 logMessage('⚠️ Cannot claim yet: Minimum staking period not met', 'warning');
+                logMessage('The contract requires tokens to be staked for a minimum period', 'info');
             } else if (errorStr.includes('no rewards') || errorStr.includes('zero amount')) {
                 logMessage('⚠️ No rewards available to claim yet', 'warning');
+                logMessage('Rewards may take time to accumulate', 'info');
+            } else if (errorStr.includes('user denied') || errorStr.includes('user rejected')) {
+                logMessage('Transaction was rejected in your wallet', 'warning');
             } else {
                 logMessage(`Error claiming: ${error.message}`, 'error');
-
-                // Add additional helpful message
                 logMessage("This could be because the minimum staking period hasn't passed, or there are no rewards yet", 'info');
             }
         }
