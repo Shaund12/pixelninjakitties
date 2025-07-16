@@ -1,13 +1,14 @@
 /**
  * User Preferences Manager
- * Handles user preferences storage and retrieval via Supabase
+ * Handles user preferences storage and retrieval via Supabase using wallet authentication
  */
 
 import { initializeSupabase } from './supabase.js';
+import { walletAuth } from './walletAuth.js';
 
 class UserPreferencesManager {
     constructor() {
-        this.currentUser = null;
+        this.walletAddress = null;
         this.preferences = null;
         this.supabase = null;
         this.init();
@@ -18,33 +19,32 @@ class UserPreferencesManager {
             // Initialize Supabase client
             this.supabase = await initializeSupabase();
 
-            // Try to get current user, but don't require authentication
-            try {
-                const { data: { user } } = await this.supabase.auth.getUser();
-                this.currentUser = user || { id: 'anonymous_' + Date.now() };
-            } catch (error) {
-                // If auth fails, use anonymous session
-                this.currentUser = { id: 'anonymous_' + Date.now() };
+            // Get wallet address for authentication
+            this.walletAddress = await walletAuth.getWalletAddress();
+            
+            if (!this.walletAddress) {
+                console.warn('⚠️ No wallet connected, using default preferences');
+                this.preferences = { theme: 'dark', view_mode: 'grid', debug_mode: false, items_per_page: 12 };
+                return;
             }
 
             // Load preferences
             await this.loadPreferences();
         } catch (error) {
             console.error('Error initializing user preferences:', error);
-            // Fallback to anonymous session if initialization fails
-            this.currentUser = { id: 'anonymous_' + Date.now() };
-            this.preferences = { theme: 'dark', viewMode: 'grid' };
+            // Use default preferences if initialization fails
+            this.preferences = { theme: 'dark', view_mode: 'grid', debug_mode: false, items_per_page: 12 };
         }
     }
 
     async loadPreferences() {
-        if (!this.currentUser || !this.supabase) return;
+        if (!this.walletAddress || !this.supabase) return;
 
         try {
             const { data, error } = await this.supabase
                 .from('user_preferences')
                 .select('*')
-                .eq('user_id', this.currentUser.id)
+                .eq('user_id', this.walletAddress)
                 .single();
 
             if (error && error.code !== 'PGRST116') { // Not found error
@@ -57,7 +57,7 @@ class UserPreferencesManager {
             } else {
                 // Create default preferences
                 this.preferences = {
-                    user_id: this.currentUser.id,
+                    user_id: this.walletAddress,
                     theme: 'dark',
                     view_mode: 'grid',
                     last_filters: {},
@@ -72,7 +72,7 @@ class UserPreferencesManager {
     }
 
     async savePreferences() {
-        if (!this.currentUser || !this.preferences || !this.supabase) return;
+        if (!this.walletAddress || !this.preferences || !this.supabase) return;
 
         try {
             const { error } = await this.supabase

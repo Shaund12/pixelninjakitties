@@ -1,13 +1,14 @@
 /**
  * Analytics Manager
- * Handles logging of user interactions and gallery events
+ * Handles logging of user interactions and gallery events using wallet authentication
  */
 
 import { initializeSupabase } from './supabase.js';
+import { walletAuth } from './walletAuth.js';
 
 class AnalyticsManager {
     constructor() {
-        this.currentUser = null;
+        this.walletAddress = null;
         this.debugMode = false;
         this.supabase = null;
         this.init();
@@ -18,18 +19,16 @@ class AnalyticsManager {
             // Initialize Supabase client
             this.supabase = await initializeSupabase();
 
-            // Try to get current user, but don't require authentication
-            try {
-                const { data: { user } } = await this.supabase.auth.getUser();
-                this.currentUser = user || { id: 'anonymous_' + Date.now() };
-            } catch (error) {
-                // If auth fails, use anonymous session
-                this.currentUser = { id: 'anonymous_' + Date.now() };
+            // Get wallet address for authentication
+            this.walletAddress = await walletAuth.getWalletAddress();
+            
+            if (!this.walletAddress) {
+                console.warn('⚠️ No wallet connected, analytics will not be persisted');
+                return;
             }
         } catch (error) {
             console.error('Error initializing analytics:', error);
-            // Fallback to anonymous session if initialization fails
-            this.currentUser = { id: 'anonymous_' + Date.now() };
+            // Continue with fallback mode for analytics
         }
     }
 
@@ -44,13 +43,19 @@ class AnalyticsManager {
             console.log(`📊 Analytics: ${eventType}`, eventData);
         }
 
-        if (!this.currentUser || !this.supabase) return;
+        if (!this.walletAddress || !this.supabase) {
+            // Fallback logging for debugging
+            if (this.debugMode) {
+                console.log(`📊 Analytics (fallback): ${eventType}`, eventData);
+            }
+            return;
+        }
 
         try {
             const { error } = await this.supabase
                 .from('gallery_analytics')
                 .insert({
-                    user_id: this.currentUser.id,
+                    user_id: this.walletAddress,
                     event_type: eventType,
                     event_data: eventData
                 });
@@ -144,13 +149,13 @@ class AnalyticsManager {
 
     // Get analytics data (for debug mode)
     async getAnalyticsData(limit = 100) {
-        if (!this.currentUser || !this.supabase) return [];
+        if (!this.walletAddress || !this.supabase) return [];
 
         try {
             const { data, error } = await this.supabase
                 .from('gallery_analytics')
                 .select('*')
-                .eq('user_id', this.currentUser.id)
+                .eq('user_id', this.walletAddress)
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
@@ -168,13 +173,13 @@ class AnalyticsManager {
 
     // Get performance stats
     async getPerformanceStats() {
-        if (!this.currentUser || !this.supabase) return {};
+        if (!this.walletAddress || !this.supabase) return {};
 
         try {
             const { data, error } = await this.supabase
                 .from('gallery_analytics')
                 .select('event_type, event_data, created_at')
-                .eq('user_id', this.currentUser.id)
+                .eq('user_id', this.walletAddress)
                 .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
                 .order('created_at', { ascending: false });
 

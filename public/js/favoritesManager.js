@@ -1,13 +1,14 @@
 /**
  * Favorites Manager
- * Handles favorite tokens storage and retrieval via Supabase
+ * Handles favorite tokens storage and retrieval via Supabase using wallet authentication
  */
 
 import { initializeSupabase } from './supabase.js';
+import { walletAuth } from './walletAuth.js';
 
 class FavoritesManager {
     constructor() {
-        this.currentUser = null;
+        this.walletAddress = null;
         this.favorites = new Set();
         this.supabase = null;
         this.init();
@@ -18,33 +19,32 @@ class FavoritesManager {
             // Initialize Supabase client
             this.supabase = await initializeSupabase();
 
-            // Try to get current user, but don't require authentication
-            try {
-                const { data: { user } } = await this.supabase.auth.getUser();
-                this.currentUser = user || { id: 'anonymous_' + Date.now() };
-            } catch (error) {
-                // If auth fails, use anonymous session
-                this.currentUser = { id: 'anonymous_' + Date.now() };
+            // Get wallet address for authentication
+            this.walletAddress = await walletAuth.getWalletAddress();
+            
+            if (!this.walletAddress) {
+                console.warn('⚠️ No wallet connected, favorites will not be persisted');
+                this.favorites = new Set();
+                return;
             }
 
             // Load favorites
             await this.loadFavorites();
         } catch (error) {
             console.error('Error initializing favorites:', error);
-            // Fallback to anonymous session if initialization fails
-            this.currentUser = { id: 'anonymous_' + Date.now() };
+            // Use empty favorites set if initialization fails
             this.favorites = new Set();
         }
     }
 
     async loadFavorites() {
-        if (!this.currentUser || !this.supabase) return;
+        if (!this.walletAddress || !this.supabase) return;
 
         try {
             const { data, error } = await this.supabase
                 .from('favorites')
                 .select('token_id')
-                .eq('user_id', this.currentUser.id);
+                .eq('user_id', this.walletAddress);
 
             if (error) {
                 console.error('Error loading favorites:', error);
@@ -71,13 +71,13 @@ class FavoritesManager {
     async addFavorite(tokenId) {
         const tokenIdStr = tokenId.toString();
 
-        if (!this.currentUser || !this.supabase) return;
+        if (!this.walletAddress || !this.supabase) return;
 
         try {
             const { error } = await this.supabase
                 .from('favorites')
                 .insert({
-                    user_id: this.currentUser.id,
+                    user_id: this.walletAddress,
                     token_id: tokenIdStr
                 });
 
@@ -97,13 +97,13 @@ class FavoritesManager {
     async removeFavorite(tokenId) {
         const tokenIdStr = tokenId.toString();
 
-        if (!this.currentUser || !this.supabase) return;
+        if (!this.walletAddress || !this.supabase) return;
 
         try {
             const { error } = await this.supabase
                 .from('favorites')
                 .delete()
-                .eq('user_id', this.currentUser.id)
+                .eq('user_id', this.walletAddress)
                 .eq('token_id', tokenIdStr);
 
             if (error) {
@@ -139,13 +139,13 @@ class FavoritesManager {
 
     // Log analytics event
     async logAnalytics(eventType, eventData) {
-        if (!this.currentUser || !this.supabase) return;
+        if (!this.walletAddress || !this.supabase) return;
 
         try {
             await this.supabase
                 .from('gallery_analytics')
                 .insert({
-                    user_id: this.currentUser.id,
+                    user_id: this.walletAddress,
                     event_type: eventType,
                     event_data: eventData
                 });
@@ -156,13 +156,13 @@ class FavoritesManager {
 
     // Get favorites with metadata (for displaying favorites page)
     async getFavoritesWithMetadata() {
-        if (!this.currentUser || !this.supabase) return [];
+        if (!this.walletAddress || !this.supabase) return [];
 
         try {
             const { data, error } = await this.supabase
                 .from('favorites')
                 .select('token_id, added_at')
-                .eq('user_id', this.currentUser.id)
+                .eq('user_id', this.walletAddress)
                 .order('added_at', { ascending: false });
 
             if (error) {
@@ -179,13 +179,13 @@ class FavoritesManager {
 
     // Clear all favorites
     async clearFavorites() {
-        if (!this.currentUser || !this.supabase) return;
+        if (!this.walletAddress || !this.supabase) return;
 
         try {
             const { error } = await this.supabase
                 .from('favorites')
                 .delete()
-                .eq('user_id', this.currentUser.id);
+                .eq('user_id', this.walletAddress);
 
             if (error) {
                 console.error('Error clearing favorites:', error);
