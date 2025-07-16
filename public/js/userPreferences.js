@@ -3,7 +3,7 @@
  * Handles user preferences storage and retrieval via Supabase
  */
 
-import { supabase } from './supabaseClient.js';
+import { initializeSupabase } from './supabaseClient.js';
 
 class UserPreferencesManager {
     constructor() {
@@ -14,20 +14,27 @@ class UserPreferencesManager {
     }
 
     async init() {
-        // Use the imported Supabase client
-        this.supabase = supabase;
-
-        // Try to get current user, but don't require authentication
         try {
-            const { data: { user } } = await this.supabase.auth.getUser();
-            this.currentUser = user || { id: 'anonymous_' + Date.now() };
-        } catch (error) {
-            // If auth fails, use anonymous session
-            this.currentUser = { id: 'anonymous_' + Date.now() };
-        }
+            // Initialize Supabase client
+            this.supabase = await initializeSupabase();
 
-        // Load preferences
-        await this.loadPreferences();
+            // Try to get current user, but don't require authentication
+            try {
+                const { data: { user } } = await this.supabase.auth.getUser();
+                this.currentUser = user || { id: 'anonymous_' + Date.now() };
+            } catch (error) {
+                // If auth fails, use anonymous session
+                this.currentUser = { id: 'anonymous_' + Date.now() };
+            }
+
+            // Load preferences
+            await this.loadPreferences();
+        } catch (error) {
+            console.error('Error initializing user preferences:', error);
+            // Fallback to anonymous session if initialization fails
+            this.currentUser = { id: 'anonymous_' + Date.now() };
+            this.preferences = { theme: 'dark', viewMode: 'grid' };
+        }
     }
 
     async loadPreferences() {

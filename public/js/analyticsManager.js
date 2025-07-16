@@ -3,7 +3,7 @@
  * Handles logging of user interactions and gallery events
  */
 
-import { supabase } from './supabaseClient.js';
+import { initializeSupabase } from './supabaseClient.js';
 
 class AnalyticsManager {
     constructor() {
@@ -14,15 +14,21 @@ class AnalyticsManager {
     }
 
     async init() {
-        // Use the imported Supabase client
-        this.supabase = supabase;
-
-        // Try to get current user, but don't require authentication
         try {
-            const { data: { user } } = await this.supabase.auth.getUser();
-            this.currentUser = user || { id: 'anonymous_' + Date.now() };
+            // Initialize Supabase client
+            this.supabase = await initializeSupabase();
+
+            // Try to get current user, but don't require authentication
+            try {
+                const { data: { user } } = await this.supabase.auth.getUser();
+                this.currentUser = user || { id: 'anonymous_' + Date.now() };
+            } catch (error) {
+                // If auth fails, use anonymous session
+                this.currentUser = { id: 'anonymous_' + Date.now() };
+            }
         } catch (error) {
-            // If auth fails, use anonymous session
+            console.error('Error initializing analytics:', error);
+            // Fallback to anonymous session if initialization fails
             this.currentUser = { id: 'anonymous_' + Date.now() };
         }
     }

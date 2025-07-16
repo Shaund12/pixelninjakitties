@@ -15,11 +15,11 @@ export function securityHeaders(req, res, next) {
     // Content Security Policy
     res.setHeader('Content-Security-Policy', [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.ethers.io https://unpkg.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.ethers.io https://unpkg.com https://cdn.jsdelivr.net",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: https:",
-        "connect-src 'self' https://rpc.vitruveo.xyz https://api.openai.com https://api.stability.ai https://api-inference.huggingface.co",
+        "connect-src 'self' https://rpc.vitruveo.xyz https://api.openai.com https://api.stability.ai https://api-inference.huggingface.co https://hbfleatipxxfcueekjlv.supabase.co",
         "media-src 'self'",
         "object-src 'none'",
         "base-uri 'self'",
