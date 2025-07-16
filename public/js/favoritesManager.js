@@ -3,7 +3,7 @@
  * Handles favorite tokens storage and retrieval via Supabase
  */
 
-import { getSupabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js';
 
 class FavoritesManager {
     constructor() {
@@ -14,29 +14,20 @@ class FavoritesManager {
     }
 
     async init() {
+        // Use the imported Supabase client
+        this.supabase = supabase;
+
+        // Try to get current user, but don't require authentication
         try {
-            // Get Supabase client
-            this.supabase = await getSupabase();
-            
-            // Get current user
             const { data: { user } } = await this.supabase.auth.getUser();
-
-            if (!user) {
-                // Sign in anonymously if no user
-                const { data: { user: anonUser } } = await this.supabase.auth.signInAnonymously();
-                this.currentUser = anonUser;
-            } else {
-                this.currentUser = user;
-            }
-
-            // Load favorites
-            await this.loadFavorites();
+            this.currentUser = user || { id: 'anonymous_' + Date.now() };
         } catch (error) {
-            console.error('Error initializing favorites:', error);
-            // Fallback to localStorage
-            this.useFallback = true;
-            this.loadFallbackFavorites();
+            // If auth fails, use anonymous session
+            this.currentUser = { id: 'anonymous_' + Date.now() };
         }
+
+        // Load favorites
+        await this.loadFavorites();
     }
 
     async loadFavorites() {
@@ -64,25 +55,6 @@ class FavoritesManager {
         }
     }
 
-    loadFallbackFavorites() {
-        try {
-            const stored = localStorage.getItem('ninjacat_favorites');
-            if (stored) {
-                this.favorites = new Set(JSON.parse(stored));
-            }
-        } catch (error) {
-            console.error('Error loading fallback favorites:', error);
-        }
-    }
-
-    saveFallbackFavorites() {
-        try {
-            localStorage.setItem('ninjacat_favorites', JSON.stringify([...this.favorites]));
-        } catch (error) {
-            console.error('Error saving fallback favorites:', error);
-        }
-    }
-
     // Check if token is favorite
     isFavorite(tokenId) {
         return this.favorites.has(tokenId.toString());
@@ -91,12 +63,6 @@ class FavoritesManager {
     // Add token to favorites
     async addFavorite(tokenId) {
         const tokenIdStr = tokenId.toString();
-
-        if (this.useFallback) {
-            this.favorites.add(tokenIdStr);
-            this.saveFallbackFavorites();
-            return;
-        }
 
         if (!this.currentUser || !this.supabase) return;
 
@@ -123,12 +89,6 @@ class FavoritesManager {
     // Remove token from favorites
     async removeFavorite(tokenId) {
         const tokenIdStr = tokenId.toString();
-
-        if (this.useFallback) {
-            this.favorites.delete(tokenIdStr);
-            this.saveFallbackFavorites();
-            return;
-        }
 
         if (!this.currentUser || !this.supabase) return;
 
@@ -172,7 +132,7 @@ class FavoritesManager {
 
     // Log analytics event
     async logAnalytics(eventType, eventData) {
-        if (!this.currentUser || this.useFallback || !this.supabase) return;
+        if (!this.currentUser || !this.supabase) return;
 
         try {
             await this.supabase
@@ -212,12 +172,6 @@ class FavoritesManager {
 
     // Clear all favorites
     async clearFavorites() {
-        if (this.useFallback) {
-            this.favorites.clear();
-            this.saveFallbackFavorites();
-            return;
-        }
-
         if (!this.currentUser || !this.supabase) return;
 
         try {

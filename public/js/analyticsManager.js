@@ -3,7 +3,7 @@
  * Handles logging of user interactions and gallery events
  */
 
-import { getSupabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js';
 
 class AnalyticsManager {
     constructor() {
@@ -14,23 +14,16 @@ class AnalyticsManager {
     }
 
     async init() {
-        try {
-            // Get Supabase client
-            this.supabase = await getSupabase();
-            
-            // Get current user
-            const { data: { user } } = await this.supabase.auth.getUser();
+        // Use the imported Supabase client
+        this.supabase = supabase;
 
-            if (!user) {
-                // Sign in anonymously if no user
-                const { data: { user: anonUser } } = await this.supabase.auth.signInAnonymously();
-                this.currentUser = anonUser;
-            } else {
-                this.currentUser = user;
-            }
+        // Try to get current user, but don't require authentication
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            this.currentUser = user || { id: 'anonymous_' + Date.now() };
         } catch (error) {
-            console.error('Error initializing analytics:', error);
-            this.useFallback = true;
+            // If auth fails, use anonymous session
+            this.currentUser = { id: 'anonymous_' + Date.now() };
         }
     }
 
@@ -43,12 +36,6 @@ class AnalyticsManager {
     async logEvent(eventType, eventData = {}) {
         if (this.debugMode) {
             console.log(`📊 Analytics: ${eventType}`, eventData);
-        }
-
-        if (this.useFallback) {
-            // Just log to console in fallback mode
-            console.log(`Analytics (fallback): ${eventType}`, eventData);
-            return;
         }
 
         if (!this.currentUser || !this.supabase) return;

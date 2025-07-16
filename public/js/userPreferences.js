@@ -3,7 +3,7 @@
  * Handles user preferences storage and retrieval via Supabase
  */
 
-import { getSupabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js';
 
 class UserPreferencesManager {
     constructor() {
@@ -14,28 +14,20 @@ class UserPreferencesManager {
     }
 
     async init() {
-        try {
-            // Get Supabase client
-            this.supabase = await getSupabase();
-            
-            // Get current user
-            const { data: { user } } = await this.supabase.auth.getUser();
-            
-            if (!user) {
-                // Sign in anonymously if no user
-                const { data: { user: anonUser } } = await this.supabase.auth.signInAnonymously();
-                this.currentUser = anonUser;
-            } else {
-                this.currentUser = user;
-            }
+        // Use the imported Supabase client
+        this.supabase = supabase;
 
-            // Load preferences
-            await this.loadPreferences();
+        // Try to get current user, but don't require authentication
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            this.currentUser = user || { id: 'anonymous_' + Date.now() };
         } catch (error) {
-            console.error('Error initializing user preferences:', error);
-            // Fallback to localStorage
-            this.useFallback = true;
+            // If auth fails, use anonymous session
+            this.currentUser = { id: 'anonymous_' + Date.now() };
         }
+
+        // Load preferences
+        await this.loadPreferences();
     }
 
     async loadPreferences() {
@@ -93,19 +85,11 @@ class UserPreferencesManager {
 
     // Get preference value
     get(key, defaultValue = null) {
-        if (this.useFallback) {
-            return localStorage.getItem(`ninjacat_${key}`) || defaultValue;
-        }
         return this.preferences?.[key] || defaultValue;
     }
 
     // Set preference value
     async set(key, value) {
-        if (this.useFallback) {
-            localStorage.setItem(`ninjacat_${key}`, value);
-            return;
-        }
-
         if (!this.preferences) {
             await this.loadPreferences();
         }
@@ -140,7 +124,15 @@ class UserPreferencesManager {
     // Get last filters
     getLastFilters() {
         const filters = this.get('last_filters', {});
-        return typeof filters === 'string' ? JSON.parse(filters) : filters;
+        if (typeof filters === 'string') {
+            try {
+                return JSON.parse(filters);
+            } catch (error) {
+                console.error('Error parsing last filters:', error);
+                return {};
+            }
+        }
+        return filters;
     }
 
     // Set last filters

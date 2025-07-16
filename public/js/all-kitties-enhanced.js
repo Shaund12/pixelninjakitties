@@ -23,13 +23,13 @@ let totalSupply = 0;
 let allTokens = [];
 let filteredTokens = [];
 let loadedTokens = [];
-let tokenCache = {};
+const tokenCache = {};
 let isLoading = false;
 let isInitialized = false;
 let searchTimeout;
 let currentFilters = {};
 let debugMode = false;
-let startTime = Date.now();
+const startTime = Date.now();
 
 // DOM elements
 const grid = document.getElementById('kittiesGrid');
@@ -126,18 +126,18 @@ async function loadTokenMetadata(tokenId) {
     }
 
     const startTime = Date.now();
-    
+
     try {
         const uri = await Promise.race([
             nftContract.tokenURI(tokenId),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('URI fetch timeout')), RPC_TIMEOUT)
             )
         ]);
 
         const owner = await Promise.race([
             nftContract.ownerOf(tokenId),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Owner fetch timeout')), RPC_TIMEOUT)
             )
         ]);
@@ -154,11 +154,11 @@ async function loadTokenMetadata(tokenId) {
         };
 
         tokenCache[tokenId] = token;
-        
+
         // Log RPC latency
         const latency = Date.now() - startTime;
         await analyticsManager.logRPCLatency('token_metadata', latency);
-        
+
         return token;
     } catch (error) {
         console.error(`Error loading metadata for token #${tokenId}:`, error);
@@ -238,7 +238,7 @@ async function renderCatCard(tokenId) {
 
     // Add event listeners
     setupCardEventListeners(card, tokenId, token);
-    
+
     return card;
 }
 
@@ -277,7 +277,7 @@ function setupCardEventListeners(card, tokenId, token) {
 // Toggle favorite status
 async function toggleFavorite(tokenId, favoriteBtn) {
     const wasActive = favoriteBtn.classList.contains('active');
-    
+
     // Optimistic update
     favoriteBtn.classList.toggle('active');
     const icon = favoriteBtn.querySelector('.favorite-icon');
@@ -345,7 +345,7 @@ async function openModal(tokenId, token) {
     cardModal.classList.add('show');
     cardModal.setAttribute('aria-hidden', 'false');
     modalContent.focus();
-    
+
     // Log analytics
     await analyticsManager.logModalOpen(tokenId);
 }
@@ -359,9 +359,9 @@ function closeModal() {
 // Initialize the application
 async function init() {
     if (isInitialized) return;
-    
+
     showLoading(true);
-    
+
     try {
         // Initialize managers
         await Promise.all([
@@ -375,7 +375,7 @@ async function init() {
         await applyViewMode(userPreferences.getViewMode());
         debugMode = userPreferences.getDebugMode();
         updateDebugToggle();
-        
+
         // Load saved filters
         currentFilters = userPreferences.getLastFilters();
         applyFiltersToUI();
@@ -394,17 +394,17 @@ async function init() {
         // Initial filter and load
         await applyFilters();
         await loadMore();
-        
+
         // Setup intersection observer for infinite scroll
         setupInfiniteScroll();
-        
+
         // Log page load analytics
         const loadTime = Date.now() - startTime;
         await analyticsManager.logPageLoad(loadTime, totalSupply);
-        
+
         isInitialized = true;
         showLoading(false);
-        
+
     } catch (error) {
         console.error('Error initializing gallery:', error);
         await analyticsManager.logError('init_error', error.message);
@@ -449,7 +449,7 @@ function applyFiltersToUI() {
     if (weaponFilter) weaponFilter.value = currentFilters.weapon || '';
     if (stanceFilter) stanceFilter.value = currentFilters.stance || '';
     if (rankFilter) rankFilter.value = currentFilters.rank || '';
-    
+
     searchBar.value = currentFilters.search || '';
     favoritesFilter.classList.toggle('active', currentFilters.favoritesOnly || false);
 }
@@ -491,14 +491,14 @@ async function applyFilters() {
         filteredTokens = filteredTokens.filter(tokenId => {
             const token = tokenCache[tokenId];
             if (!token) return false;
-            
+
             const searchText = [
                 token.metadata.name,
                 tokenId.toString(),
                 token.owner,
                 ...Object.values(token.traits)
             ].join(' ').toLowerCase();
-            
+
             return searchText.includes(searchTerm);
         });
     }
@@ -510,22 +510,22 @@ async function applyFilters() {
     }
 
     // Apply other filters
-    if (currentFilters.rarity || currentFilters.breed || currentFilters.element || 
+    if (currentFilters.rarity || currentFilters.breed || currentFilters.element ||
         currentFilters.weapon || currentFilters.stance || currentFilters.rank) {
-        
+
         filteredTokens = filteredTokens.filter(tokenId => {
             const token = tokenCache[tokenId];
             if (!token) return false;
-            
+
             const traits = token.traits;
-            
+
             if (currentFilters.rarity && token.rarity !== currentFilters.rarity) return false;
             if (currentFilters.breed && traits['Breed'] !== currentFilters.breed) return false;
             if (currentFilters.element && traits['Element'] !== currentFilters.element && traits['Power'] !== currentFilters.element) return false;
             if (currentFilters.weapon && traits['Weapon'] !== currentFilters.weapon && traits['Equipment'] !== currentFilters.weapon) return false;
             if (currentFilters.stance && traits['Stance'] !== currentFilters.stance) return false;
             if (currentFilters.rank && traits['Rank'] !== currentFilters.rank) return false;
-            
+
             return true;
         });
     }
@@ -559,7 +559,7 @@ async function applyFilters() {
     // Reset loaded tokens and reload
     loadedTokens = [];
     grid.innerHTML = '';
-    
+
     // Log search analytics
     if (currentFilters.search) {
         await analyticsManager.logSearchQuery(currentFilters.search, filteredTokens.length);
@@ -580,13 +580,13 @@ async function applyFilters() {
 function updateURL() {
     const url = new URL(window.location);
     const params = new URLSearchParams();
-    
+
     Object.entries(currentFilters).forEach(([key, value]) => {
         if (value && value !== '' && value !== false) {
             params.set(key, value);
         }
     });
-    
+
     url.search = params.toString();
     window.history.replaceState({}, '', url);
 }
@@ -625,10 +625,10 @@ async function loadMore() {
     });
 
     loadedTokens = loadedTokens.concat(tokensToLoad.filter((_, index) => cards[index]));
-    
+
     // Log infinite scroll analytics
     await analyticsManager.logInfiniteScrollLoad(Math.floor(loadedTokens.length / ITEMS_PER_BATCH), tokensToLoad.length);
-    
+
     isLoading = false;
     showInfiniteLoading(false);
     updateDebugPanel();
@@ -681,13 +681,13 @@ function updateDebugPanel() {
     document.getElementById('debugFavoritesCount').textContent = favoritesManager.getFavoriteCount();
     document.getElementById('debugCurrentTheme').textContent = userPreferences.getTheme();
     document.getElementById('debugCurrentView').textContent = userPreferences.getViewMode();
-    
+
     const activeFilters = Object.entries(currentFilters)
         .filter(([key, value]) => value && value !== '' && value !== false)
         .map(([key, value]) => `${key}:${value}`)
         .join(', ');
     document.getElementById('debugActiveFilters').textContent = activeFilters || 'none';
-    
+
     // Get average RPC latency
     analyticsManager.getPerformanceStats().then(stats => {
         document.getElementById('debugRPCLatency').textContent = `${Math.round(stats.averageRPCLatency || 0)}ms`;
@@ -739,7 +739,7 @@ function setupEventListeners() {
     if (applyFiltersBtn) {
         applyFiltersBtn.addEventListener('click', applyFilters);
     }
-    
+
     if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener('click', () => {
             currentFilters = {};

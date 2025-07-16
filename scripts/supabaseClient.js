@@ -13,7 +13,7 @@ let supabase;
 
 if (!supabaseUrl || !supabaseKey) {
     console.warn('⚠️ SUPABASE_URL and SUPABASE_ANON_KEY environment variables not set - some features may be disabled');
-    
+
     // Create a mock client for development
     supabase = {
         from: (table) => ({
