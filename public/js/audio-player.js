@@ -1194,50 +1194,53 @@
             
             <div class="ai-commentary" id="aiCommentary"></div>
             
-            <div class="player-controls">
-                <button class="ninja-control-btn play-btn" id="audioToggle" aria-label="Toggle play">
-                    <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 3 19 12 5 21"></polygon>
-                    </svg>
-                    <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="6" y="4" width="4" height="16"></rect>
-                        <rect x="14" y="4" width="4" height="16"></rect>
+            <!-- Fixed control buttons with direct styling -->
+            <div style="display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 0 0 20px 20px; margin-top: 5px;">
+                <!-- Play/Pause Button -->
+                <button id="audioToggle" style="width: 45px; height: 45px; background: linear-gradient(145deg, #8a65ff, #6b4bd6); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <polygon points="5 3 19 12 5 21"/>
                     </svg>
                 </button>
                 
-                <button class="ninja-control-btn" id="nextTrackBtn" aria-label="Next stream">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 4 15 12 5 20"></polygon>
-                        <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line>
+                <!-- Next Track Button -->
+                <button id="nextTrackBtn" style="width: 38px; height: 38px; background: rgba(138, 101, 255, 0.2); border: 1px solid rgba(138, 101, 255, 0.3); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #a28aff;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#a28aff">
+                        <polygon points="5 4 15 12 5 20"/>
+                        <line x1="19" y1="5" x2="19" y2="19" stroke="#a28aff" stroke-width="2"/>
                     </svg>
                 </button>
                 
-                <div class="volume-container">
-                    <button class="ninja-control-btn" id="volumeBtn" aria-label="Volume">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <!-- Volume Button -->
+                <div class="volume-container" style="position: relative;">
+                    <button id="volumeBtn" style="width: 38px; height: 38px; background: rgba(138, 101, 255, 0.2); border: 1px solid rgba(138, 101, 255, 0.3); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #a28aff;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a28aff" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
                         </svg>
                     </button>
-                    <div class="volume-slider-container">
-                        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="${playerState.volume}">
+                    <div id="volumeSliderContainer" style="position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); background: #23263a; padding: 15px 10px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); display: none;">
+                        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="${playerState.volume}" style="width: 100px; transform: rotate(-90deg);">
                     </div>
                 </div>
                 
-                <div class="stream-info">
-                    <div class="stream-name" id="currentStreamName">${streamingSources[0].name}</div>
-                    <div class="stream-metadata">
-                        <span class="live-indicator"></span>
+                <!-- Stream Info -->
+                <div style="flex: 1; min-width: 0;">
+                    <div id="currentStreamName" style="font-weight: 700; font-size: 15px; color: white; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${streamingSources[0].name}</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.7); display: flex; gap: 8px; align-items: center;">
+                        <span style="display: inline-block; width: 6px; height: 6px; background: #00ff00; border-radius: 50%;"></span>
                         <span id="streamGenre">${streamingSources[0].genre}</span>
                         <span>•</span>
                         <span id="streamBitrate">${streamingSources[0].bitrate}</span>
                     </div>
                 </div>
                 
-                <button class="ninja-control-btn" id="focusToggle" aria-label="Focus Mode">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12,6 12,12 16,14"></polyline>
+                <!-- Focus Mode Button -->
+                <button id="focusToggle" style="width: 38px; height: 38px; background: rgba(138, 101, 255, 0.2); border: 1px solid rgba(138, 101, 255, 0.3); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #a28aff;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a28aff" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
                     </svg>
                 </button>
             </div>
@@ -1296,7 +1299,7 @@
             
             <audio id="audioPlayer" preload="none"></audio>
             
-            <div class="stream-attribution">
+            <div style="text-align: center; padding: 8px; font-size: 11px; color: rgba(255,255,255,0.5);">
                 <span id="streamProvider">${streamingSources[0].provider}</span> • Tuned by the Silent Order
             </div>
         `;
