@@ -21,7 +21,7 @@ class AnalyticsManager {
 
             // Get wallet address for authentication
             this.walletAddress = await walletAuth.getWalletAddress();
-            
+
             if (!this.walletAddress) {
                 console.warn('⚠️ No wallet connected, analytics will not be persisted');
                 return;

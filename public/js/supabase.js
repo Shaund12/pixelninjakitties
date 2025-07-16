@@ -21,7 +21,7 @@ async function initializeSupabase() {
     initializationPromise = (async () => {
         try {
             console.log('🚀 Initializing Supabase client...');
-            
+
             // Get configuration from server
             const response = await fetch('/api/config');
             if (!response.ok) {
@@ -29,7 +29,7 @@ async function initializeSupabase() {
             }
 
             const config = await response.json();
-            
+
             if (!config.supabase.configured) {
                 throw new Error('Supabase configuration is missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
             }
@@ -37,7 +37,7 @@ async function initializeSupabase() {
             // Initialize Supabase client
             supabase = createClient(config.supabase.url, config.supabase.anonKey);
             console.log('✅ Supabase client initialized successfully');
-            
+
             return supabase;
         } catch (error) {
             console.error('❌ Failed to initialize Supabase client:', error);

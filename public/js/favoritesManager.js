@@ -21,7 +21,7 @@ class FavoritesManager {
 
             // Get wallet address for authentication
             this.walletAddress = await walletAuth.getWalletAddress();
-            
+
             if (!this.walletAddress) {
                 console.warn('⚠️ No wallet connected, favorites will not be persisted');
                 this.favorites = new Set();

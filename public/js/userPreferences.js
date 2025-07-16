@@ -21,7 +21,7 @@ class UserPreferencesManager {
 
             // Get wallet address for authentication
             this.walletAddress = await walletAuth.getWalletAddress();
-            
+
             if (!this.walletAddress) {
                 console.warn('⚠️ No wallet connected, using default preferences');
                 this.preferences = { theme: 'dark', view_mode: 'grid', debug_mode: false, items_per_page: 12 };
