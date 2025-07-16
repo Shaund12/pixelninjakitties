@@ -1,6 +1,6 @@
 ﻿import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
 import { getFavorites, toggleFavorite, isFavorite, savePreferences, loadPreferences } from '../utils/supabaseClient.js';
-import { getCurrentWalletAddress, addConnectionListener, removeConnectionListener } from '../utils/walletConnector.js';
+import { getCurrentWalletAddress, addConnectionListener, removeConnectionListener } from './walletConnector.js';
 import { logListingView, logFavoriteAction, logPurchase, logListingCreated, logListingCancelled, logMarketplaceView, logFilterApplied } from '../utils/activityLogger.js';
 
 // Constants
@@ -176,7 +176,7 @@ async function showQuickPreview(token, listing = null) {
     // Check if item is favorited
     const isFavorited = isTokenFavorited(token.id);
     updateFavoriteButton(isFavorited);
-    
+
     // Log the listing view
     await logListingView(token.id, {
         price: listing?.price,
@@ -381,7 +381,7 @@ async function loadFavorites() {
             favorites = [];
             return;
         }
-        
+
         favorites = await getFavorites(walletAddress);
         console.log(`Loaded ${favorites.length} favorites from Supabase`);
     } catch (error) {
@@ -398,26 +398,26 @@ async function toggleFavoriteStatus(tokenId) {
             showToast('Please connect your wallet to manage favorites', 'error');
             return;
         }
-        
+
         const result = await toggleFavorite(walletAddress, tokenId);
-        
+
         if (result.action === 'added') {
             favorites.push(tokenId);
             showEnhancedNotification('Added to Favorites', 'Item added to your favorites list', 'success');
-            
+
             // Log activity
             await logFavoriteAction(tokenId, 'add');
         } else {
             favorites = favorites.filter(id => id !== tokenId);
             showEnhancedNotification('Removed from Favorites', 'Item removed from your favorites list', 'info');
-            
+
             // Log activity
             await logFavoriteAction(tokenId, 'remove');
         }
-        
+
         // Update button state
         updateFavoriteButton(favorites.includes(tokenId));
-        
+
     } catch (error) {
         console.error('Error toggling favorite:', error);
         showToast('Error updating favorites. Please try again.', 'error');
@@ -429,32 +429,17 @@ function isTokenFavorited(tokenId) {
     return favorites.includes(tokenId);
 }
 
-// Update favorite button state
-function updateFavoriteButton(isFavorited) {
-    const favoriteBtn = document.getElementById('favoriteBtn');
-    if (!favoriteBtn) return;
-
-    const span = favoriteBtn.querySelector('span');
-    if (isFavorited) {
-        favoriteBtn.classList.add('favorited');
-        if (span) span.textContent = 'Remove from Favorites';
-    } else {
-        favoriteBtn.classList.remove('favorited');
-        if (span) span.textContent = 'Add to Favorites';
-    }
-}
-
 // Handle wallet connection changes
 async function handleWalletConnectionChange(walletAddress) {
     if (walletAddress) {
         // Wallet connected - load user data
         await loadFavorites();
         await loadUserPreferences();
-        
+
         // Update UI
         if (walletPrompt) walletPrompt.style.display = 'none';
         if (sellContent) sellContent.style.display = 'block';
-        
+
         // Initialize contracts and load user data
         if (browserProvider) {
             try {
@@ -470,7 +455,7 @@ async function handleWalletConnectionChange(walletAddress) {
         // Wallet disconnected - clear user data
         favorites = [];
         currentAccount = null;
-        
+
         // Update UI
         if (walletPrompt) walletPrompt.style.display = 'block';
         if (sellContent) sellContent.style.display = 'none';
@@ -482,19 +467,19 @@ async function loadUserPreferences() {
     try {
         const walletAddress = getCurrentWalletAddress();
         if (!walletAddress) return;
-        
+
         const preferences = await loadPreferences(walletAddress);
-        
+
         // Apply saved filters
         if (preferences.filters && Object.keys(preferences.filters).length > 0) {
             applySavedFilters(preferences.filters);
         }
-        
+
         // Apply theme
         if (preferences.theme && preferences.theme !== 'dark') {
             document.body.classList.add(`theme-${preferences.theme}`);
         }
-        
+
         console.log('User preferences loaded:', preferences);
     } catch (error) {
         console.error('Error loading user preferences:', error);
@@ -507,11 +492,11 @@ function applySavedFilters(filters) {
         if (filters.currency && currencyFilter) {
             currencyFilter.value = filters.currency;
         }
-        
+
         if (filters.sort && sortListings) {
             sortListings.value = filters.sort;
         }
-        
+
         // Apply filters and refresh listings
         applyListingFiltersAndSort();
     } catch (error) {
@@ -524,17 +509,17 @@ async function saveCurrentFilters() {
     try {
         const walletAddress = getCurrentWalletAddress();
         if (!walletAddress) return;
-        
+
         const currentFilters = {
             currency: currencyFilter ? currencyFilter.value : 'all',
             sort: sortListings ? sortListings.value : 'newest'
         };
-        
+
         const preferences = await loadPreferences(walletAddress);
         preferences.filters = currentFilters;
-        
+
         await savePreferences(walletAddress, preferences);
-        
+
         // Log activity
         await logFilterApplied('batch', currentFilters);
     } catch (error) {
@@ -2003,7 +1988,7 @@ async function init() {
             applyListingFiltersAndSort();
             await saveCurrentFilters();
         });
-        
+
         sortListings.addEventListener('change', async () => {
             await logFilterApplied('sort', sortListings.value);
             applyListingFiltersAndSort();
@@ -2036,7 +2021,7 @@ async function init() {
             await handleWalletConnectionChange(walletAddress);
         } else {
             // Try to initialize wallet connection
-            const { initializeWalletConnection } = await import('../utils/walletConnector.js');
+            const { initializeWalletConnection } = await import('./walletConnector.js');
             const connection = await initializeWalletConnection();
             if (connection && connection.address) {
                 currentAccount = connection.address;
@@ -2351,7 +2336,7 @@ async function saveCurrentSearch(searchName) {
 
         const { saveSearch } = await import('../utils/supabaseClient.js');
         await saveSearch(walletAddress, searchName, currentFilters);
-        
+
         showEnhancedNotification('Search Saved', `Search "${searchName}" has been saved`, 'success');
     } catch (error) {
         console.error('Error saving search:', error);
@@ -2370,10 +2355,10 @@ async function showSavedSearchesModal() {
 
         const { loadPreferences } = await import('../utils/supabaseClient.js');
         const preferences = await loadPreferences(walletAddress);
-        
+
         const modal = document.getElementById('savedSearchesModal');
         const savedSearchesList = document.getElementById('savedSearchesList');
-        
+
         if (preferences.savedSearches && preferences.savedSearches.length > 0) {
             savedSearchesList.innerHTML = preferences.savedSearches.map(search => `
                 <div class="saved-search-item">
@@ -2393,7 +2378,7 @@ async function showSavedSearchesModal() {
         } else {
             savedSearchesList.innerHTML = '<div class="no-notifications">No saved searches found</div>';
         }
-        
+
         modal.classList.add('active');
     } catch (error) {
         console.error('Error loading saved searches:', error);
@@ -2409,7 +2394,7 @@ async function applySavedSearch(searchName) {
 
         const { loadPreferences } = await import('../utils/supabaseClient.js');
         const preferences = await loadPreferences(walletAddress);
-        
+
         const savedSearch = preferences.savedSearches.find(s => s.name === searchName);
         if (savedSearch) {
             // Apply the saved filters
@@ -2419,11 +2404,11 @@ async function applySavedSearch(searchName) {
             if (savedSearch.filters.sort && sortListings) {
                 sortListings.value = savedSearch.filters.sort;
             }
-            
+
             // Apply filters and close modal
             applyListingFiltersAndSort();
             document.getElementById('savedSearchesModal').classList.remove('active');
-            
+
             showEnhancedNotification('Search Applied', `Applied saved search "${searchName}"`, 'success');
         }
     } catch (error) {
@@ -2440,13 +2425,13 @@ async function deleteSavedSearch(searchName) {
 
         const { loadPreferences, savePreferences } = await import('../utils/supabaseClient.js');
         const preferences = await loadPreferences(walletAddress);
-        
+
         preferences.savedSearches = preferences.savedSearches.filter(s => s.name !== searchName);
         await savePreferences(walletAddress, preferences);
-        
+
         // Refresh the modal
         showSavedSearchesModal();
-        
+
         showEnhancedNotification('Search Deleted', `Deleted saved search "${searchName}"`, 'info');
     } catch (error) {
         console.error('Error deleting saved search:', error);
@@ -2455,7 +2440,7 @@ async function deleteSavedSearch(searchName) {
 }
 
 // Notification system functions
-let notifications = [];
+const notifications = [];
 let notificationCount = 0;
 
 function showRealtimeNotification(title, message, type = 'info') {
@@ -2467,16 +2452,16 @@ function showRealtimeNotification(title, message, type = 'info') {
         timestamp: new Date(),
         read: false
     };
-    
+
     notifications.unshift(notification);
     notificationCount++;
-    
+
     // Update notification bell
     updateNotificationBell();
-    
+
     // Show toast notification
     showEnhancedNotification(title, message, type);
-    
+
     // Update dropdown
     updateNotificationDropdown();
 }
@@ -2492,17 +2477,17 @@ function updateNotificationBell() {
 function updateNotificationDropdown() {
     const listElement = document.getElementById('notificationList');
     if (!listElement) return;
-    
+
     if (notifications.length === 0) {
         listElement.innerHTML = '<div class="no-notifications">No new notifications</div>';
         return;
     }
-    
+
     listElement.innerHTML = notifications.slice(0, 10).map(notification => `
         <div class="notification-item ${notification.read ? '' : 'unread'}">
             <div class="notification-item-content">
                 <div class="notification-item-icon">
-                    ${notification.type === 'success' ? '✅' : 
+                    ${notification.type === 'success' ? '✅' :
                       notification.type === 'error' ? '❌' : 'ℹ️'}
                 </div>
                 <div class="notification-item-text">
@@ -2528,7 +2513,7 @@ function timeAgo(date) {
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
+
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
@@ -2537,13 +2522,13 @@ function timeAgo(date) {
 
 // Trending carousel functions
 let trendingItems = [];
-let trendingIndex = 0;
+const trendingIndex = 0;
 
 async function loadTrendingItems() {
     try {
         const { getTrendingTokens } = await import('../utils/supabaseClient.js');
         const trendingData = await getTrendingTokens(5);
-        
+
         trendingItems = [];
         for (const item of trendingData) {
             const tokenMetadata = await fetchTokenMetadata(item.token_id);
@@ -2559,7 +2544,7 @@ async function loadTrendingItems() {
                 }
             }
         }
-        
+
         renderTrendingCarousel();
     } catch (error) {
         console.error('Error loading trending items:', error);
@@ -2569,11 +2554,11 @@ async function loadTrendingItems() {
 function renderTrendingCarousel() {
     const trendingItemsContainer = document.getElementById('trendingItems');
     if (!trendingItemsContainer || trendingItems.length === 0) return;
-    
+
     trendingItemsContainer.innerHTML = trendingItems.map(item => {
         const formattedPrice = formatPrice(item.listing.price, item.listing.currency);
         const currencyName = getCurrencyName(item.listing.currency);
-        
+
         return `
             <div class="trending-item" data-token-id="${item.id}">
                 <img src="${item.image}" alt="${item.name}" class="trending-item-image" 
@@ -2583,7 +2568,7 @@ function renderTrendingCarousel() {
             </div>
         `;
     }).join('');
-    
+
     // Add click handlers
     trendingItemsContainer.querySelectorAll('.trending-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -2598,7 +2583,7 @@ function renderTrendingCarousel() {
             }
         });
     });
-    
+
     // Show trending carousel
     const trendingCarousel = document.getElementById('trendingCarousel');
     if (trendingCarousel) {
@@ -2609,10 +2594,10 @@ function renderTrendingCarousel() {
 function scrollTrendingCarousel(direction) {
     const container = document.getElementById('trendingItems');
     if (!container) return;
-    
+
     const scrollAmount = 140; // width of one item plus gap
     const currentScroll = container.scrollLeft;
-    
+
     if (direction === 'prev') {
         container.scrollTo({
             left: currentScroll - scrollAmount,
@@ -2630,21 +2615,21 @@ function scrollTrendingCarousel(direction) {
 async function setupRealtimeSubscriptions() {
     try {
         const { subscribeToNewListings, subscribeToUserNotifications } = await import('../utils/supabaseClient.js');
-        
+
         // Subscribe to new listings
         await subscribeToNewListings((payload) => {
             if (payload.new && payload.new.event_type === 'listing_created') {
                 showRealtimeNotification(
                     'New Listing',
-                    `A new NFT has been listed for sale!`,
+                    'A new NFT has been listed for sale!',
                     'info'
                 );
-                
+
                 // Refresh listings
                 loadListings();
             }
         });
-        
+
         // Subscribe to user notifications
         const walletAddress = getCurrentWalletAddress();
         if (walletAddress) {
@@ -2655,7 +2640,7 @@ async function setupRealtimeSubscriptions() {
                 }
             });
         }
-        
+
         console.log('Real-time subscriptions set up successfully');
     } catch (error) {
         console.error('Error setting up real-time subscriptions:', error);

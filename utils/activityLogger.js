@@ -229,7 +229,7 @@ let currentPage = null;
 
 function autoLogPageView() {
     if (typeof window === 'undefined') return;
-    
+
     const pageName = window.location.pathname.split('/').pop().replace('.html', '') || 'home';
 
     if (pageName !== currentPage) {

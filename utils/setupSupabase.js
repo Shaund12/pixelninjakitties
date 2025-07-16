@@ -2,7 +2,7 @@
 
 /**
  * Supabase Database Setup Script
- * 
+ *
  * This script helps set up the Supabase database tables and functions
  * required for the wallet-based personalization system.
  */
@@ -41,12 +41,12 @@ async function main() {
         // Read and execute the SQL schema
         const schemaPath = join(__dirname, 'supabase_schema.sql');
         const schema = readFileSync(schemaPath, 'utf8');
-        
+
         console.log('📋 Creating database tables and functions...');
-        
+
         // Split schema into individual statements
         const statements = schema.split(';').filter(stmt => stmt.trim());
-        
+
         for (const statement of statements) {
             if (statement.trim()) {
                 try {
@@ -59,58 +59,58 @@ async function main() {
                 }
             }
         }
-        
+
         console.log('✅ Database schema setup complete!');
         console.log('');
-        
+
         // Test the setup
         console.log('🧪 Testing database setup...');
-        
+
         // Test basic table existence
         const { data: users, error: usersError } = await supabase
             .from('users')
             .select('count')
             .limit(1);
-            
+
         if (usersError) {
             console.error('❌ Users table test failed:', usersError.message);
         } else {
             console.log('✅ Users table accessible');
         }
-        
+
         const { data: favorites, error: favoritesError } = await supabase
             .from('favorites')
             .select('count')
             .limit(1);
-            
+
         if (favoritesError) {
             console.error('❌ Favorites table test failed:', favoritesError.message);
         } else {
             console.log('✅ Favorites table accessible');
         }
-        
+
         const { data: preferences, error: preferencesError } = await supabase
             .from('preferences')
             .select('count')
             .limit(1);
-            
+
         if (preferencesError) {
             console.error('❌ Preferences table test failed:', preferencesError.message);
         } else {
             console.log('✅ Preferences table accessible');
         }
-        
+
         const { data: activityLogs, error: activityLogsError } = await supabase
             .from('activity_logs')
             .select('count')
             .limit(1);
-            
+
         if (activityLogsError) {
             console.error('❌ Activity logs table test failed:', activityLogsError.message);
         } else {
             console.log('✅ Activity logs table accessible');
         }
-        
+
         console.log('');
         console.log('🎉 Supabase setup complete!');
         console.log('');
@@ -122,7 +122,7 @@ async function main() {
         console.log('Environment variables needed:');
         console.log('   SUPABASE_URL=' + SUPABASE_URL);
         console.log('   SUPABASE_ANON_KEY=<your_anon_key>');
-        
+
     } catch (error) {
         console.error('❌ Setup failed:', error.message);
         process.exit(1);
