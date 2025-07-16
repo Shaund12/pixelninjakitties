@@ -362,7 +362,7 @@
                 z-index: 999;
                 transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
                 overflow: hidden;
-                width: 420px;
+                width: 380px;
                 border: 2px solid rgba(138, 101, 255, 0.4);
                 user-select: none;
                 backdrop-filter: blur(15px);
@@ -370,13 +370,13 @@
             
             #ninja-casts-player.minimized {
                 width: 200px;
-                height: 95px;
+                height: 80px;
                 border-radius: 15px;
             }
             
             #ninja-casts-player.expanded {
-                width: 440px;
-                height: 340px;
+                width: 400px;
+                height: 320px;
             }
 
             .ninja-cat-avatar {
@@ -432,7 +432,7 @@
 
             .player-header {
                 background: linear-gradient(90deg, rgba(138, 101, 255, 0.15), transparent);
-                padding: 25px 25px 15px 80px;
+                padding: 20px 20px 10px 75px;
                 border-bottom: 1px solid rgba(138, 101, 255, 0.1);
             }
 
@@ -466,101 +466,27 @@
             .stream-carousel {
                 display: flex;
                 overflow-x: auto;
-                gap: 12px;
-                padding: 15px 20px;
-                scrollbar-width: thin;
-                scrollbar-color: rgba(138, 101, 255, 0.3) transparent;
-                scroll-behavior: smooth;
-                scroll-snap-type: x mandatory;
-                position: relative;
+                gap: 10px;
+                padding: 10px 15px;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
             }
 
             .stream-carousel::-webkit-scrollbar {
-                height: 4px;
-            }
-
-            .stream-carousel::-webkit-scrollbar-track {
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 2px;
-            }
-
-            .stream-carousel::-webkit-scrollbar-thumb {
-                background: rgba(138, 101, 255, 0.3);
-                border-radius: 2px;
-            }
-
-            .stream-carousel::-webkit-scrollbar-thumb:hover {
-                background: rgba(138, 101, 255, 0.5);
-            }
-
-            .stream-carousel:hover::-webkit-scrollbar {
-                opacity: 1;
-            }
-
-            .carousel-container {
-                position: relative;
-                margin: 0 5px;
-            }
-
-            .carousel-nav-btn {
-                position: absolute;
-                top: 50%;
-                transform: translateY(-50%);
-                background: rgba(138, 101, 255, 0.8);
-                border: none;
-                border-radius: 50%;
-                width: 32px;
-                height: 32px;
-                color: white;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
-                font-weight: bold;
-                z-index: 10;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-                opacity: 0;
-                pointer-events: none;
-            }
-
-            .carousel-container:hover .carousel-nav-btn {
-                opacity: 1;
-                pointer-events: auto;
-            }
-
-            .carousel-nav-btn:hover {
-                background: rgba(138, 101, 255, 1);
-                transform: translateY(-50%) scale(1.1);
-            }
-
-            .carousel-nav-btn.prev {
-                left: 5px;
-            }
-
-            .carousel-nav-btn.next {
-                right: 5px;
-            }
-
-            .carousel-nav-btn:disabled {
-                opacity: 0.3;
-                cursor: not-allowed;
+                display: none;
             }
 
             .stream-card {
-                min-width: 140px;
+                min-width: 110px;
                 background: rgba(255, 255, 255, 0.05);
                 border: 1px solid rgba(138, 101, 255, 0.2);
-                border-radius: 12px;
-                padding: 12px;
+                border-radius: 10px;
+                padding: 8px 10px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 text-align: center;
                 position: relative;
                 overflow: hidden;
-                flex-shrink: 0;
-                scroll-snap-align: start;
             }
 
             .stream-card:before {
@@ -590,21 +516,19 @@
             }
 
             .stream-card-name {
-                font-size: 15px;
+                font-size: 11px;
                 font-weight: 600;
                 color: white;
-                margin-bottom: 4px;
+                margin-bottom: 2px;
                 z-index: 1;
                 position: relative;
-                line-height: 1.2;
             }
 
             .stream-card-genre {
-                font-size: 12px;
+                font-size: 9px;
                 color: rgba(255, 255, 255, 0.6);
                 z-index: 1;
                 position: relative;
-                line-height: 1.2;
             }
 
             .expanded .stream-carousel {
@@ -701,11 +625,10 @@
 
             .visualizer-skin-selector {
                 display: flex;
-                gap: 15px;
-                padding: 15px 20px;
+                gap: 12px;
+                padding: 10px 15px;
                 justify-content: center;
                 align-items: center;
-                margin-top: 8px;
             }
 
             .skin-label {
@@ -754,18 +677,14 @@
                 display: none;
             }
 
-                        /* Enhanced controls styling */
+            /* Enhanced controls styling */
             .player-controls {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                padding: 18px 20px;
+                gap: 15px;
+                padding: 15px;
                 background: rgba(0, 0, 0, 0.1);
                 border-radius: 0 0 20px 20px;
-                margin-top: 5px;
-                position: relative;
-                flex-wrap: wrap;
             }
 
             .ninja-control-btn {
@@ -781,33 +700,8 @@
                 cursor: pointer;
                 transition: all 0.3s ease;
                 padding: 0;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2),
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2), 
                             inset 0 1px 2px rgba(255,255,255,0.1);
-                flex-shrink: 0;
-            }
-
-            .ninja-control-btn svg {
-                width: 20px;
-                height: 20px;
-                fill: currentColor;
-                stroke: currentColor;
-                display: block;
-            }
-
-            .play-btn {
-                background: linear-gradient(145deg, #8a65ff, #6b4bd6);
-                color: white;
-                width: 48px;
-                height: 48px;
-                box-shadow: 0 4px 15px rgba(138, 101, 255, 0.4);
-                z-index: 2;
-            }
-
-            .stream-info {
-                flex: 1;
-                padding-left: 10px;
-                min-width: 0;
-                overflow: hidden;
             }
 
             .ninja-control-btn:hover {
@@ -837,11 +731,6 @@
                 0%, 100% { box-shadow: 0 4px 15px rgba(138, 101, 255, 0.4); }
                 50% { box-shadow: 0 4px 20px rgba(138, 101, 255, 0.7); }
             }
-
-            /* Play/Pause Icon Switching */
-            .play-btn .pause-icon { display: none; }
-            .play-btn.playing .pause-icon { display: block; }
-            .play-btn.playing .play-icon { display: none; }
 
             .minimized .ninja-control-btn {
                 width: 36px;
@@ -1169,18 +1058,14 @@
                 <p class="player-subtitle">Shadow Frequencies</p>
             </div>
             
-            <div class="carousel-container">
-                <button class="carousel-nav-btn prev" id="carouselPrev" aria-label="Previous streams">‹</button>
-                <div class="stream-carousel" id="streamCarousel">
-                    ${streamingSources.map((stream, index) => `
-                        <div class="stream-card ${index === playerState.currentIndex ? 'active' : ''}" 
-                             data-index="${index}">
-                            <div class="stream-card-name">${stream.name}</div>
-                            <div class="stream-card-genre">${stream.genre}</div>
-                        </div>
-                    `).join('')}
-                </div>
-                <button class="carousel-nav-btn next" id="carouselNext" aria-label="Next streams">›</button>
+            <div class="stream-carousel" id="streamCarousel">
+                ${streamingSources.map((stream, index) => `
+                    <div class="stream-card ${index === playerState.currentIndex ? 'active' : ''}" 
+                         data-index="${index}">
+                        <div class="stream-card-name">${stream.name}</div>
+                        <div class="stream-card-genre">${stream.genre}</div>
+                    </div>
+                `).join('')}
             </div>
             
             <div class="focus-mode-panel" id="focusModePanel">
@@ -1194,53 +1079,50 @@
             
             <div class="ai-commentary" id="aiCommentary"></div>
             
-            <!-- Fixed control buttons with direct styling -->
-            <div style="display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 0 0 20px 20px; margin-top: 5px;">
-                <!-- Play/Pause Button -->
-                <button id="audioToggle" style="width: 45px; height: 45px; background: linear-gradient(145deg, #8a65ff, #6b4bd6); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                        <polygon points="5 3 19 12 5 21"/>
+            <div class="player-controls">
+                <button class="ninja-control-btn play-btn" id="audioToggle" aria-label="Toggle play">
+                    <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21"></polygon>
+                    </svg>
+                    <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
                     </svg>
                 </button>
                 
-                <!-- Next Track Button -->
-                <button id="nextTrackBtn" style="width: 38px; height: 38px; background: rgba(138, 101, 255, 0.2); border: 1px solid rgba(138, 101, 255, 0.3); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #a28aff;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#a28aff">
-                        <polygon points="5 4 15 12 5 20"/>
-                        <line x1="19" y1="5" x2="19" y2="19" stroke="#a28aff" stroke-width="2"/>
+                <button class="ninja-control-btn" id="nextTrackBtn" aria-label="Next stream">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 4 15 12 5 20"></polygon>
+                        <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line>
                     </svg>
                 </button>
                 
-                <!-- Volume Button -->
-                <div class="volume-container" style="position: relative;">
-                    <button id="volumeBtn" style="width: 38px; height: 38px; background: rgba(138, 101, 255, 0.2); border: 1px solid rgba(138, 101, 255, 0.3); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #a28aff;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a28aff" stroke-width="2">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                <div class="volume-container">
+                    <button class="ninja-control-btn" id="volumeBtn" aria-label="Volume">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                         </svg>
                     </button>
-                    <div id="volumeSliderContainer" style="position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); background: #23263a; padding: 15px 10px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); display: none;">
-                        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="${playerState.volume}" style="width: 100px; transform: rotate(-90deg);">
+                    <div class="volume-slider-container">
+                        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="${playerState.volume}">
                     </div>
                 </div>
                 
-                <!-- Stream Info -->
-                <div style="flex: 1; min-width: 0;">
-                    <div id="currentStreamName" style="font-weight: 700; font-size: 15px; color: white; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${streamingSources[0].name}</div>
-                    <div style="font-size: 11px; color: rgba(255,255,255,0.7); display: flex; gap: 8px; align-items: center;">
-                        <span style="display: inline-block; width: 6px; height: 6px; background: #00ff00; border-radius: 50%;"></span>
+                <div class="stream-info">
+                    <div class="stream-name" id="currentStreamName">${streamingSources[0].name}</div>
+                    <div class="stream-metadata">
+                        <span class="live-indicator"></span>
                         <span id="streamGenre">${streamingSources[0].genre}</span>
                         <span>•</span>
                         <span id="streamBitrate">${streamingSources[0].bitrate}</span>
                     </div>
                 </div>
                 
-                <!-- Focus Mode Button -->
-                <button id="focusToggle" style="width: 38px; height: 38px; background: rgba(138, 101, 255, 0.2); border: 1px solid rgba(138, 101, 255, 0.3); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #a28aff;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a28aff" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12,6 12,12 16,14"/>
+                <button class="ninja-control-btn" id="focusToggle" aria-label="Focus Mode">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12,6 12,12 16,14"></polyline>
                     </svg>
                 </button>
             </div>
@@ -1299,7 +1181,7 @@
             
             <audio id="audioPlayer" preload="none"></audio>
             
-            <div style="text-align: center; padding: 8px; font-size: 11px; color: rgba(255,255,255,0.5);">
+            <div class="stream-attribution">
                 <span id="streamProvider">${streamingSources[0].provider}</span> • Tuned by the Silent Order
             </div>
         `;
@@ -1357,8 +1239,6 @@
         // Enhanced DOM references
         const ninjaCatAvatar = document.getElementById('ninjaCatAvatar');
         const streamCarousel = document.getElementById('streamCarousel');
-        const carouselPrev = document.getElementById('carouselPrev');
-        const carouselNext = document.getElementById('carouselNext');
         const focusModePanel = document.getElementById('focusModePanel');
         const focusTimer = document.getElementById('focusTimer');
         const focusToggle = document.getElementById('focusToggle');
@@ -1383,35 +1263,6 @@
                     selectStream(index);
                 }
             });
-
-            // Carousel navigation buttons
-            carouselPrev.addEventListener('click', () => {
-                scrollCarousel(-1);
-            });
-
-            carouselNext.addEventListener('click', () => {
-                scrollCarousel(1);
-            });
-
-            // Mouse wheel scrolling on carousel
-            streamCarousel.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                streamCarousel.scrollLeft += e.deltaY;
-            });
-
-            // Keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft' && e.target.tagName !== 'INPUT') {
-                    e.preventDefault();
-                    scrollCarousel(-1);
-                } else if (e.key === 'ArrowRight' && e.target.tagName !== 'INPUT') {
-                    e.preventDefault();
-                    scrollCarousel(1);
-                }
-            });
-
-            // Update carousel navigation state on scroll
-            streamCarousel.addEventListener('scroll', updateCarouselNavigation);
 
             // Focus mode controls
             focusToggle.addEventListener('click', toggleFocusMode);
@@ -1465,9 +1316,6 @@
 
             // Initialize expanded state UI
             updateExpandedState();
-
-            // Initialize carousel navigation state
-            updateCarouselNavigation();
         }
 
         // Enhanced stream selection
@@ -1487,22 +1335,6 @@
             if (playerState.isPlaying) {
                 loadAndPlayStream(true);
             }
-        }
-
-        // Carousel navigation functions
-        function scrollCarousel(direction) {
-            const cardWidth = 152; // 140px + 12px gap
-            const scrollAmount = cardWidth * direction;
-            streamCarousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        }
-
-        function updateCarouselNavigation() {
-            const canScrollLeft = streamCarousel.scrollLeft > 0;
-            const canScrollRight = streamCarousel.scrollLeft < 
-                (streamCarousel.scrollWidth - streamCarousel.clientWidth);
-            
-            carouselPrev.disabled = !canScrollLeft;
-            carouselNext.disabled = !canScrollRight;
         }
 
         // Enhanced stream display update
@@ -2277,6 +2109,8 @@
             const toggleBtn = document.getElementById('audioToggle');
             if (toggleBtn) {
                 toggleBtn.classList.remove('playing');
+                toggleBtn.querySelector('.play-icon').style.display = 'block';
+                toggleBtn.querySelector('.pause-icon').style.display = 'none';
             }
 
             // Reset state
