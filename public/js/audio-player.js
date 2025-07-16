@@ -1,134 +1,1026 @@
-﻿// Enhanced Global Audio Player with Stream Details and UI Controls
+﻿// Ninja Casts: Shadow Frequencies - Enhanced Audio Player
 (() => {
-    // Collection of high-quality, reliable meditation/ambient streams
+    // Define showToast early to avoid reference errors
+    if (typeof showToast !== 'function') {
+        window.showToast = (message, type, duration = 3000) => {
+            const toast = document.createElement('div');
+            toast.className = `global-toast ${type || 'info'}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                right: 20px;
+                background: #23263a;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+                z-index: 10000;
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+                font-size: 14px;
+            `;
+            document.body.appendChild(toast);
+
+            // Show the toast
+            setTimeout(() => {
+                toast.style.opacity = '1';
+            }, 10);
+            // Hide and remove after duration
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+
+            return toast;
+        };
+    }
+
+    // Collection of ninja-themed, high-quality streaming sources
     const streamingSources = [
         {
             url: 'https://ice1.somafm.com/dronezone-128-mp3',
-            name: 'SomaFM Drone Zone',
+            name: 'Shadow Frequencies',
             bitrate: '128 kbps',
-            genre: 'Ambient, Atmospheric',
-            provider: 'SomaFM'
+            genre: 'Ambient Ninja',
+            provider: 'SomaFM',
+            theme: 'shadow'
         },
         {
             url: 'https://radio4.cdm-radio.com:18020/stream-mp3-Zen',
-            name: 'CDM Zen Radio',
+            name: 'Zen Temple',
             bitrate: '192 kbps',
-            genre: 'Meditation, Eastern',
-            provider: 'CDM-Radio'
+            genre: 'Meditation Dojo',
+            provider: 'CDM-Radio',
+            theme: 'zen'
         },
         {
             url: 'https://icecast.cloudradionetwork.com:8037/spacedreams',
-            name: 'Space Dreams',
+            name: 'Moonlight Serenade',
             bitrate: '128 kbps',
-            genre: 'Ambient, Space',
-            provider: 'Cloud Radio'
+            genre: 'Cosmic Ninja',
+            provider: 'Cloud Radio',
+            theme: 'moon'
         },
         {
             url: 'https://streams.calmradio.com/api/36/128/stream',
-            name: 'Calm Radio - Zen',
+            name: 'Inner Peace',
             bitrate: '128 kbps',
-            genre: 'Meditation, Relaxation',
-            provider: 'Calm Radio'
+            genre: 'Tranquil Focus',
+            provider: 'Calm Radio',
+            theme: 'peace'
         },
         {
             url: 'https://streaming.live365.com/b05055_128mp3',
-            name: 'Ambient Sleeping Pill',
+            name: 'Dream Realm',
             bitrate: '128 kbps',
-            genre: 'Ambient, Sleep',
-            provider: 'Live365'
+            genre: 'Sleeping Ninja',
+            provider: 'Live365',
+            theme: 'dream'
         }
     ];
 
-    // Player state management with localStorage for persistence
-    const playerState = {
-        get currentIndex() {
-            return parseInt(localStorage.getItem('ninja_audio_index') || '0');
+    // Visualizer skins configuration
+    const visualizerSkins = {
+        katana_wave: {
+            name: 'Katana Wave',
+            colors: ['#8a65ff', '#9e7fff', '#b39dff'],
+            style: 'bars'
         },
-        set currentIndex(value) {
-            localStorage.setItem('ninja_audio_index', value.toString());
+        sakura_pulse: {
+            name: 'Sakura Pulse',
+            colors: ['#ff6b9d', '#ff8a9b', '#ffa8c9'],
+            style: 'circles'
         },
-        get isPlaying() {
-            return localStorage.getItem('ninja_audio_playing') === 'true';
-        },
-        set isPlaying(value) {
-            localStorage.setItem('ninja_audio_playing', value.toString());
-        },
-        get volume() {
-            return parseFloat(localStorage.getItem('ninja_audio_volume') || '0.5');
-        },
-        set volume(value) {
-            localStorage.setItem('ninja_audio_volume', value.toString());
-        },
-        get isExpanded() {
-            return localStorage.getItem('ninja_audio_expanded') === 'true';
-        },
-        set isExpanded(value) {
-            localStorage.setItem('ninja_audio_expanded', value.toString());
-        },
-        get isVisible() {
-            return localStorage.getItem('ninja_audio_visible') !== 'false';
-        },
-        set isVisible(value) {
-            localStorage.setItem('ninja_audio_visible', value.toString());
-        },
-        get showVisualizer() {
-            return localStorage.getItem('ninja_audio_visualizer') !== 'false';
-        },
-        set showVisualizer(value) {
-            localStorage.setItem('ninja_audio_visualizer', value.toString());
+        shadow_mode: {
+            name: 'Shadow Mode',
+            colors: ['#444466', '#666688', '#8888aa'],
+            style: 'waves'
         }
     };
+
+    // AI DJ Commentary messages
+    const aiCommentary = [
+        'The blade is silent, but it never sleeps…',
+        'In the quiet, a storm prepares.',
+        'Focus flows like water, sharp like steel.',
+        'The shadow knows what the light cannot see.',
+        'Breathe with the rhythm of the ancient ways.',
+        'Your mind is the sharpest weapon in the dojo.',
+        'Let the frequencies guide your inner ninja.',
+        'In stillness, find your true strength.',
+        'The wise ninja listens to the silence between notes.',
+        'Your concentration sharpens like a blade in moonlight.'
+    ];
+
+    // Secret dojo playlist for easter egg
+    const dojoPlaylist = [
+        {
+            url: 'https://ice1.somafm.com/secretagent-128-mp3',
+            name: 'Secret Agent',
+            genre: 'Spy Ambient'
+        },
+        {
+            url: 'https://ice1.somafm.com/deepspaceone-128-mp3',
+            name: 'Deep Space One',
+            genre: 'Space Ambient'
+        },
+        {
+            url: 'https://ice1.somafm.com/missioncontrol-128-mp3',
+            name: 'Mission Control',
+            genre: 'Electronic'
+        }
+    ];
+
+    // Enhanced player state with Supabase integration
+    const playerState = {
+        // Supabase client will be initialized
+        supabase: null,
+        userId: null,
+
+        // Settings with defaults
+        settings: {
+            volume: 0.5,
+            stream_index: 0,
+            visualizer_skin: 'katana_wave',
+            focus_mode: false,
+            focus_duration: 25,
+            ai_commentary: false,
+            is_expanded: false,
+            is_visible: true,
+            show_visualizer: true,
+            position_x: 20,
+            position_y: 20
+        },
+
+        // Initialize Supabase connection
+        async initSupabase() {
+            try {
+                const { initializeSupabase } = await import('/js/supabase.js');
+                this.supabase = await initializeSupabase();
+                this.userId = this.getCurrentUserId();
+                await this.loadSettings();
+            } catch (error) {
+                console.warn('Supabase not available, using localStorage fallback:', error);
+                this.loadFromLocalStorage();
+            }
+        },
+
+        getCurrentUserId() {
+            // For development, use localStorage-based user ID
+            let userId = localStorage.getItem('ninja_user_id');
+            if (!userId) {
+                userId = 'guest_' + Date.now();
+                localStorage.setItem('ninja_user_id', userId);
+            }
+            return userId;
+        },
+
+        async loadSettings() {
+            if (!this.supabase || !this.userId) {
+                return this.loadFromLocalStorage();
+            }
+
+            try {
+                const { data, error } = await this.supabase
+                    .from('ninja_player_settings')
+                    .select('*')
+                    .eq('user_id', this.userId)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+
+                if (data) {
+                    this.settings = { ...this.settings, ...data };
+                } else {
+                    await this.saveSettings();
+                }
+            } catch (error) {
+                console.warn('Failed to load settings from Supabase:', error);
+                this.loadFromLocalStorage();
+            }
+        },
+
+        async saveSettings() {
+            if (!this.supabase || !this.userId) {
+                return this.saveToLocalStorage();
+            }
+
+            try {
+                const { error } = await this.supabase
+                    .from('ninja_player_settings')
+                    .upsert({
+                        user_id: this.userId,
+                        ...this.settings,
+                        last_updated: new Date().toISOString()
+                    });
+
+                if (error) throw error;
+            } catch (error) {
+                // Silently fall back to localStorage - expected if table doesn't exist
+                this.saveToLocalStorage();
+            }
+        },
+
+        loadFromLocalStorage() {
+            const mappings = {
+                'ninja_audio_volume': 'volume',
+                'ninja_audio_index': 'stream_index',
+                'ninja_audio_visualizer_skin': 'visualizer_skin',
+                'ninja_audio_focus_mode': 'focus_mode',
+                'ninja_audio_ai_commentary': 'ai_commentary',
+                'ninja_audio_expanded': 'is_expanded',
+                'ninja_audio_visible': 'is_visible',
+                'ninja_audio_visualizer': 'show_visualizer'
+            };
+
+            for (const [key, setting] of Object.entries(mappings)) {
+                const value = localStorage.getItem(key);
+                if (value !== null) {
+                    if (setting === 'volume') {
+                        this.settings[setting] = parseFloat(value);
+                    } else if (setting === 'stream_index') {
+                        this.settings[setting] = parseInt(value, 10);
+                    } else if (setting !== 'visualizer_skin') {
+                        this.settings[setting] = value === 'true';
+                    } else {
+                        this.settings[setting] = value;
+                    }
+                }
+            }
+        },
+
+        saveToLocalStorage() {
+            localStorage.setItem('ninja_audio_volume', this.settings.volume);
+            localStorage.setItem('ninja_audio_index', this.settings.stream_index);
+            localStorage.setItem('ninja_audio_visualizer_skin', this.settings.visualizer_skin);
+            localStorage.setItem('ninja_audio_focus_mode', this.settings.focus_mode);
+            localStorage.setItem('ninja_audio_ai_commentary', this.settings.ai_commentary);
+            localStorage.setItem('ninja_audio_expanded', this.settings.is_expanded);
+            localStorage.setItem('ninja_audio_visible', this.settings.is_visible);
+            localStorage.setItem('ninja_audio_visualizer', this.settings.show_visualizer);
+        },
+
+        // Getters and setters with auto-save
+        get currentIndex() { return this.settings.stream_index; },
+        set currentIndex(value) {
+            this.settings.stream_index = value;
+            this.saveSettings();
+        },
+
+        get isPlaying() { return this.settings.is_playing || false; },
+        set isPlaying(value) {
+            this.settings.is_playing = value;
+            this.saveSettings();
+        },
+
+        get volume() { return this.settings.volume; },
+        set volume(value) {
+            this.settings.volume = value;
+            this.saveSettings();
+        },
+
+        get isExpanded() { return this.settings.is_expanded; },
+        set isExpanded(value) {
+            this.settings.is_expanded = value;
+            this.saveSettings();
+        },
+
+        get isVisible() { return this.settings.is_visible; },
+        set isVisible(value) {
+            this.settings.is_visible = value;
+            this.saveSettings();
+        },
+
+        get showVisualizer() { return this.settings.show_visualizer; },
+        set showVisualizer(value) {
+            this.settings.show_visualizer = value;
+            this.saveSettings();
+        },
+
+        get visualizerSkin() { return this.settings.visualizer_skin; },
+        set visualizerSkin(value) {
+            this.settings.visualizer_skin = value;
+            this.saveSettings();
+        },
+
+        get focusMode() { return this.settings.focus_mode; },
+        set focusMode(value) {
+            this.settings.focus_mode = value;
+            this.saveSettings();
+        },
+
+        get aiCommentary() { return this.settings.ai_commentary; },
+        set aiCommentary(value) {
+            this.settings.ai_commentary = value;
+            this.saveSettings();
+        }
+    };
+
+    // Focus mode timer variables
+    const focusTimer = null;
+    let focusTimeLeft = 25 * 60; // 25 minutes in seconds
+    let focusPaused = false;
+
+    // AI Commentary timer
+    let aiCommentaryInterval = null;
+
+    // Easter egg variables
+    let idleTimer = null;
+    let lastActivity = Date.now();
 
     // Performance optimization flags
     let isVisualizerActive = false;
     let visualizerThrottleTimer = null;
-    const VISUALIZER_FPS = 30; // Limit frames per second for visualization
+    const VISUALIZER_FPS = 30;
 
-    // Initialize the player when DOM is ready
-    function initGlobalAudioPlayer() {
+    // Initialize the enhanced Ninja Casts player
+    async function initGlobalAudioPlayer() {
         // Only create player if it doesn't exist already
-        if (document.getElementById('ninja-audio-player')) return;
+        if (document.getElementById('ninja-casts-player')) return;
 
-        // First create the style element (create it BEFORE using it)
+        // Initialize state management
+        await playerState.initSupabase();
+
+        // Create enhanced styles with ninja theming
         const style = document.createElement('style');
         style.textContent = `
-            #ninja-audio-player {
+            #ninja-casts-player {
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                background: linear-gradient(145deg, #292d3e, #1e2132);
-                border-radius: 16px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 
-                            0 0 0 1px rgba(138, 101, 255, 0.1),
-                            inset 0 1px 1px rgba(255, 255, 255, 0.06);
+                background: linear-gradient(145deg, #1a1a2e, #16213e);
+                border-radius: 20px;
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 
+                            0 0 0 1px rgba(138, 101, 255, 0.3),
+                            inset 0 2px 4px rgba(255, 255, 255, 0.1);
                 color: white;
                 font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
                 z-index: 999;
-                transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
                 overflow: hidden;
-                width: 310px;
-                border: 1px solid rgba(138, 101, 255, 0.3);
+                width: 380px;
+                border: 2px solid rgba(138, 101, 255, 0.4);
                 user-select: none;
+                backdrop-filter: blur(15px);
+            }
+            
+            #ninja-casts-player.minimized {
+                width: 200px;
+                height: 80px;
+                border-radius: 15px;
+            }
+            
+            #ninja-casts-player.expanded {
+                width: 400px;
+                height: 320px;
+            }
+
+            .ninja-cat-avatar {
+                position: absolute;
+                top: -15px;
+                left: 15px;
+                width: 45px;
+                height: 45px;
+                background: linear-gradient(145deg, #8a65ff, #6b4bd6);
+                border-radius: 50%;
+                border: 3px solid rgba(255, 255, 255, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                z-index: 1000;
+                animation: ninja-pulse 3s ease-in-out infinite;
+                cursor: pointer;
+                transition: transform 0.3s ease;
+                box-shadow: 0 5px 15px rgba(138, 101, 255, 0.4);
+            }
+
+            .ninja-cat-avatar:hover {
+                transform: scale(1.1) rotate(5deg);
+            }
+
+            .ninja-cat-avatar.meditating {
+                animation: ninja-meditate 4s ease-in-out infinite;
+            }
+
+            .ninja-cat-avatar.kata {
+                animation: ninja-kata 2s ease-in-out;
+            }
+
+            @keyframes ninja-pulse {
+                0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(138, 101, 255, 0.7); }
+                50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(138, 101, 255, 0); }
+            }
+
+            @keyframes ninja-meditate {
+                0%, 100% { transform: scale(1) rotate(0deg); }
+                25% { transform: scale(1.02) rotate(1deg); }
+                75% { transform: scale(1.02) rotate(-1deg); }
+            }
+
+            @keyframes ninja-kata {
+                0% { transform: scale(1) rotate(0deg); }
+                25% { transform: scale(1.1) rotate(10deg); }
+                50% { transform: scale(1.2) rotate(-5deg); }
+                75% { transform: scale(1.1) rotate(8deg); }
+                100% { transform: scale(1) rotate(0deg); }
+            }
+
+            .player-header {
+                background: linear-gradient(90deg, rgba(138, 101, 255, 0.15), transparent);
+                padding: 20px 20px 10px 75px;
+                border-bottom: 1px solid rgba(138, 101, 255, 0.1);
+            }
+
+            .player-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #e0e0ff;
+                margin: 0;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            }
+
+            .player-subtitle {
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.7);
+                margin: 2px 0 0 0;
+                font-style: italic;
+            }
+
+            .minimized .player-header {
+                padding: 15px 15px 5px 60px;
+            }
+
+            .minimized .player-title {
+                font-size: 14px;
+            }
+
+            .minimized .player-subtitle {
+                font-size: 10px;
+            }
+
+            .stream-carousel {
+                display: flex;
+                overflow-x: auto;
+                gap: 10px;
+                padding: 10px 15px;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .stream-carousel::-webkit-scrollbar {
+                display: none;
+            }
+
+            .stream-card {
+                min-width: 110px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(138, 101, 255, 0.2);
+                border-radius: 10px;
+                padding: 8px 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: center;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .stream-card:before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(138, 101, 255, 0.1), transparent);
+                transition: left 0.5s ease;
+            }
+
+            .stream-card:hover:before {
+                left: 100%;
+            }
+
+            .stream-card.active {
+                background: rgba(138, 101, 255, 0.3);
+                border-color: rgba(138, 101, 255, 0.8);
+                box-shadow: 0 0 15px rgba(138, 101, 255, 0.3);
+            }
+
+            .stream-card:hover {
+                background: rgba(138, 101, 255, 0.2);
+                transform: translateY(-2px);
+            }
+
+            .stream-card-name {
+                font-size: 11px;
+                font-weight: 600;
+                color: white;
+                margin-bottom: 2px;
+                z-index: 1;
+                position: relative;
+            }
+
+            .stream-card-genre {
+                font-size: 9px;
+                color: rgba(255, 255, 255, 0.6);
+                z-index: 1;
+                position: relative;
+            }
+
+            .expanded .stream-carousel {
+                display: flex;
+            }
+
+            .minimized .stream-carousel {
+                display: none;
+            }
+
+            .focus-mode-panel {
+                background: rgba(255, 165, 0, 0.1);
+                border: 1px solid rgba(255, 165, 0, 0.3);
+                border-radius: 12px;
+                padding: 15px;
+                margin: 10px 15px;
+                display: none;
+            }
+
+            .focus-mode-panel.active {
+                display: block;
+            }
+
+            .focus-timer {
+                font-size: 28px;
+                font-weight: 700;
+                color: #ffb347;
+                text-align: center;
+                margin-bottom: 10px;
+                font-family: 'Courier New', monospace;
+                text-shadow: 0 0 10px rgba(255, 179, 71, 0.3);
+            }
+
+            .focus-controls {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            .focus-btn {
+                background: rgba(255, 165, 0, 0.2);
+                border: 1px solid rgba(255, 165, 0, 0.4);
+                border-radius: 8px;
+                padding: 6px 12px;
+                color: #ffb347;
+                cursor: pointer;
+                font-size: 11px;
+                transition: all 0.2s ease;
+                font-weight: 500;
+            }
+
+            .focus-btn:hover {
+                background: rgba(255, 165, 0, 0.3);
+                transform: translateY(-1px);
+            }
+
+            .focus-btn:active {
+                transform: translateY(0);
+            }
+
+            .ai-commentary {
+                background: rgba(0, 255, 255, 0.08);
+                border: 1px solid rgba(0, 255, 255, 0.3);
+                border-radius: 12px;
+                padding: 12px;
+                margin: 10px 15px;
+                font-size: 12px;
+                color: #87ceeb;
+                font-style: italic;
+                text-align: center;
+                display: none;
+                animation: fade-in 0.5s ease-in-out;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .ai-commentary:before {
+                content: '🧠';
+                position: absolute;
+                top: 5px;
+                right: 8px;
+                font-size: 14px;
+                opacity: 0.7;
+            }
+
+            .ai-commentary.visible {
+                display: block;
+            }
+
+            @keyframes fade-in {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            .visualizer-skin-selector {
+                display: flex;
+                gap: 12px;
+                padding: 10px 15px;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .skin-label {
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.6);
+                margin-right: 5px;
+            }
+
+            .skin-option {
+                width: 35px;
+                height: 22px;
+                border-radius: 8px;
+                cursor: pointer;
+                border: 2px solid transparent;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .skin-option:hover {
+                transform: scale(1.1);
+            }
+
+            .skin-option.active {
+                border-color: white;
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            }
+
+            .skin-option.katana_wave {
+                background: linear-gradient(45deg, #8a65ff, #9e7fff);
+            }
+
+            .skin-option.sakura_pulse {
+                background: linear-gradient(45deg, #ff6b9d, #ff8a9b);
+            }
+
+            .skin-option.shadow_mode {
+                background: linear-gradient(45deg, #444466, #666688);
+            }
+
+            .expanded .visualizer-skin-selector {
+                display: flex;
+            }
+
+            .minimized .visualizer-skin-selector {
+                display: none;
+            }
+
+            /* Enhanced controls styling */
+            .player-controls {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                padding: 15px;
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 0 0 20px 20px;
+            }
+
+            .ninja-control-btn {
+                background: linear-gradient(145deg, rgba(138, 101, 255, 0.2), rgba(138, 101, 255, 0.1));
+                border: 1px solid rgba(138, 101, 255, 0.3);
+                border-radius: 50%;
+                width: 42px;
+                height: 42px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #a28aff;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                padding: 0;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2), 
+                            inset 0 1px 2px rgba(255,255,255,0.1);
+            }
+
+            .ninja-control-btn:hover {
+                background: linear-gradient(145deg, rgba(138, 101, 255, 0.4), rgba(138, 101, 255, 0.2));
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            }
+
+            .play-btn {
+                background: linear-gradient(145deg, #8a65ff, #6b4bd6);
+                color: white;
+                width: 48px;
+                height: 48px;
+                box-shadow: 0 4px 15px rgba(138, 101, 255, 0.4);
+            }
+
+            .play-btn:hover {
+                background: linear-gradient(145deg, #9e7fff, #8a65ff);
+                box-shadow: 0 6px 20px rgba(138, 101, 255, 0.6);
+            }
+
+            .play-btn.playing {
+                animation: playing-pulse 2s infinite;
+            }
+
+            @keyframes playing-pulse {
+                0%, 100% { box-shadow: 0 4px 15px rgba(138, 101, 255, 0.4); }
+                50% { box-shadow: 0 4px 20px rgba(138, 101, 255, 0.7); }
+            }
+
+            .minimized .ninja-control-btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            .minimized .play-btn {
+                width: 40px;
+                height: 40px;
+            }
+
+            /* Enhanced info display */
+            .stream-info {
+                flex: 1;
+                padding-left: 10px;
+                min-width: 0;
+            }
+
+            .stream-name {
+                font-weight: 700;
+                font-size: 15px;
+                color: #e0e0ff;
+                margin-bottom: 4px;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .stream-metadata {
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.7);
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .live-indicator {
+                width: 6px;
+                height: 6px;
+                background: #00ff00;
+                border-radius: 50%;
+                animation: pulse-live 2s infinite;
+            }
+
+            @keyframes pulse-live {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+
+            .minimized .stream-name {
+                font-size: 12px;
+            }
+
+            .minimized .stream-metadata {
+                font-size: 9px;
+            }
+
+            /* Action buttons */
+            .player-actions {
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                display: flex;
+                gap: 8px;
+            }
+
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: rgba(255, 255, 255, 0.8);
+                transition: all 0.2s ease;
                 backdrop-filter: blur(10px);
             }
-            
-            #ninja-audio-player.minimized {
-                width: 180px;
-                height: 60px;
+
+            .action-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+                transform: scale(1.1);
+            }
+
+            .action-btn.active {
+                background: rgba(138, 101, 255, 0.3);
+                border-color: rgba(138, 101, 255, 0.5);
+            }
+
+            .action-btn input[type="checkbox"]:checked + svg {
+                color: #8a65ff;
+            }
+
+            .minimized .action-btn {
+                width: 28px;
+                height: 28px;
+            }
+
+            /* Volume control */
+            .volume-container {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+
+            .volume-slider-container {
+                position: absolute;
+                bottom: 50px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(35, 38, 58, 0.9);
+                padding: 15px 8px;
                 border-radius: 12px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease, transform 0.3s ease;
+                z-index: 1000;
+                backdrop-filter: blur(10px);
             }
-            
-            #ninja-audio-player.expanded {
-                width: 310px;
-                height: 170px;
+
+            .volume-container:hover .volume-slider-container {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateX(-50%) translateY(-5px);
             }
-            
+
+            #volumeSlider {
+                width: 100px;
+                height: 6px;
+                -webkit-appearance: none;
+                appearance: none;
+                background: rgba(255, 255, 255, 0.2);
+                outline: none;
+                border-radius: 3px;
+                transform: rotate(-90deg);
+            }
+
+            #volumeSlider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 18px;
+                height: 18px;
+                background: #a28aff;
+                cursor: pointer;
+                border-radius: 50%;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            }
+
+            #volumeSlider::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+                background: #a28aff;
+                cursor: pointer;
+                border-radius: 50%;
+                border: none;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            }
+
+            /* Visualizer container */
+            .visualizer-container {
+                height: 50px;
+                width: 100%;
+                display: none;
+                position: relative;
+                margin: 8px 0;
+                border-radius: 10px;
+                overflow: hidden;
+                background: rgba(0, 0, 0, 0.2);
+            }
+
+            .expanded .visualizer-container {
+                display: block;
+            }
+
+            #audioVisualizer {
+                width: 100%;
+                height: 100%;
+                border-radius: 10px;
+            }
+
+            /* Show player button */
+            .show-player-button {
+                position: fixed !important;
+                bottom: 20px !important;
+                right: 20px !important;
+                background: linear-gradient(145deg, #8a65ff, #6b4bd6) !important;
+                border-radius: 50% !important;
+                width: 60px !important;
+                height: 60px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                cursor: pointer !important;
+                color: white !important;
+                box-shadow: 0 8px 25px rgba(138, 101, 255, 0.6) !important;
+                z-index: 2000 !important;
+                border: none !important;
+                padding: 0 !important;
+                font-size: 28px !important;
+                animation: ninja-pulse 2s infinite !important;
+                transition: transform 0.3s ease !important;
+            }
+
+            .show-player-button:hover {
+                transform: scale(1.1) !important;
+            }
+
+            /* Secret dojo easter egg */
+            .dojo-easter-egg {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.95);
+                border: 2px solid #8a65ff;
+                border-radius: 20px;
+                padding: 30px;
+                color: white;
+                text-align: center;
+                z-index: 10000;
+                display: none;
+                animation: dojo-appear 0.5s ease-in-out;
+                backdrop-filter: blur(10px);
+            }
+
+            @keyframes dojo-appear {
+                from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            }
+
+            .dojo-easter-egg.visible {
+                display: block;
+            }
+
+            .dojo-title {
+                font-size: 24px;
+                color: #8a65ff;
+                margin-bottom: 15px;
+                font-weight: 700;
+                text-shadow: 0 0 10px rgba(138, 101, 255, 0.5);
+            }
+
+            .dojo-playlist {
+                list-style: none;
+                padding: 0;
+                margin: 15px 0;
+            }
+
+            .dojo-playlist li {
+                padding: 8px 0;
+                border-bottom: 1px solid rgba(138, 101, 255, 0.2);
+                cursor: pointer;
+                transition: color 0.2s ease;
+            }
+
+            .dojo-playlist li:hover {
+                color: #8a65ff;
+            }
+
+            /* Responsive design */
+            @media (max-width: 768px) {
+                #ninja-casts-player {
+                    width: 320px;
+                    bottom: 10px;
+                    right: 10px;
+                }
+                
+                #ninja-casts-player.minimized {
+                    width: 180px;
+                    height: 70px;
+                }
+                
+                #ninja-casts-player.expanded {
+                    width: 340px;
+                    height: 300px;
+                }
+            }
+
+            /* Drag handle */
             .player-drag-handle {
                 width: 100%;
                 height: 8px;
                 cursor: grab;
                 background: rgba(138, 101, 255, 0.1);
-                border-radius: 16px 16px 0 0;
+                border-radius: 20px 20px 0 0;
                 position: relative;
             }
             
@@ -137,7 +1029,7 @@
                 position: absolute;
                 width: 40px;
                 height: 4px;
-                background: rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.4);
                 border-radius: 2px;
                 top: 2px;
                 left: 50%;
@@ -147,595 +1039,67 @@
             .player-drag-handle:active {
                 cursor: grabbing;
             }
-            
-            .player-main {
-                padding: 10px 15px;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .player-controls {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .audio-button {
-                background: rgba(138, 101, 255, 0.15);
-                border: none;
-                border-radius: 50%;
-                width: 36px;
-                height: 36px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #a28aff;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                padding: 0;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.15), 
-                            inset 0 1px 1px rgba(255,255,255,0.1);
-            }
-            
-            .audio-button:hover {
-                background: rgba(138, 101, 255, 0.3);
-                transform: scale(1.05);
-                box-shadow: 0 3px 8px rgba(0,0,0,0.2), 
-                            inset 0 1px 1px rgba(255,255,255,0.15);
-            }
-            
-            .audio-button:active {
-                transform: scale(0.95);
-                box-shadow: 0 1px 2px rgba(0,0,0,0.1), 
-                            inset 0 1px 1px rgba(0,0,0,0.1);
-            }
-            
-            .play-button {
-                background: linear-gradient(145deg, #9a7aff, #8361e9);
-                color: white;
-                box-shadow: 0 3px 10px rgba(138, 101, 255, 0.4), 
-                            inset 0 1px 1px rgba(255,255,255,0.2);
-            }
-            
-            .play-button:hover {
-                background: linear-gradient(145deg, #a48bff, #8d6eff);
-            }
-            
-            .play-button svg {
-                transform: translateX(1px);
-            }
-            
-            .play-icon, .pause-icon {
-                position: absolute;
-                transition: opacity 0.2s ease, transform 0.2s ease;
-            }
-            
-            .play-icon {
-                opacity: 1;
-            }
-            
-            .pause-icon {
-                opacity: 0;
-            }
-            
-            .audio-button.playing .play-icon {
-                opacity: 0;
-            }
-            
-            .audio-button.playing .pause-icon {
-                opacity: 1;
-            }
-            
-            .volume-container {
-                position: relative;
-                display: flex;
-                align-items: center;
-            }
-            
-            .volume-slider-container {
-                position: absolute;
-                bottom: 45px;
-                background: #23263a;
-                padding: 12px 6px;
-                border-radius: 10px;
-                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4), 
-                            0 0 0 1px rgba(138, 101, 255, 0.2);
-                transform: translateX(-40%);
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.3s ease, transform 0.3s ease;
-                z-index: 1000;
-            }
-            
-            .volume-container:hover .volume-slider-container {
-                opacity: 1;
-                pointer-events: auto;
-                transform: translateX(-40%) translateY(-5px);
-            }
-            
-            #volumeSlider {
-                width: 80px;
-                height: 5px;
-                -webkit-appearance: none;
-                appearance: none;
-                background: rgba(255, 255, 255, 0.2);
-                outline: none;
-                border-radius: 2px;
-                transform: rotate(-90deg);
-            }
-            
-            #volumeSlider::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 14px;
-                height: 14px;
-                background: #a28aff;
-                cursor: pointer;
-                border-radius: 50%;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            }
-            
-            #volumeSlider::-moz-range-thumb {
-                width: 14px;
-                height: 14px;
-                background: #a28aff;
-                cursor: pointer;
-                border-radius: 50%;
-                border: none;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            }
-            
-            .player-info {
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-                padding-left: 3px;
-            }
-            
-            .stream-name {
-                font-weight: 600;
-                font-size: 14px;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-                overflow: hidden;
-                color: #f0f0f0;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            }
-            
-            .stream-details {
-                font-size: 11px;
-                color: rgba(255, 255, 255, 0.6);
-                display: flex;
-                align-items: center;
-                gap: 5px;
-                margin-top: 1px;
-            }
-            
-            .separator {
-                font-size: 8px;
-                opacity: 0.6;
-            }
-            
-            .visualizer-container {
-                height: 45px;
-                width: 100%;
-                display: none;
-                position: relative;
-                margin-top: 5px;
-                border-radius: 8px;
-                overflow: hidden;
-            }
-            
-            #ninja-audio-player.expanded .visualizer-container {
-                display: block;
-            }
-            
-            #audioVisualizer {
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.2);
-                border-radius: 8px;
-                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-            }
-            
-            .visualizer-toggle {
-                position: absolute;
-                right: 5px;
-                top: 5px;
-                font-size: 10px;
-                background: rgba(35, 38, 58, 0.7);
-                padding: 3px 6px;
-                border-radius: 10px;
-                backdrop-filter: blur(5px);
-            }
-            
-            .toggle {
-                display: flex;
-                align-items: center;
-                cursor: pointer;
-                user-select: none;
-            }
-            
-            .toggle input {
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
-            
-            .toggle-slider {
-                position: relative;
-                display: inline-block;
-                width: 24px;
-                height: 14px;
-                background-color: rgba(255, 255, 255, 0.15);
-                border-radius: 7px;
-                margin-right: 5px;
-                transition: 0.3s;
-                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-            }
-            
-            .toggle-slider:before {
-                position: absolute;
-                content: "";
-                height: 10px;
-                width: 10px;
-                left: 2px;
-                bottom: 2px;
-                background-color: white;
-                border-radius: 50%;
-                transition: 0.3s;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-            }
-            
-            .toggle input:checked + .toggle-slider {
-                background-color: #8a65ff;
-            }
-            
-            .toggle input:checked + .toggle-slider:before {
-                transform: translateX(10px);
-            }
-            
-            .toggle-label {
-                color: rgba(255, 255, 255, 0.8);
-                text-shadow: 0 1px 1px rgba(0,0,0,0.3);
-            }
-            
-            .stream-attribution {
-                font-size: 10px;
-                color: rgba(255, 255, 255, 0.5);
-                text-align: center;
-                margin-bottom: 8px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .info-button {
-                background: none;
-                border: none;
-                color: rgba(255, 255, 255, 0.5);
-                cursor: pointer;
-                padding: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                opacity: 0.7;
-                transition: opacity 0.2s;
-            }
-            
-            .info-button:hover {
-                opacity: 1;
-            }
-            
-            .info-modal {
-                display: none;
-                position: fixed;
-                z-index: 1001;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
-                opacity: 0;
-                transition: opacity 0.3s;
-                backdrop-filter: blur(3px);
-            }
-            
-            .info-modal.visible {
-                opacity: 1;
-            }
-            
-            .info-modal-content {
-                background: linear-gradient(145deg, #292d3e, #1e2132);
-                margin: 15% auto;
-                padding: 25px;
-                border: 1px solid rgba(138, 101, 255, 0.3);
-                border-radius: 16px;
-                width: 80%;
-                max-width: 450px;
-                color: white;
-                position: relative;
-                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(10px);
-            }
-            
-            .info-modal-content h3 {
-                margin-top: 0;
-                color: #a28aff;
-                font-size: 1.4em;
-                font-weight: 600;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-                margin-bottom: 15px;
-            }
-            
-            .info-modal-content p {
-                margin: 10px 0;
-                font-size: 14px;
-                line-height: 1.5;
-                color: rgba(255, 255, 255, 0.9);
-            }
-            
-            .info-modal-content ul {
-                margin: 5px 0;
-                padding-left: 20px;
-                color: rgba(255, 255, 255, 0.9);
-            }
-            
-            .info-modal-content li {
-                margin: 8px 0;
-                line-height: 1.4;
-            }
-            
-            .info-modal-content kbd {
-                display: inline-block;
-                padding: 2px 5px;
-                font-family: monospace;
-                font-size: 12px;
-                background: rgba(0, 0, 0, 0.2);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 4px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-                margin: 0 2px;
-            }
-            
-            .info-modal-content small {
-                color: rgba(255, 255, 255, 0.6);
-                font-size: 11px;
-            }
-            
-            .close-modal {
-                position: absolute;
-                top: 15px;
-                right: 15px;
-                font-size: 24px;
-                color: rgba(255, 255, 255, 0.7);
-                background: none;
-                border: none;
-                cursor: pointer;
-                padding: 0;
-                line-height: 1;
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-            }
-            
-            .close-modal:hover {
-                color: white;
-                background: rgba(255, 255, 255, 0.1);
-            }
-            
-            .player-actions {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                display: flex;
-                gap: 5px;
-            }
-            
-            .action-button {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.07);
-                border: none;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                color: rgba(255, 255, 255, 0.7);
-                padding: 0;
-                transition: all 0.2s ease;
-            }
-            
-            .action-button:hover {
-                background: rgba(255, 255, 255, 0.15);
-                color: white;
-            }
-            
-            .expand-icon, .minimize-icon {
-                position: absolute;
-                transition: opacity 0.2s ease;
-            }
-            
-            .expand-icon {
-                opacity: 1;
-            }
-            
-            .minimize-icon {
-                opacity: 0;
-            }
-            
-            #ninja-audio-player.expanded .expand-icon {
-                opacity: 0;
-            }
-            
-            #ninja-audio-player.expanded .minimize-icon {
-                opacity: 1;
-            }
-            
-            .show-player-button {
-                position: fixed !important;
-                bottom: 20px !important;
-                right: 20px !important;
-                background: linear-gradient(145deg, #9a7aff, #8361e9) !important;
-                border-radius: 50% !important;
-                width: 45px !important;
-                height: 45px !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                cursor: pointer !important;
-                color: white !important;
-                box-shadow: 0 5px 20px rgba(138, 101, 255, 0.5) !important;
-                z-index: 2000 !important;
-                border: none !important;
-                padding: 0 !important;
-                animation: pulse-attention 2s infinite !important;
-                transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-            }
-            
-            .show-player-button:hover {
-                transform: scale(1.1) !important;
-                box-shadow: 0 5px 25px rgba(138, 101, 255, 0.7) !important;
-            }
-            
-            @keyframes pulse-attention {
-                0% { transform: scale(1); box-shadow: 0 5px 20px rgba(138, 101, 255, 0.4); }
-                50% { transform: scale(1.05); box-shadow: 0 5px 25px rgba(138, 101, 255, 0.7); }
-                100% { transform: scale(1); box-shadow: 0 5px 20px rgba(138, 101, 255, 0.4); }
-            }
-            
-            /* Sparkle animation for loader */
-            @keyframes sparkle {
-                0% { transform: scale(0) rotate(0deg); opacity: 0; }
-                50% { opacity: 1; }
-                100% { transform: scale(1.5) rotate(360deg); opacity: 0; }
-            }
-            
-            .sparkle-loading {
-                position: relative;
-            }
-            
-            .sparkle-loading:before,
-            .sparkle-loading:after {
-                content: "";
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                background: radial-gradient(circle, #a28aff 0%, transparent 70%);
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                z-index: -1;
-                animation: sparkle 1.5s infinite;
-            }
-            
-            .sparkle-loading:after {
-                animation-delay: 0.5s;
-                width: 15px;
-                height: 15px;
-            }
-            
-            /* For minimalist mode */
-            #ninja-audio-player.minimized .player-info {
-                max-width: 110px;
-            }
-            
-            #ninja-audio-player.minimized .player-controls {
-                gap: 8px;
-            }
-            
-            #ninja-audio-player.minimized .audio-button {
-                width: 30px;
-                height: 30px;
-            }
-            
-            #ninja-audio-player.minimized .stream-attribution {
-                display: none;
-            }
-            
-            /* Context menu styles */
-            .player-context-menu {
-                position: absolute;
-                background: linear-gradient(145deg, #292d3e, #1e2132);
-                border: 1px solid rgba(138, 101, 255, 0.3);
-                border-radius: 8px;
-                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-                padding: 8px 0;
-                min-width: 150px;
-                z-index: 2000;
-                opacity: 0;
-                transform: scale(0.95);
-                transform-origin: top left;
-                transition: opacity 0.15s ease, transform 0.15s ease;
-            }
-            
-            .player-context-menu.visible {
-                opacity: 1;
-                transform: scale(1);
-            }
-            
-            .context-menu-item {
-                padding: 8px 15px;
-                color: rgba(255, 255, 255, 0.85);
-                cursor: pointer;
-                font-size: 13px;
-                transition: background 0.2s;
-                display: flex;
-                align-items: center;
-            }
-            
-            .context-menu-item:hover {
-                background: rgba(138, 101, 255, 0.15);
-                color: white;
-            }
-            
-            .context-menu-item svg {
-                margin-right: 8px;
-                width: 14px;
-                height: 14px;
-            }
         `;
 
-        // Create the player container
+        // Create the enhanced player container
         const playerContainer = document.createElement('div');
-        playerContainer.id = 'ninja-audio-player';
+        playerContainer.id = 'ninja-casts-player';
         playerContainer.className = playerState.isExpanded ? 'expanded' : 'minimized';
         playerContainer.style.display = playerState.isVisible ? 'block' : 'none';
 
-        // Player HTML structure - removing the showPlayerBtn from the player container
+        // Enhanced Player HTML structure with new features
         playerContainer.innerHTML = `
-        <div class="player-drag-handle"></div>
-        <div class="player-main">
-            <audio id="audioPlayer" preload="none"></audio>
+            <div class="player-drag-handle"></div>
+            
+            <div class="ninja-cat-avatar" id="ninjaCatAvatar">🥷</div>
+            
+            <div class="player-header">
+                <h3 class="player-title">Ninja Casts</h3>
+                <p class="player-subtitle">Shadow Frequencies</p>
+            </div>
+            
+            <div class="stream-carousel" id="streamCarousel">
+                ${streamingSources.map((stream, index) => `
+                    <div class="stream-card ${index === playerState.currentIndex ? 'active' : ''}" 
+                         data-index="${index}">
+                        <div class="stream-card-name">${stream.name}</div>
+                        <div class="stream-card-genre">${stream.genre}</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="focus-mode-panel" id="focusModePanel">
+                <div class="focus-timer" id="focusTimer">25:00</div>
+                <div class="focus-controls">
+                    <button class="focus-btn" id="focusStart">Start</button>
+                    <button class="focus-btn" id="focusPause">Pause</button>
+                    <button class="focus-btn" id="focusReset">Reset</button>
+                </div>
+            </div>
+            
+            <div class="ai-commentary" id="aiCommentary"></div>
             
             <div class="player-controls">
-                <button id="audioToggle" class="audio-button play-button" aria-label="Toggle play">
-                    <svg class="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button class="ninja-control-btn play-btn" id="audioToggle" aria-label="Toggle play">
+                    <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="5 3 19 12 5 21"></polygon>
                     </svg>
-                    <svg class="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
                         <rect x="6" y="4" width="4" height="16"></rect>
                         <rect x="14" y="4" width="4" height="16"></rect>
                     </svg>
                 </button>
-                <button id="nextTrackBtn" class="audio-button" aria-label="Next track">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                
+                <button class="ninja-control-btn" id="nextTrackBtn" aria-label="Next stream">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="5 4 15 12 5 20"></polygon>
-                        <line x1="19" y1="5" x2="19" y2="19"></line>
+                        <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line>
                     </svg>
                 </button>
                 
                 <div class="volume-container">
-                    <button id="volumeBtn" class="audio-button" aria-label="Volume">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button class="ninja-control-btn" id="volumeBtn" aria-label="Volume">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                         </svg>
@@ -744,117 +1108,113 @@
                         <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="${playerState.volume}">
                     </div>
                 </div>
-            </div>
-            
-            <div class="player-info">
-                <div class="stream-name">Ninja Meditation</div>
-                <div class="stream-details">
-                    <span id="streamBitrate" class="bitrate">128 kbps</span>
-                    <span class="separator">•</span>
-                    <span id="streamGenre" class="genre">Ambient</span>
+                
+                <div class="stream-info">
+                    <div class="stream-name" id="currentStreamName">${streamingSources[0].name}</div>
+                    <div class="stream-metadata">
+                        <span class="live-indicator"></span>
+                        <span id="streamGenre">${streamingSources[0].genre}</span>
+                        <span>•</span>
+                        <span id="streamBitrate">${streamingSources[0].bitrate}</span>
+                    </div>
                 </div>
+                
+                <button class="ninja-control-btn" id="focusToggle" aria-label="Focus Mode">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12,6 12,12 16,14"></polyline>
+                    </svg>
+                </button>
             </div>
             
             <div class="visualizer-container">
                 <canvas id="audioVisualizer"></canvas>
-                <div class="visualizer-toggle">
-                    <label class="toggle">
-                        <input type="checkbox" id="visualizerToggle" ${playerState.showVisualizer ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-label">Visualizer</span>
-                    </label>
-                </div>
             </div>
-        </div>
-        
-        <div class="stream-attribution">
-            <span id="streamProvider">SomaFM</span> free stream
-            <button id="infoBtn" class="info-button" aria-label="Stream info">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-            </button>
-        </div>
-        
-        <div class="player-actions">
-            <button id="expandToggleBtn" class="action-button" aria-label="Toggle expanded view">
-                <svg class="expand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 3 21 3 21 9"></polyline>
-                    <polyline points="9 21 3 21 3 15"></polyline>
-                    <line x1="21" y1="3" x2="14" y2="10"></line>
-                    <line x1="3" y1="21" x2="10" y2="14"></line>
-                </svg>
-                <svg class="minimize-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="4 14 10 14 10 20"></polyline>
-                    <polyline points="20 10 14 10 14 4"></polyline>
-                    <line x1="14" y1="10" x2="21" y2="3"></line>
-                    <line x1="3" y1="21" x2="10" y2="14"></line>
-                </svg>
-            </button>
-            <button id="hidePlayerBtn" class="action-button" aria-label="Hide player">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-        
-        <div id="infoModal" class="info-modal">
-            <div class="info-modal-content">
-                <button class="close-modal">&times;</button>
-                <h3>Ninja Meditation Audio</h3>
-                <p>Enhance your coding experience with ambient meditation music.</p>
-                <p><strong>Attribution:</strong> All streams are provided by their respective owners and are freely available online.</p>
-                <p><strong>Keyboard Shortcuts:</strong></p>
-                <ul>
-                    <li><kbd>Alt</kbd> + <kbd>M</kbd> - Show/hide player</li>
-                    <li><kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>R</kbd> - Reset player (if frozen)</li>
-                </ul>
-                <p><small>Music provided by: SomaFM, CDM-Radio, Cloud Radio, Calm Radio, and Live365</small></p>
+            
+            <div class="visualizer-skin-selector" id="skinSelector">
+                <span class="skin-label">Skin:</span>
+                ${Object.keys(visualizerSkins).map(skin => `
+                    <div class="skin-option ${skin} ${skin === playerState.visualizerSkin ? 'active' : ''}" 
+                         data-skin="${skin}" 
+                         title="${visualizerSkins[skin].name}"></div>
+                `).join('')}
             </div>
-        </div>
-    `;
+            
+            <div class="player-actions">
+                <button class="action-btn" id="aiToggle" title="Toggle AI Commentary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </button>
+                
+                <label class="action-btn" title="Toggle Visualizer">
+                    <input type="checkbox" id="visualizerToggle" style="display: none;" ${playerState.showVisualizer ? 'checked' : ''}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+                        <path d="M19 19V9a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+                        <path d="M14 7V4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+                    </svg>
+                </label>
+                
+                <button class="action-btn" id="expandToggleBtn" title="Expand/Minimize" aria-label="Toggle expanded view">
+                    <svg class="expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                    <svg class="minimize-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                        <polyline points="4 14 10 14 10 20"></polyline>
+                        <polyline points="20 10 14 10 14 4"></polyline>
+                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                </button>
+                
+                <button class="action-btn" id="hidePlayerBtn" title="Hide Player" aria-label="Hide player">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <audio id="audioPlayer" preload="none"></audio>
+            
+            <div class="stream-attribution">
+                <span id="streamProvider">${streamingSources[0].provider}</span> • Tuned by the Silent Order
+            </div>
+        `;
 
-        // Create the show button separately as its own element
+        // Create the show button separately
         const showPlayerBtn = document.createElement('div');
         showPlayerBtn.id = 'showPlayerBtn';
         showPlayerBtn.className = 'show-player-button';
         showPlayerBtn.style.display = playerState.isVisible ? 'none' : 'flex';
-        showPlayerBtn.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 18V5l12 7-12 7z"></path>
-            <path d="M3 18V5"></path>
-        </svg>
-    `;
+        showPlayerBtn.innerHTML = '🥷';
 
-        // Ensure show button is ALWAYS in a fixed position at the bottom right
-        showPlayerBtn.style.cssText = `
-        display: ${playerState.isVisible ? 'none' : 'flex'} !important;
-        position: fixed !important;
-        bottom: 20px !important;
-        right: 20px !important;
-        z-index: 2000 !important;
-        background: linear-gradient(145deg, #9a7aff, #8361e9) !important;
-        border-radius: 50% !important;
-        width: 45px !important;
-        height: 45px !important;
-        align-items: center !important;
-        justify-content: center !important;
-        cursor: pointer !important;
-        color: white !important;
-        box-shadow: 0 5px 20px rgba(138, 101, 255, 0.5) !important;
-        border: none !important;
-        padding: 0 !important;
-        animation: pulse-attention 2s infinite !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-    `;
+        // Create secret dojo easter egg
+        const dojoEasterEgg = document.createElement('div');
+        dojoEasterEgg.id = 'dojoEasterEgg';
+        dojoEasterEgg.className = 'dojo-easter-egg';
+        dojoEasterEgg.innerHTML = `
+            <div class="dojo-title">🏯 Secret Ninja Dojo</div>
+            <p>You have discovered the hidden frequencies of the ancient order...</p>
+            <ul class="dojo-playlist">
+                ${dojoPlaylist.map(track => `
+                    <li data-url="${track.url}" data-name="${track.name}" data-genre="${track.genre}">
+                        ${track.name} - ${track.genre}
+                    </li>
+                `).join('')}
+            </ul>
+            <button class="focus-btn" id="closeDojo">Return to Shadows</button>
+        `;
 
-        // Add all elements to document in correct order
+        // Add all elements to document
         document.head.appendChild(style);
         document.body.appendChild(playerContainer);
         document.body.appendChild(showPlayerBtn);
+        document.body.appendChild(dojoEasterEgg);
 
         // Get DOM references
         const audioPlayer = document.getElementById('audioPlayer');
@@ -863,16 +1223,339 @@
         const volumeSlider = document.getElementById('volumeSlider');
         const expandToggleBtn = document.getElementById('expandToggleBtn');
         const hidePlayerBtn = document.getElementById('hidePlayerBtn');
-        const streamNameEl = document.querySelector('.stream-name');
+        const streamNameEl = document.getElementById('currentStreamName');
         const streamBitrateEl = document.getElementById('streamBitrate');
         const streamGenreEl = document.getElementById('streamGenre');
         const streamProviderEl = document.getElementById('streamProvider');
         const visualizerCanvas = document.getElementById('audioVisualizer');
         const visualizerToggle = document.getElementById('visualizerToggle');
+        const dragHandle = document.querySelector('.player-drag-handle');
+
+        // Info modal elements (may not exist in current HTML structure)
         const infoBtn = document.getElementById('infoBtn');
         const infoModal = document.getElementById('infoModal');
-        const closeModalBtn = document.querySelector('.close-modal');
-        const dragHandle = document.querySelector('.player-drag-handle');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        // Enhanced DOM references
+        const ninjaCatAvatar = document.getElementById('ninjaCatAvatar');
+        const streamCarousel = document.getElementById('streamCarousel');
+        const focusModePanel = document.getElementById('focusModePanel');
+        const focusTimer = document.getElementById('focusTimer');
+        const focusToggle = document.getElementById('focusToggle');
+        const focusStart = document.getElementById('focusStart');
+        const focusPause = document.getElementById('focusPause');
+        const focusReset = document.getElementById('focusReset');
+        const aiCommentary = document.getElementById('aiCommentary');
+        const aiToggle = document.getElementById('aiToggle');
+        const skinSelector = document.getElementById('skinSelector');
+        const closeDojo = document.getElementById('closeDojo');
+
+        // Initialize enhanced event listeners
+        initEnhancedEventListeners();
+
+        // Enhanced event listener initialization
+        function initEnhancedEventListeners() {
+            // Stream carousel selection
+            streamCarousel.addEventListener('click', (e) => {
+                const card = e.target.closest('.stream-card');
+                if (card) {
+                    const index = parseInt(card.dataset.index);
+                    selectStream(index);
+                }
+            });
+
+            // Focus mode controls
+            focusToggle.addEventListener('click', toggleFocusMode);
+            focusStart.addEventListener('click', startFocusSession);
+            focusPause.addEventListener('click', pauseFocusSession);
+            focusReset.addEventListener('click', resetFocusSession);
+
+            // AI commentary toggle
+            aiToggle.addEventListener('click', toggleAiCommentary);
+
+            // Visualizer skin selector
+            skinSelector.addEventListener('click', (e) => {
+                const skinOption = e.target.closest('.skin-option');
+                if (skinOption) {
+                    const skin = skinOption.dataset.skin;
+                    selectVisualizerSkin(skin);
+                }
+            });
+
+            // Ninja cat avatar interactions
+            ninjaCatAvatar.addEventListener('click', toggleMeditationMode);
+
+            // Secret dojo easter egg
+            document.addEventListener('keydown', (e) => {
+                if (e.altKey && e.shiftKey && e.key.toLowerCase() === 'n') {
+                    showSecretDojo();
+                    e.preventDefault();
+                }
+            });
+
+            // Close dojo
+            closeDojo.addEventListener('click', () => {
+                document.getElementById('dojoEasterEgg').classList.remove('visible');
+            });
+
+            // Dojo playlist selection
+            document.querySelectorAll('.dojo-playlist li').forEach(item => {
+                item.addEventListener('click', () => {
+                    const url = item.dataset.url;
+                    const name = item.dataset.name;
+                    const genre = item.dataset.genre;
+                    playDojoTrack(url, name, genre);
+                });
+            });
+
+            // Idle timer for kata easter egg
+            resetIdleTimer();
+            document.addEventListener('mousemove', resetIdleTimer);
+            document.addEventListener('keypress', resetIdleTimer);
+            document.addEventListener('click', resetIdleTimer);
+
+            // Initialize expanded state UI
+            updateExpandedState();
+        }
+
+        // Enhanced stream selection
+        function selectStream(index) {
+            if (index === playerState.currentIndex) return;
+
+            playerState.currentIndex = index;
+
+            // Update carousel visual state
+            document.querySelectorAll('.stream-card').forEach((card, i) => {
+                card.classList.toggle('active', i === index);
+            });
+
+            updateStreamDisplay();
+
+            // If playing, load new stream
+            if (playerState.isPlaying) {
+                loadAndPlayStream(true);
+            }
+        }
+
+        // Enhanced stream display update
+        function updateStreamDisplay() {
+            const currentStream = streamingSources[playerState.currentIndex];
+            streamNameEl.textContent = currentStream.name;
+            streamGenreEl.textContent = currentStream.genre;
+            streamBitrateEl.textContent = currentStream.bitrate;
+            streamProviderEl.textContent = currentStream.provider;
+        }
+
+        // Focus mode functions
+        function toggleFocusMode() {
+            playerState.focusMode = !playerState.focusMode;
+            focusModePanel.classList.toggle('active', playerState.focusMode);
+            focusToggle.classList.toggle('active', playerState.focusMode);
+
+            if (playerState.focusMode) {
+                resetFocusSession();
+                showAiCommentary('Focus mode activated. Let the flow guide you.');
+            } else {
+                if (focusTimer) clearInterval(focusTimer);
+                focusTimer = null;
+            }
+        }
+
+        function startFocusSession() {
+            if (focusTimer) clearInterval(focusTimer);
+            focusPaused = false;
+
+            focusTimer = setInterval(() => {
+                if (!focusPaused) {
+                    focusTimeLeft--;
+                    updateFocusDisplay();
+
+                    if (focusTimeLeft <= 0) {
+                        clearInterval(focusTimer);
+                        focusTimer = null;
+                        showFocusComplete();
+                    }
+                }
+            }, 1000);
+        }
+
+        function pauseFocusSession() {
+            focusPaused = !focusPaused;
+            focusPause.textContent = focusPaused ? 'Resume' : 'Pause';
+        }
+
+        function resetFocusSession() {
+            if (focusTimer) {
+                clearInterval(focusTimer);
+                focusTimer = null;
+            }
+            focusTimeLeft = playerState.settings.focus_duration * 60;
+            focusPaused = false;
+            focusPause.textContent = 'Pause';
+            updateFocusDisplay();
+        }
+
+        function updateFocusDisplay() {
+            const minutes = Math.floor(focusTimeLeft / 60);
+            const seconds = focusTimeLeft % 60;
+            focusTimer.textContent =
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function showFocusComplete() {
+            showAiCommentary('Focus session complete! Your inner ninja has grown stronger. 🥷');
+
+            // Optional: Auto-pause audio
+            if (playerState.isPlaying) {
+                audioToggle.click();
+            }
+        }
+
+        // AI Commentary system
+        function toggleAiCommentary() {
+            playerState.aiCommentary = !playerState.aiCommentary;
+            aiToggle.classList.toggle('active', playerState.aiCommentary);
+
+            if (playerState.aiCommentary) {
+                startAiCommentary();
+                showAiCommentary('AI commentary activated. The wisdom of the ancients flows through you.');
+            } else {
+                stopAiCommentary();
+            }
+        }
+
+        function startAiCommentary() {
+            if (aiCommentaryInterval) clearInterval(aiCommentaryInterval);
+
+            // Show random commentary every 2-4 minutes
+            aiCommentaryInterval = setInterval(() => {
+                if (playerState.aiCommentary) {
+                    showRandomAiCommentary();
+                }
+            }, (2 + Math.random() * 2) * 60 * 1000);
+        }
+
+        function stopAiCommentary() {
+            if (aiCommentaryInterval) {
+                clearInterval(aiCommentaryInterval);
+                aiCommentaryInterval = null;
+            }
+            aiCommentary.classList.remove('visible');
+        }
+
+        function showRandomAiCommentary() {
+            const message = aiCommentary[Math.floor(Math.random() * aiCommentary.length)];
+            showAiCommentary(message);
+        }
+
+        function showAiCommentary(message) {
+            aiCommentary.textContent = message;
+            aiCommentary.classList.add('visible');
+
+            setTimeout(() => {
+                aiCommentary.classList.remove('visible');
+            }, 5000);
+        }
+
+        // Visualizer skin selection
+        function selectVisualizerSkin(skinName) {
+            playerState.visualizerSkin = skinName;
+
+            document.querySelectorAll('.skin-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.skin === skinName);
+            });
+
+            // Update visualizer colors if active
+            if (isVisualizerActive) {
+                updateVisualizerColors();
+            }
+        }
+
+        function updateVisualizerColors() {
+            // This would update the visualizer with the new skin colors
+            // Implementation depends on the visualizer code
+        }
+
+        // Meditation mode toggle
+        function toggleMeditationMode() {
+            ninjaCatAvatar.classList.toggle('meditating');
+
+            if (ninjaCatAvatar.classList.contains('meditating')) {
+                showAiCommentary('Meditation mode activated. Feel the harmony of the frequencies.');
+            } else {
+                showAiCommentary('Returning to normal awareness. The ninja is ready.');
+            }
+        }
+
+        // Secret dojo easter egg
+        function showSecretDojo() {
+            document.getElementById('dojoEasterEgg').classList.add('visible');
+        }
+
+        function playDojoTrack(url, name, genre) {
+            // Add to streams temporarily
+            const tempStream = {
+                url: url,
+                name: name,
+                genre: genre,
+                provider: 'Secret Dojo',
+                bitrate: '128 kbps',
+                theme: 'secret'
+            };
+
+            // Update display
+            streamNameEl.textContent = name;
+            streamGenreEl.textContent = genre;
+            streamProviderEl.textContent = 'Secret Dojo';
+
+            // Play the track
+            audioPlayer.src = url;
+            audioPlayer.play();
+
+            // Hide dojo
+            document.getElementById('dojoEasterEgg').classList.remove('visible');
+
+            showAiCommentary('Ancient frequencies now flow through you...');
+        }
+
+        // Idle timer for kata easter egg
+        function resetIdleTimer() {
+            lastActivity = Date.now();
+
+            if (idleTimer) clearTimeout(idleTimer);
+
+            idleTimer = setTimeout(() => {
+                if (Date.now() - lastActivity >= 5 * 60 * 1000) { // 5 minutes
+                    performKataEasterEgg();
+                }
+            }, 5 * 60 * 1000);
+        }
+
+        function performKataEasterEgg() {
+            ninjaCatAvatar.classList.add('kata');
+            showAiCommentary('The ninja performs a kata move in the silence...');
+
+            setTimeout(() => {
+                ninjaCatAvatar.classList.remove('kata');
+            }, 2000);
+        }
+
+        // Update expanded state UI
+        function updateExpandedState() {
+            const isExpanded = playerState.isExpanded;
+
+            // Update expand/minimize button icons
+            const expandIcon = expandToggleBtn.querySelector('.expand-icon');
+            const minimizeIcon = expandToggleBtn.querySelector('.minimize-icon');
+
+            if (isExpanded) {
+                expandIcon.style.display = 'none';
+                minimizeIcon.style.display = 'block';
+            } else {
+                expandIcon.style.display = 'block';
+                minimizeIcon.style.display = 'none';
+            }
+        }
 
         // Function to reset player position
         function resetPlayerPosition() {
@@ -1000,7 +1683,7 @@
 
         // Function to toggle audio player visibility
         function toggleAudioPlayer() {
-            const playerContainer = document.getElementById('ninja-audio-player');
+            const playerContainer = document.getElementById('ninja-casts-player');
             const showPlayerBtn = document.getElementById('showPlayerBtn');
 
             if (!playerContainer) return;
@@ -1008,16 +1691,7 @@
             if (playerState.isVisible) {
                 // Hide the player
                 playerContainer.style.display = 'none';
-
-                // Always position the show button in the bottom right corner
-                showPlayerBtn.style.cssText = `
-                    display: flex !important;
-                    position: fixed !important;
-                    bottom: 20px !important;
-                    right: 20px !important;
-                    z-index: 2000 !important;
-                `;
-
+                showPlayerBtn.style.display = 'flex';
                 playerState.isVisible = false;
             } else {
                 // Show the player
@@ -1040,24 +1714,46 @@
             }
         }
 
-        // Add keyboard shortcut (Alt+M) to toggle player
+        // Function to reset player position
+        function resetPlayerPosition() {
+            if (!playerContainer) return;
+
+            // Clear any custom positioning
+            playerContainer.style.left = '';
+            playerContainer.style.top = '';
+            playerContainer.style.right = '20px';
+            playerContainer.style.bottom = '20px';
+
+            // Apply transition for smooth movement
+            playerContainer.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+
+            // Show toast notification
+            showToast('Player position reset to corner', 'info');
+        }
+
+        // Enhanced keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.altKey && e.key === 'm') {
                 toggleAudioPlayer();
-                e.preventDefault(); // Prevent default browser behavior
+                e.preventDefault();
+            }
+
+            // Alt+Shift+N for secret dojo (already implemented above)
+            // Alt+Shift+R for reset (existing functionality)
+            if (e.shiftKey && e.altKey && e.key.toLowerCase() === 'r') {
+                resetAudioPlayer();
+                e.preventDefault();
             }
         });
 
-        // Enhance the hide button functionality
+        // Enhanced hide button functionality
         hidePlayerBtn.addEventListener('click', () => {
             toggleAudioPlayer();
             stopVisualizer();
-
-            // Show a toast notification about the keyboard shortcut
             showToast('Player hidden. Press Alt+M to restore it', 'info', 5000);
         });
 
-        // Make sure the show button works and is always in fixed position
+        // Enhanced show button functionality
         showPlayerBtn.addEventListener('click', () => {
             toggleAudioPlayer();
 
@@ -1066,33 +1762,31 @@
             }
         });
 
-        // Expose player controls globally for emergency recovery
-        window.ninjaAudio = {
+        // Expose enhanced global controls
+        window.ninjaCasts = {
             show: () => {
                 playerState.isVisible = true;
-                const playerContainer = document.getElementById('ninja-audio-player');
+                const playerContainer = document.getElementById('ninja-casts-player');
                 const showPlayerBtn = document.getElementById('showPlayerBtn');
                 if (playerContainer) playerContainer.style.display = 'block';
                 if (showPlayerBtn) showPlayerBtn.style.display = 'none';
             },
             hide: () => {
                 playerState.isVisible = false;
-                const playerContainer = document.getElementById('ninja-audio-player');
+                const playerContainer = document.getElementById('ninja-casts-player');
                 const showPlayerBtn = document.getElementById('showPlayerBtn');
                 if (playerContainer) playerContainer.style.display = 'none';
-                if (showPlayerBtn) {
-                    showPlayerBtn.style.cssText = `
-                        display: flex !important;
-                        position: fixed !important;
-                        bottom: 20px !important;
-                        right: 20px !important;
-                        z-index: 2000 !important;
-                    `;
-                }
+                if (showPlayerBtn) showPlayerBtn.style.display = 'flex';
             },
             toggle: toggleAudioPlayer,
-            resetPosition: resetPlayerPosition
+            resetPosition: resetPlayerPosition,
+            focusMode: toggleFocusMode,
+            aiCommentary: toggleAiCommentary,
+            secretDojo: showSecretDojo
         };
+
+        // Legacy support
+        window.ninjaAudio = window.ninjaCasts;
 
         // Start visualizer with performance optimizations
         function startVisualizer() {
@@ -1380,7 +2074,7 @@
             }, 100);
         }
 
-        // Add a recovery function to reset the player if it freezes
+        // Enhanced reset function for the new player
         window.resetAudioPlayer = function () {
             // Stop any audio playback
             try {
@@ -1395,11 +2089,14 @@
                 if (window.streamLoadTimeout) clearTimeout(window.streamLoadTimeout);
                 if (window.streamRetryTimeout) clearTimeout(window.streamRetryTimeout);
                 if (window.volumeFadeInterval) clearInterval(window.volumeFadeInterval);
+                if (focusTimer) clearInterval(focusTimer);
+                if (aiCommentaryInterval) clearInterval(aiCommentaryInterval);
+                if (idleTimer) clearTimeout(idleTimer);
 
                 // Clean up audio context
-                if (window.audioContext && window.audioContext.state !== 'closed') {
+                if (audioContext && audioContext.state !== 'closed') {
                     try {
-                        window.audioContext.close();
+                        audioContext.close();
                     } catch (e) {
                         console.error('Error closing audio context:', e);
                     }
@@ -1410,29 +2107,26 @@
 
             // Update UI
             const toggleBtn = document.getElementById('audioToggle');
-            if (toggleBtn) toggleBtn.classList.remove('playing', 'sparkle-loading');
+            if (toggleBtn) {
+                toggleBtn.classList.remove('playing');
+                toggleBtn.querySelector('.play-icon').style.display = 'block';
+                toggleBtn.querySelector('.pause-icon').style.display = 'none';
+            }
 
             // Reset state
             playerState.isPlaying = false;
 
             // Show toast
-            showToast?.('Audio player has been reset', 'info');
+            showToast('Ninja Casts has been reset', 'info');
 
             // Optional: Reload the component
             setTimeout(() => {
-                document.getElementById('ninja-audio-player')?.remove();
+                document.getElementById('ninja-casts-player')?.remove();
                 document.getElementById('showPlayerBtn')?.remove();
+                document.getElementById('dojoEasterEgg')?.remove();
                 initGlobalAudioPlayer();
             }, 500);
         };
-
-        // Add keyboard shortcut for emergency reset (Shift+Alt+R)
-        document.addEventListener('keydown', function (e) {
-            if (e.shiftKey && e.altKey && e.key.toLowerCase() === 'r') {
-                window.resetAudioPlayer();
-                e.preventDefault();
-            }
-        });
 
         // Toggle play/pause with optimized fade
         audioToggle.addEventListener('click', () => {
@@ -1486,18 +2180,22 @@
 
         // Info button modal
         infoBtn?.addEventListener('click', () => {
-            infoModal.style.display = 'block';
-            setTimeout(() => {
-                infoModal.classList.add('visible');
-            }, 10);
+            if (infoModal) {
+                infoModal.style.display = 'block';
+                setTimeout(() => {
+                    infoModal.classList.add('visible');
+                }, 10);
+            }
         });
 
         // Close modal
         closeModalBtn?.addEventListener('click', () => {
-            infoModal.classList.remove('visible');
-            setTimeout(() => {
-                infoModal.style.display = 'none';
-            }, 300);
+            if (infoModal) {
+                infoModal.classList.remove('visible');
+                setTimeout(() => {
+                    infoModal.style.display = 'none';
+                }, 300);
+            }
         });
 
         // Close modal on outside click
@@ -1510,11 +2208,13 @@
             }
         });
 
-        // Expand/minimize toggle
+        // Enhanced expand/minimize toggle
         expandToggleBtn.addEventListener('click', () => {
             playerContainer.classList.toggle('expanded');
             playerContainer.classList.toggle('minimized');
             playerState.isExpanded = playerContainer.classList.contains('expanded');
+
+            updateExpandedState();
 
             // Resize canvas for visualization if expanded
             if (playerState.isExpanded) {
@@ -1657,43 +2357,6 @@
             // Update UI for initial state
             updateStreamInfo();
         }
-
-        // Define showToast if it doesn't exist
-        if (typeof showToast !== 'function') {
-            window.showToast = (message, type, duration = 3000) => {
-                const toast = document.createElement('div');
-                toast.className = `global-toast ${type || 'info'}`;
-                toast.textContent = message;
-                toast.style.cssText = `
-                    position: fixed;
-                    bottom: 100px;
-                    right: 20px;
-                    background: #23263a;
-                    color: white;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
-                    z-index: 10000;
-                    opacity: 0;
-                    transition: opacity 0.3s;
-                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-                    font-size: 14px;
-                `;
-                document.body.appendChild(toast);
-
-                // Show the toast
-                setTimeout(() => {
-                    toast.style.opacity = '1';
-                }, 10);
-                // Hide and remove after duration
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    setTimeout(() => toast.remove(), 300);
-                }, duration);
-
-                return toast;
-            };
-        }
     }
 
     // Initialize when DOM is ready with error handling
@@ -1704,7 +2367,7 @@
             initGlobalAudioPlayer();
         }
     } catch (err) {
-        console.error('Error initializing audio player:', err);
+        console.error('Error initializing Ninja Casts player:', err);
     }
 })();
 
