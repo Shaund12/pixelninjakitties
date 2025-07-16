@@ -1231,6 +1231,11 @@
         const visualizerToggle = document.getElementById('visualizerToggle');
         const dragHandle = document.querySelector('.player-drag-handle');
 
+        // Info modal elements (may not exist in current HTML structure)
+        const infoBtn = document.getElementById('infoBtn');
+        const infoModal = document.getElementById('infoModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
         // Enhanced DOM references
         const ninjaCatAvatar = document.getElementById('ninjaCatAvatar');
         const streamCarousel = document.getElementById('streamCarousel');
@@ -2175,18 +2180,22 @@
 
         // Info button modal
         infoBtn?.addEventListener('click', () => {
-            infoModal.style.display = 'block';
-            setTimeout(() => {
-                infoModal.classList.add('visible');
-            }, 10);
+            if (infoModal) {
+                infoModal.style.display = 'block';
+                setTimeout(() => {
+                    infoModal.classList.add('visible');
+                }, 10);
+            }
         });
 
         // Close modal
         closeModalBtn?.addEventListener('click', () => {
-            infoModal.classList.remove('visible');
-            setTimeout(() => {
-                infoModal.style.display = 'none';
-            }, 300);
+            if (infoModal) {
+                infoModal.classList.remove('visible');
+                setTimeout(() => {
+                    infoModal.style.display = 'none';
+                }, 300);
+            }
         });
 
         // Close modal on outside click
