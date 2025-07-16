@@ -787,6 +787,10 @@
                 border-color: rgba(138, 101, 255, 0.5);
             }
 
+            .action-btn input[type="checkbox"]:checked + svg {
+                color: #8a65ff;
+            }
+
             .minimized .action-btn {
                 width: 28px;
                 height: 28px;
@@ -1106,6 +1110,15 @@
                     </svg>
                 </button>
                 
+                <label class="action-btn" title="Toggle Visualizer">
+                    <input type="checkbox" id="visualizerToggle" style="display: none;" ${playerState.showVisualizer ? 'checked' : ''}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+                        <path d="M19 19V9a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+                        <path d="M14 7V4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+                    </svg>
+                </label>
+                
                 <button class="action-btn" id="expandToggleBtn" title="Expand/Minimize" aria-label="Toggle expanded view">
                     <svg class="expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="15 3 21 3 21 9"></polyline>
@@ -1178,6 +1191,7 @@
         const streamGenreEl = document.getElementById('streamGenre');
         const streamProviderEl = document.getElementById('streamProvider');
         const visualizerCanvas = document.getElementById('audioVisualizer');
+        const visualizerToggle = document.getElementById('visualizerToggle');
         const dragHandle = document.querySelector('.player-drag-handle');
 
         // Enhanced DOM references
