@@ -55,6 +55,8 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_event_type ON activity_logs(event_t
 CREATE INDEX IF NOT EXISTS idx_activity_logs_token_id ON activity_logs(token_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_timestamp ON activity_logs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_users_last_activity ON users(last_activity);
+CREATE INDEX IF NOT EXISTS idx_ninja_player_settings_user_id ON ninja_player_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_ninja_player_settings_last_updated ON ninja_player_settings(last_updated);
 
 -- Create composite indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user_event ON activity_logs(user_id, event_type);
@@ -66,6 +68,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ninja_player_settings ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies (allow all operations for now, since we're using wallet addresses)
 -- In a production environment, you might want to restrict these further
@@ -100,6 +103,13 @@ CREATE POLICY "Users can view all activity logs" ON activity_logs
 
 CREATE POLICY "Users can insert activity logs" ON activity_logs
     FOR INSERT WITH CHECK (true);
+
+-- Ninja player settings table policies
+CREATE POLICY "Users can view their own player settings" ON ninja_player_settings
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage their own player settings" ON ninja_player_settings
+    FOR ALL USING (true);
 
 -- Create a function to get trending tokens
 CREATE OR REPLACE FUNCTION get_trending_tokens(time_period INTERVAL DEFAULT '24 hours', limit_count INTEGER DEFAULT 10)
@@ -166,6 +176,27 @@ BEGIN
         (SELECT COUNT(DISTINCT token_id) FROM activity_logs WHERE token_id IS NOT NULL AND timestamp >= (NOW() - time_period)) as trending_tokens;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Create ninja_player_settings table for audio player state persistence
+CREATE TABLE IF NOT EXISTS ninja_player_settings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    volume DECIMAL(3,2) DEFAULT 0.5 CHECK (volume >= 0 AND volume <= 1),
+    stream_index INTEGER DEFAULT 0 CHECK (stream_index >= 0),
+    visualizer_skin TEXT DEFAULT 'katana_wave' CHECK (visualizer_skin IN ('katana_wave', 'sakura_pulse', 'shadow_mode')),
+    focus_mode BOOLEAN DEFAULT false,
+    focus_duration INTEGER DEFAULT 25 CHECK (focus_duration > 0), -- minutes
+    ai_commentary BOOLEAN DEFAULT false,
+    is_expanded BOOLEAN DEFAULT false,
+    is_visible BOOLEAN DEFAULT true,
+    show_visualizer BOOLEAN DEFAULT true,
+    position_x INTEGER DEFAULT 20,
+    position_y INTEGER DEFAULT 20,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    
+    -- One settings record per user
+    UNIQUE(user_id)
+);
 
 -- Create a function to clean up old activity logs (optional, for maintenance)
 CREATE OR REPLACE FUNCTION cleanup_old_activity_logs(days_to_keep INTEGER DEFAULT 90)
