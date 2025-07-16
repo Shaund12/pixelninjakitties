@@ -754,15 +754,18 @@
                 display: none;
             }
 
-            /* Enhanced controls styling */
+                        /* Enhanced controls styling */
             .player-controls {
                 display: flex;
                 align-items: center;
-                gap: 18px;
+                justify-content: space-between;
+                gap: 12px;
                 padding: 18px 20px;
                 background: rgba(0, 0, 0, 0.1);
                 border-radius: 0 0 20px 20px;
                 margin-top: 5px;
+                position: relative;
+                flex-wrap: wrap;
             }
 
             .ninja-control-btn {
@@ -778,8 +781,33 @@
                 cursor: pointer;
                 transition: all 0.3s ease;
                 padding: 0;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2), 
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2),
                             inset 0 1px 2px rgba(255,255,255,0.1);
+                flex-shrink: 0;
+            }
+
+            .ninja-control-btn svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
+                stroke: currentColor;
+                display: block;
+            }
+
+            .play-btn {
+                background: linear-gradient(145deg, #8a65ff, #6b4bd6);
+                color: white;
+                width: 48px;
+                height: 48px;
+                box-shadow: 0 4px 15px rgba(138, 101, 255, 0.4);
+                z-index: 2;
+            }
+
+            .stream-info {
+                flex: 1;
+                padding-left: 10px;
+                min-width: 0;
+                overflow: hidden;
             }
 
             .ninja-control-btn:hover {
