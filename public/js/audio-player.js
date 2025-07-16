@@ -40,46 +40,42 @@
     // Collection of ninja-themed, high-quality streaming sources
     const streamingSources = [
         {
-            url: 'https://ice1.somafm.com/dronezone-128-mp3',
-            name: 'Shadow Frequencies',
-            bitrate: '128 kbps',
-            genre: 'Ambient Ninja',
-            provider: 'SomaFM',
-            theme: 'shadow'
-        },
-        {
-            url: 'https://radio4.cdm-radio.com:18020/stream-mp3-Zen',
-            name: 'Zen Temple',
-            bitrate: '192 kbps',
-            genre: 'Meditation Dojo',
-            provider: 'CDM-Radio',
-            theme: 'zen'
-        },
-        {
-            url: 'https://icecast.cloudradionetwork.com:8037/spacedreams',
-            name: 'Moonlight Serenade',
-            bitrate: '128 kbps',
-            genre: 'Cosmic Ninja',
-            provider: 'Cloud Radio',
-            theme: 'moon'
-        },
-        {
-            url: 'https://streams.calmradio.com/api/36/128/stream',
-            name: 'Inner Peace',
-            bitrate: '128 kbps',
-            genre: 'Tranquil Focus',
-            provider: 'Calm Radio',
-            theme: 'peace'
+            url: 'https://radio.chinesemusicworld.com/chinesemusic.mp3',
+            name: 'Chinese Classical Music',
+            bitrate: '128 kbps',
+            genre: 'Chinese Classical',
+            provider: 'ChineseMusicWorld',
+            theme: 'classical'
+            // Source: Chinese Classical Music Online Radio :contentReference[oaicite:0]{index=0}
         },
         {
             url: 'https://streaming.live365.com/b05055_128mp3',
             name: 'Dream Realm',
-            bitrate: '128 kbps',
+            bitrate: '128 kbps',
             genre: 'Sleeping Ninja',
             provider: 'Live365',
             theme: 'dream'
+        },
+        {
+            url: 'http://listen.di.fm/eastasianmeditation',
+            name: 'East Asian Meditation',
+            bitrate: '128 kbps',
+            genre: 'Meditation, East Asian',
+            provider: 'DI.FM',
+            theme: 'eastasian'
+            // Source: DI.FM channel list :contentReference[oaicite:1]{index=1}
+        },
+        {
+            url: 'http://listen.di.fm/tibetan_singing_bowls',
+            name: 'Tibetan Singing Bowls',
+            bitrate: '128 kbps',
+            genre: 'Tibetan Buddhist, Meditation',
+            provider: 'DI.FM',
+            theme: 'tibetan'
+            // Source: DI.FM channel list :contentReference[oaicite:2]{index=2}
         }
     ];
+
 
     // Visualizer skins configuration
     const visualizerSkins = {
