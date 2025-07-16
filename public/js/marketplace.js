@@ -336,10 +336,7 @@ function updateFavoriteButton(isFavorited) {
     }
 }
 
-// Toggle favorite status
-function toggleFavorite(tokenId) {
-    toggleFavoriteStatus(tokenId);
-}
+
 
 // Share functionality
 function shareItem(token) {
