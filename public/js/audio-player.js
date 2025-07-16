@@ -810,6 +810,11 @@
                 50% { box-shadow: 0 4px 20px rgba(138, 101, 255, 0.7); }
             }
 
+            /* Play/Pause Icon Switching */
+            .play-btn .pause-icon { display: none; }
+            .play-btn.playing .pause-icon { display: block; }
+            .play-btn.playing .play-icon { display: none; }
+
             .minimized .ninja-control-btn {
                 width: 36px;
                 height: 36px;
@@ -1166,7 +1171,7 @@
                     <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="5 3 19 12 5 21"></polygon>
                     </svg>
-                    <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                    <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <rect x="6" y="4" width="4" height="16"></rect>
                         <rect x="14" y="4" width="4" height="16"></rect>
                     </svg>
@@ -2241,8 +2246,6 @@
             const toggleBtn = document.getElementById('audioToggle');
             if (toggleBtn) {
                 toggleBtn.classList.remove('playing');
-                toggleBtn.querySelector('.play-icon').style.display = 'block';
-                toggleBtn.querySelector('.pause-icon').style.display = 'none';
             }
 
             // Reset state
