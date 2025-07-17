@@ -3037,7 +3037,7 @@
                     <div class="stats-label">Total Sales</div>
                 </div>
             </div>
-            
+
             <!-- Rarity Floor Prices -->
             <div class="rarity-floor-prices">
                 <h3>Floor Prices by Rarity</h3>
@@ -3068,7 +3068,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Advanced Analytics -->
             <div class="advanced-analytics">
                 <h3>Market Analytics</h3>
@@ -3103,7 +3103,7 @@
                     </div>
                 </div>
                 <p class="hotlist-description">Discover the most sought-after Ninja Cats in our marketplace. These unique collectibles are trending right now!</p>
-                
+
                 <div class="hotlist-carousel-container">
                     <div class="hotlist-carousel" id="hotlistCarousel">
                         <!-- Hot items will be loaded dynamically -->
@@ -3114,7 +3114,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="hotlist-footer">
                     <button class="btn primary-btn" id="viewHotCollectionBtn">View All Hot Items</button>
                     <div class="hotlist-stats">
@@ -3147,7 +3147,7 @@
                     <option value="priceDesc">Price: High to Low</option>
                     <option value="rarity">Rarity</option>
                 </select>
-                
+
                 <div class="search-actions">
                     <button id="saveSearchBtn" class="btn secondary-btn">💾 Save Search</button>
                     <button id="savedSearchesBtn" class="btn secondary-btn">📋 Saved Searches</button>
@@ -3648,12 +3648,12 @@
                 }
 
                 notification.innerHTML = `
-                                                    <div class="notification-icon">${iconSvg}</div>
-                                                    <div class="notification-content">
-                                                        <div class="notification-title">${title}</div>
-                                                        <div class="notification-message">${message}</div>
-                                                    </div>
-                                                `;
+                                                        <div class="notification-icon">${iconSvg}</div>
+                                                        <div class="notification-content">
+                                                            <div class="notification-title">${title}</div>
+                                                            <div class="notification-message">${message}</div>
+                                                        </div>
+                                                    `;
 
                 notificationSystem.appendChild(notification);
 
@@ -3812,7 +3812,7 @@
             </div>
             <div class="modal-body">
                 <div class="selected-cat"></div>
-                
+
                 <!-- Pricing Context Section -->
                 <div class="pricing-context" id="pricingContext" style="display: none;">
                     <div class="pricing-loading" id="pricingLoading">
@@ -3839,7 +3839,7 @@
                             <span id="matchingListings">0 matching listings found</span>
                             <span id="traitMatches" style="display: none;">0 trait matches found</span>
                         </div>
-                        
+
                         <!-- Suggested Price -->
                         <div class="suggested-price" id="suggestedPriceSection" style="display: none;">
                             <span class="suggested-label">💡 Suggested: </span>
@@ -3858,7 +3858,7 @@
                             Match by trait (breed, rank, or element)
                         </label>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="listingPrice">Price</label>
@@ -3925,11 +3925,11 @@
     </div>
 
     <!-- Saved Searches Modal -->
-    <div id="savedSearchesModal" class="modal">
-        <div class="modal-content">
+    <div id="savedSearchesModal" class="modal-backdrop">
+        <div class="modal-container">
             <div class="modal-header">
                 <h3>Saved Searches</h3>
-                <button id="closeSavedSearchesBtn" class="close-btn">×</button>
+                <button id="closeSavedSearchesBtn" class="close-modal">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="savedSearchesList" class="saved-searches-list"></div>
@@ -3965,22 +3965,22 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
-        .notification.show {
-            transform: translateX(0);
-            opacity: 1;
-        }
+            .notification.show {
+                transform: translateX(0);
+                opacity: 1;
+            }
 
-        .notification.success {
-            border-left: 4px solid #10b981;
-        }
+            .notification.success {
+                border-left: 4px solid #10b981;
+            }
 
-        .notification.error {
-            border-left: 4px solid #ef4444;
-        }
+            .notification.error {
+                border-left: 4px solid #ef4444;
+            }
 
-        .notification.info {
-            border-left: 4px solid #3b82f6;
-        }
+            .notification.info {
+                border-left: 4px solid #3b82f6;
+            }
 
         .notification-icon {
             display: inline-block;
@@ -4023,9 +4023,9 @@
             transition: transform 0.4s ease;
         }
 
-        .trending-carousel.show {
-            transform: translateY(0);
-        }
+            .trending-carousel.show {
+                transform: translateY(0);
+            }
 
         .trending-header {
             display: flex;
@@ -4034,11 +4034,11 @@
             margin-bottom: 1rem;
         }
 
-        .trending-header h3 {
-            color: white;
-            font-size: 1.2rem;
-            margin: 0;
-        }
+            .trending-header h3 {
+                color: white;
+                font-size: 1.2rem;
+                margin: 0;
+            }
 
         .trending-controls {
             display: flex;
@@ -4060,17 +4060,17 @@
             font-size: 1.2rem;
         }
 
-        .trending-nav-btn:hover {
-            background: rgba(138, 101, 255, 0.2);
-            border-color: rgba(138, 101, 255, 0.3);
-            transform: scale(1.05);
-        }
+            .trending-nav-btn:hover {
+                background: rgba(138, 101, 255, 0.2);
+                border-color: rgba(138, 101, 255, 0.3);
+                transform: scale(1.05);
+            }
 
-        .trending-nav-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            transform: none;
-        }
+            .trending-nav-btn:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+                transform: none;
+            }
 
         .trending-items {
             display: flex;
@@ -4081,9 +4081,9 @@
             -ms-overflow-style: none;
         }
 
-        .trending-items::-webkit-scrollbar {
-            display: none;
-        }
+            .trending-items::-webkit-scrollbar {
+                display: none;
+            }
 
         .trending-item {
             flex: 0 0 120px;
@@ -4096,11 +4096,11 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .trending-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
+            .trending-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            }
 
         .trending-item-image {
             width: 60px;
@@ -4146,10 +4146,10 @@
             transition: all 0.3s ease;
         }
 
-        .bell-icon:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(138, 101, 255, 0.4);
-        }
+            .bell-icon:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(138, 101, 255, 0.4);
+            }
 
         .notification-count {
             position: absolute;
@@ -4168,9 +4168,9 @@
             border: 2px solid var(--background);
         }
 
-        .notification-count.hidden {
-            display: none;
-        }
+            .notification-count.hidden {
+                display: none;
+            }
 
         .notification-dropdown {
             position: absolute;
@@ -4188,11 +4188,11 @@
             transition: all 0.3s ease;
         }
 
-        .notification-dropdown.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
+            .notification-dropdown.show {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
 
         .notification-header {
             display: flex;
@@ -4202,10 +4202,10 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .notification-header span {
-            color: white;
-            font-weight: 600;
-        }
+            .notification-header span {
+                color: white;
+                font-weight: 600;
+            }
 
         .mark-all-read {
             background: none;
@@ -4218,9 +4218,9 @@
             transition: background 0.3s ease;
         }
 
-        .mark-all-read:hover {
-            background: rgba(138, 101, 255, 0.2);
-        }
+            .mark-all-read:hover {
+                background: rgba(138, 101, 255, 0.2);
+            }
 
         .notification-list {
             max-height: 300px;
@@ -4235,13 +4235,13 @@
             transition: background 0.3s ease;
         }
 
-        .notification-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
+            .notification-item:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
 
-        .notification-item.unread {
-            background: rgba(138, 101, 255, 0.1);
-        }
+            .notification-item.unread {
+                background: rgba(138, 101, 255, 0.1);
+            }
 
         .notification-item-content {
             display: flex;
@@ -4334,15 +4334,15 @@
             font-size: 0.8rem;
         }
 
-        .saved-search-btn:hover {
-            background: rgba(138, 101, 255, 0.2);
-            border-color: rgba(138, 101, 255, 0.3);
-        }
+            .saved-search-btn:hover {
+                background: rgba(138, 101, 255, 0.2);
+                border-color: rgba(138, 101, 255, 0.3);
+            }
 
-        .saved-search-btn.danger:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.3);
-        }
+            .saved-search-btn.danger:hover {
+                background: rgba(239, 68, 68, 0.2);
+                border-color: rgba(239, 68, 68, 0.3);
+            }
 
         .save-current-search {
             display: flex;
@@ -4354,43 +4354,43 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .save-current-search input {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 0.75rem;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
+            .save-current-search input {
+                flex: 1;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                padding: 0.75rem;
+                border-radius: 6px;
+                transition: all 0.3s ease;
+            }
 
-        .save-current-search input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(138, 101, 255, 0.2);
-        }
+                .save-current-search input:focus {
+                    outline: none;
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 2px rgba(138, 101, 255, 0.2);
+                }
 
-        .save-current-search input::placeholder {
-            color: var(--text-muted);
-        }
+                .save-current-search input::placeholder {
+                    color: var(--text-muted);
+                }
 
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             .notification-bell {
                 right: 20px;
             }
-            
+
             .trending-carousel {
                 left: 10px;
                 right: 10px;
             }
-            
+
             .notification-system {
                 right: 10px;
                 left: 10px;
                 max-width: none;
             }
-            
+
             .notification-dropdown {
                 right: -20px;
                 width: 300px;
