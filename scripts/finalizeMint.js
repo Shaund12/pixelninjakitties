@@ -73,13 +73,13 @@ try {
     schema = JSON.parse(
         readFileSync(path.resolve(__dirname, '../docs/metadata-schema.json'), 'utf8')
     );
-} catch (err) {
+} catch {
     try {
         // Try from scripts directory
         schema = JSON.parse(
             readFileSync(path.resolve(__dirname, 'docs/metadata-schema.json'), 'utf8')
         );
-    } catch (error) {
+    } catch {
         // Create a minimal schema if file can't be found
         console.warn('⚠️ Could not load metadata schema file, using default schema');
         schema = {
@@ -902,6 +902,11 @@ export async function finalizeMint({
         let imageUri;
         try {
             imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+
+            // Ensure imageUri is converted to HTTPS gateway URL
+            const imageFilename = `${normalizedBreed}-${tokenId}.png`;
+            imageUri = normalizeToGatewayUrl(imageUri, imageFilename);
+
             const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
             console.log(`✅ Image uploaded in ${uploadTime}s`);
 
@@ -997,6 +1002,10 @@ export async function finalizeMint({
         let metadataUri;
         try {
             metadataUri = await uploadToIPFS(metaPath, fileName);
+
+            // Ensure metadataUri is converted to HTTPS gateway URL
+            metadataUri = normalizeToGatewayUrl(metadataUri, fileName);
+
             const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
             console.log(`✅ Metadata uploaded in ${metadataUploadTime}s as ${fileName}`);
         } catch (error) {
@@ -1210,8 +1219,10 @@ async function uploadToPinata(filePath, name) {
         const result = await response.json();
         const ipfsHash = result.IpfsHash;
 
-        console.log(`✅ Pinata upload successful: ipfs://${ipfsHash}`);
-        return `ipfs://${ipfsHash}`;
+        // Return HTTPS gateway URL instead of raw ipfs:// for better compatibility
+        const gatewayUrl = `https://ipfs.io/ipfs/${ipfsHash}/${path.basename(filePath)}`;
+        console.log(`✅ Pinata upload successful: ${gatewayUrl}`);
+        return gatewayUrl;
     } catch (error) {
         console.error(`Error uploading to Pinata: ${error.message}`);
         throw error;
@@ -1244,8 +1255,10 @@ async function uploadToIPFS(filePath, name) {
             throw new Error(`Invalid IPFS CID returned: ${ipfsCid}`);
         }
 
-        console.log(`✅ Web3.storage upload successful: ipfs://${ipfsCid}`);
-        return `ipfs://${ipfsCid}`;
+        // Return HTTPS gateway URL instead of raw ipfs:// for better compatibility
+        const gatewayUrl = `https://ipfs.io/ipfs/${ipfsCid}/${path.basename(filePath)}`;
+        console.log(`✅ Web3.storage upload successful: ${gatewayUrl}`);
+        return gatewayUrl;
     } catch (error) {
         console.error(`Error uploading to IPFS: ${error.message}`);
 
@@ -1273,6 +1286,31 @@ async function uploadToIPFS(filePath, name) {
 async function getFileSize(filePath) {
     const stats = await fs.stat(filePath);
     return stats.size;
+}
+
+/**
+ * Convert IPFS URI to HTTPS gateway URL if needed
+ * @param {string} uri - URI to convert (may be ipfs:// or https://)
+ * @param {string} filename - Optional filename to append
+ * @returns {string} - HTTPS gateway URL
+ */
+function normalizeToGatewayUrl(uri, filename = '') {
+    if (!uri) return uri;
+
+    // If already HTTPS, return as-is
+    if (uri.startsWith('https://')) {
+        return uri;
+    }
+
+    // Convert ipfs:// to HTTPS gateway
+    if (uri.startsWith('ipfs://')) {
+        const cid = uri.replace('ipfs://', '');
+        const filenamePart = filename ? `/${filename}` : '';
+        return `https://ipfs.io/ipfs/${cid}${filenamePart}`;
+    }
+
+    // Return as-is if not IPFS URI
+    return uri;
 }
 
 /**
