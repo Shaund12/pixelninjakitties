@@ -61,6 +61,30 @@ import {
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
+/**
+ * Critical validation function to ensure URI is HTTPS gateway format
+ * @param {string} uri - URI to validate
+ * @param {string} context - Context for error messages
+ * @returns {string} - Validated HTTPS URI
+ * @throws {Error} - If URI is not in correct format
+ */
+function validateHttpsUri(uri, context = 'URI') {
+    if (!uri || typeof uri !== 'string') {
+        throw new Error(`${context} is empty or invalid: ${uri}`);
+    }
+    
+    if (uri.startsWith('ipfs://')) {
+        throw new Error(`${context} is still raw IPFS format: ${uri} - This should have been normalized!`);
+    }
+    
+    if (!uri.startsWith('https://')) {
+        throw new Error(`${context} is not HTTPS format: ${uri}`);
+    }
+    
+    console.log(`✅ ${context} validation passed: ${uri}`);
+    return uri;
+}
+
 const execAsync = promisify(exec);
 
 // Get current directory for ES modules
@@ -1069,6 +1093,10 @@ export async function finalizeMint({
         const finalTokenURI = normalizeToGatewayUrl(metadataUri);
         const finalImageURI = normalizeToGatewayUrl(imageUri);
         
+        // CRITICAL VALIDATION: These MUST be HTTPS URLs
+        validateHttpsUri(finalTokenURI, 'Final Token URI');
+        validateHttpsUri(finalImageURI, 'Final Image URI');
+        
         console.log(`🔍 FINAL SAFETY CHECK:`);
         console.log(`   • metadataUri: ${metadataUri}`);
         console.log(`   • finalTokenURI: ${finalTokenURI}`);
@@ -1281,13 +1309,37 @@ async function uploadToIPFS(filePath, name) {
     // Fall back to web3.storage CLI
     try {
         console.log(`🔄 Attempting web3.storage CLI fallback for ${name}`);
-        const { stdout } = await execAsync(`npx web3.storage put "${filePath}" --name "${name}"`);
-        console.log(`📤 Web3.storage CLI output: ${stdout}`);
+        const command = `npx web3.storage put "${filePath}" --name "${name}"`;
+        console.log(`🔧 Running command: ${command}`);
         
-        const ipfsCid = stdout.trim().split('\n').pop().trim();
+        const { stdout, stderr } = await execAsync(command);
+        console.log(`📤 Web3.storage CLI stdout: ${stdout}`);
+        console.log(`📤 Web3.storage CLI stderr: ${stderr}`);
+        
+        // Parse the output more carefully
+        const lines = stdout.trim().split('\n');
+        console.log(`🔍 All output lines:`, lines);
+        
+        // The CID is typically the last line, but let's be more defensive
+        let ipfsCid = null;
+        for (let i = lines.length - 1; i >= 0; i--) {
+            const line = lines[i].trim();
+            // Look for a line that looks like a CID (starts with Qm or baf and has right length)
+            if (line.match(/^(Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[0-9a-z]{56})$/)) {
+                ipfsCid = line;
+                break;
+            }
+        }
+        
+        if (!ipfsCid) {
+            // Fallback to the last line method
+            ipfsCid = lines[lines.length - 1].trim();
+        }
+        
+        console.log(`🔍 Extracted CID: ${ipfsCid}`);
 
         if (!ipfsCid || ipfsCid.length < 40) {
-            throw new Error(`Invalid IPFS CID returned: ${ipfsCid}`);
+            throw new Error(`Invalid IPFS CID returned: "${ipfsCid}" from output: ${stdout}`);
         }
 
         // Return HTTPS gateway URL instead of raw ipfs:// for better compatibility
