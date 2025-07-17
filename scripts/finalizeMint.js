@@ -55,10 +55,35 @@ import addFormats from 'ajv-formats';
 import {
     generateTraits,
     assembleMetadata,
-    getBackgroundDefinitions
+    getBackgroundDefinitions,
+    normalizeToGatewayUrl
 } from '../utils/metadata.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
+
+/**
+ * Critical validation function to ensure URI is HTTPS gateway format
+ * @param {string} uri - URI to validate
+ * @param {string} context - Context for error messages
+ * @returns {string} - Validated HTTPS URI
+ * @throws {Error} - If URI is not in correct format
+ */
+function validateHttpsUri(uri, context = 'URI') {
+    if (!uri || typeof uri !== 'string') {
+        throw new Error(`${context} is empty or invalid: ${uri}`);
+    }
+    
+    if (uri.startsWith('ipfs://')) {
+        throw new Error(`${context} is still raw IPFS format: ${uri} - This should have been normalized!`);
+    }
+    
+    if (!uri.startsWith('https://')) {
+        throw new Error(`${context} is not HTTPS format: ${uri}`);
+    }
+    
+    console.log(`✅ ${context} validation passed: ${uri}`);
+    return uri;
+}
 
 const execAsync = promisify(exec);
 
@@ -73,13 +98,13 @@ try {
     schema = JSON.parse(
         readFileSync(path.resolve(__dirname, '../docs/metadata-schema.json'), 'utf8')
     );
-} catch (err) {
+} catch {
     try {
         // Try from scripts directory
         schema = JSON.parse(
             readFileSync(path.resolve(__dirname, 'docs/metadata-schema.json'), 'utf8')
         );
-    } catch (error) {
+    } catch {
         // Create a minimal schema if file can't be found
         console.warn('⚠️ Could not load metadata schema file, using default schema');
         schema = {
@@ -902,6 +927,19 @@ export async function finalizeMint({
         let imageUri;
         try {
             imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+            
+            // CRITICAL SAFETY CHECK: Ensure imageUri is HTTPS
+            if (imageUri && imageUri.startsWith('ipfs://')) {
+                console.warn(`⚠️ WARNING: uploadToIPFS returned raw IPFS URI: ${imageUri}`);
+                const imageFilename = `${normalizedBreed}-${tokenId}.png`;
+                imageUri = normalizeToGatewayUrl(imageUri, imageFilename);
+                console.log(`🔧 CORRECTED to HTTPS: ${imageUri}`);
+            }
+
+            // Ensure imageUri is converted to HTTPS gateway URL (double-check)
+            const imageFilename = `${normalizedBreed}-${tokenId}.png`;
+            imageUri = normalizeToGatewayUrl(imageUri, imageFilename);
+
             const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
             console.log(`✅ Image uploaded in ${uploadTime}s`);
 
@@ -997,6 +1035,17 @@ export async function finalizeMint({
         let metadataUri;
         try {
             metadataUri = await uploadToIPFS(metaPath, fileName);
+            
+            // CRITICAL SAFETY CHECK: Ensure metadataUri is HTTPS
+            if (metadataUri && metadataUri.startsWith('ipfs://')) {
+                console.warn(`⚠️ WARNING: uploadToIPFS returned raw IPFS URI: ${metadataUri}`);
+                metadataUri = normalizeToGatewayUrl(metadataUri, fileName);
+                console.log(`🔧 CORRECTED to HTTPS: ${metadataUri}`);
+            }
+
+            // Ensure metadataUri is converted to HTTPS gateway URL (double-check)
+            metadataUri = normalizeToGatewayUrl(metadataUri, fileName);
+
             const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
             console.log(`✅ Metadata uploaded in ${metadataUploadTime}s as ${fileName}`);
         } catch (error) {
@@ -1008,6 +1057,12 @@ export async function finalizeMint({
         }
 
         console.log(`🔗 Token URI metadata at: ${metadataUri}`);
+        
+        // Verify normalization for debugging
+        console.log(`🔍 FINAL NORMALIZATION CHECK:`);
+        console.log(`   • metadataUri: ${metadataUri}`);
+        console.log(`   • imageUri: ${imageUri}`);
+        console.log(`   • Starts with https: ${metadataUri.startsWith('https://')}`);
 
         // Clean up temporary directory
         fs.rm(processedImage.directory, { recursive: true, force: true }).catch(err => {
@@ -1034,10 +1089,24 @@ export async function finalizeMint({
             });
         }
 
-        // Return comprehensive result object
+        // TRIPLE SAFETY CHECK: Ensure all URIs are HTTPS gateway URLs
+        const finalTokenURI = normalizeToGatewayUrl(metadataUri);
+        const finalImageURI = normalizeToGatewayUrl(imageUri);
+        
+        // CRITICAL VALIDATION: These MUST be HTTPS URLs
+        validateHttpsUri(finalTokenURI, 'Final Token URI');
+        validateHttpsUri(finalImageURI, 'Final Image URI');
+        
+        console.log(`🔍 FINAL SAFETY CHECK:`);
+        console.log(`   • metadataUri: ${metadataUri}`);
+        console.log(`   • finalTokenURI: ${finalTokenURI}`);
+        console.log(`   • finalImageURI: ${finalImageURI}`);
+        console.log(`   • All HTTPS: ${finalTokenURI.startsWith('https://') && finalImageURI.startsWith('https://')}`);
+        
+        // Return comprehensive result object with guaranteed HTTPS URLs
         return {
-            tokenURI: metadataUri,
-            imageUri,
+            tokenURI: finalTokenURI, // Triple-checked HTTPS URL
+            imageUri: finalImageURI, // Triple-checked HTTPS URL
             metadata,
             provider: imageResult.provider,
             model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
@@ -1168,105 +1237,77 @@ async function processImage(imageResult) {
 }
 
 /**
- * Upload an image to IPFS via Pinata
- * @param {string} imagePath - Path to the image file
- * @param {string} name - Name for the upload
- * @returns {Promise<string>} - IPFS hash/CID
+ * Upload a file (image or JSON) to Pinata and return an HTTPS gateway URL.
+ * @param {string} filePath – Path to the file on disk.
+ * @param {string} name – Friendly name (used for Pinata metadata).
+ * @returns {Promise<string>} – Always an HTTPS URL: https://ipfs.io/ipfs/{CID}/{filename}
  */
 async function uploadToPinata(filePath, name) {
-    console.log(`📤 Attempting Pinata upload for ${name} (${await getFileSize(filePath)} bytes)`);
-    console.log(`Uploading to Pinata: ${filePath}`);
-
-    if (!isPinataConfigured) {
-        throw new Error('Pinata not configured - missing API key or secret key');
+    if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
+        throw new Error('Pinata not configured – missing PINATA_API_KEY or PINATA_SECRET_KEY');
     }
 
-    // Create form data with the file
     const formData = new FormData();
-    const fileStream = await fs.readFile(filePath);
-    formData.append('file', fileStream, { filename: path.basename(filePath) });
+    const fileBuffer = await fs.readFile(filePath);
+    formData.append('file', fileBuffer, { filename: path.basename(filePath) });
+    formData.append('pinataMetadata', JSON.stringify({ name }));
 
-    // Add metadata
-    formData.append('pinataMetadata', JSON.stringify({
-        name: `nft-${name}`
-    }));
-
-    try {
-        const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-            method: 'POST',
-            headers: {
-                'pinata_api_key': PINATA_API_KEY,
-                'pinata_secret_api_key': PINATA_SECRET_KEY,
-                ...formData.getHeaders()
-            },
-            body: formData
-        });
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Pinata error: ${response.status} - ${error}`);
-        }
-
-        const result = await response.json();
-        const ipfsHash = result.IpfsHash;
-
-        console.log(`✅ Pinata upload successful: ipfs://${ipfsHash}`);
-        return `ipfs://${ipfsHash}`;
-    } catch (error) {
-        console.error(`Error uploading to Pinata: ${error.message}`);
-        throw error;
+    const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+            pinata_api_key: PINATA_API_KEY,
+            pinata_secret_api_key: PINATA_SECRET_KEY,
+            ...formData.getHeaders(),
+        },
+        body: formData,
+    });
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Pinata upload failed: ${res.status} – ${err}`);
     }
+
+    const { IpfsHash: cid } = await res.json();
+    // Return the HTTPS gateway URL
+    return `https://ipfs.io/ipfs/${cid}/${path.basename(filePath)}`;
 }
 
 /**
- * Upload a file to IPFS
- * @param {string} filePath - Path to the file
- * @param {string} name - Name for the upload
- * @returns {Promise<string>} - IPFS URL
+ * Upload any file to IPFS, preferring Pinata, then falling back to web3.storage.
+ * Always returns an HTTPS gateway URL.
+ * @param {string} filePath – Path to the file on disk.
+ * @param {string} name – Friendly name for metadata or CLI fallback.
+ * @returns {Promise<string>} – https://ipfs.io/ipfs/{CID}/{filename}
  */
 async function uploadToIPFS(filePath, name) {
-    // Try Pinata first if configured
-    if (isPinataConfigured) {
+    // 1) Try Pinata
+    if (PINATA_API_KEY && PINATA_SECRET_KEY) {
         try {
             return await uploadToPinata(filePath, name);
-        } catch (error) {
-            console.warn(`⚠️ Pinata upload failed: ${error.message}`);
-            console.warn('⚠️ Falling back to local w3.storage CLI...');
-        }
-    }
-
-    // Fall back to web3.storage CLI
-    try {
-        const { stdout } = await execAsync(`npx web3.storage put "${filePath}" --name "${name}"`);
-        const ipfsCid = stdout.trim().split('\n').pop().trim();
-
-        if (!ipfsCid || ipfsCid.length < 40) {
-            throw new Error(`Invalid IPFS CID returned: ${ipfsCid}`);
-        }
-
-        console.log(`✅ Web3.storage upload successful: ipfs://${ipfsCid}`);
-        return `ipfs://${ipfsCid}`;
-    } catch (error) {
-        console.error(`Error uploading to IPFS: ${error.message}`);
-
-        // In case of failure, generate a local URL as last resort
-        const backupFilename = `${Date.now()}-${name}.png`;
-        const publicDir = path.join(process.cwd(), 'public', 'images');
-
-        try {
-            // Ensure the public/images directory exists
-            await fs.mkdir(publicDir, { recursive: true });
-
-            // Copy the file to the public directory
-            await fs.copyFile(filePath, path.join(publicDir, backupFilename));
-
-            // Return a URL relative to the base URL
-            return `${baseUrl}/images/${backupFilename}`;
         } catch (err) {
-            console.error(`Final fallback failed: ${err.message}`);
-            throw new Error('All upload attempts failed');
+            console.warn(`⚠️ Pinata upload failed, falling back: ${err.message}`);
         }
     }
+
+    // 2) Fall back to web3.storage CLI
+    try {
+        const cmd = `npx web3.storage put "${filePath}" --name "${name}"`;
+        const { stdout } = await execAsync(cmd);
+        const lines = stdout.trim().split('\n').filter(l => l);
+        const cid = lines[lines.length - 1];
+        if (!/^[A-Za-z0-9]+$/.test(cid)) {
+            throw new Error(`Invalid CID from web3.storage: ${cid}`);
+        }
+        return `https://ipfs.io/ipfs/${cid}/${path.basename(filePath)}`;
+    } catch (err) {
+        console.warn(`⚠️ web3.storage fallback failed: ${err.message}`);
+    }
+
+    // 3) Last‑resort local fallback (serves from your BASE_URL/public/images)
+    const backupDir = path.join(process.cwd(), 'public', 'images');
+    await fs.mkdir(backupDir, { recursive: true });
+    const filename = `${Date.now()}-${path.basename(filePath)}`;
+    await fs.copyFile(filePath, path.join(backupDir, filename));
+    return `${BASE_URL.replace(/\/$/, '')}/images/${filename}`;
 }
 
 // Helper to get file size

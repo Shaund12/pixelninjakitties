@@ -11,9 +11,8 @@ import { strict as assert } from 'assert';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -26,8 +25,7 @@ import {
     generateNinjaCatDescription,
     calculateRarityScore,
     getRarityTier,
-    assembleMetadata,
-    getBackgroundDefinitions
+    assembleMetadata
 } from '../utils/metadata.js';
 
 // Load the JSON schema
@@ -126,7 +124,7 @@ function runTests() {
         try {
             calculateRarityScore([]);
             console.log('❌ Empty attributes should throw error');
-        } catch (error) {
+        } catch {
             console.log('✅ Empty attributes correctly throws error');
         }
 
@@ -137,6 +135,37 @@ function runTests() {
             console.log('✅ Unknown breed fallback works');
         } else {
             console.log('❌ Unknown breed fallback failed');
+        }
+
+        console.log('\n🎉 All tests completed!');
+
+        // Test IPFS gateway URL normalization
+        console.log('\nTesting IPFS gateway URL normalization...');
+
+        // Test with ipfs:// URI
+        const ipfsMetadata = assembleMetadata(traits, 'ipfs://QmTestHash123', {
+            name: 'Test Cat #1',
+            tokenId: '1'
+        });
+
+        if (ipfsMetadata.image.startsWith('https://ipfs.io/ipfs/')) {
+            console.log('✅ IPFS URI correctly converted to HTTPS gateway URL');
+            console.log(`   Image URL: ${ipfsMetadata.image}`);
+        } else {
+            console.log('❌ IPFS URI conversion failed');
+            console.log(`   Expected HTTPS URL, got: ${ipfsMetadata.image}`);
+        }
+
+        // Test with already HTTPS URI
+        const httpsMetadata = assembleMetadata(traits, 'https://ipfs.io/ipfs/QmTestHash123/image.png', {
+            name: 'Test Cat #2',
+            tokenId: '2'
+        });
+
+        if (httpsMetadata.image === 'https://ipfs.io/ipfs/QmTestHash123/image.png') {
+            console.log('✅ HTTPS URI correctly preserved');
+        } else {
+            console.log('❌ HTTPS URI preservation failed');
         }
 
         console.log('\n🎉 All tests completed!');
