@@ -1298,71 +1298,234 @@ async function generateImage(prompt, options = {}) {
 }
 
 /**
- * IPFS upload functions
+ * IPFS upload functions with better error handling and debugging
  */
 async function uploadToPinata(filePath, name) {
     if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
-        throw new Error('Pinata not configured');
+        throw new Error('Pinata not configured - missing PINATA_API_KEY or PINATA_SECRET_KEY');
     }
 
-    const formData = new FormData();
-    const fileBuffer = await fs.readFile(filePath);
-    formData.append('file', fileBuffer, { filename: path.basename(filePath) });
-    formData.append('pinataMetadata', JSON.stringify({ name }));
+    logger.info(`Attempting Pinata upload for ${name}`);
 
-    const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-        method: 'POST',
-        headers: {
-            pinata_api_key: PINATA_API_KEY,
-            pinata_secret_api_key: PINATA_SECRET_KEY,
-            ...formData.getHeaders(),
-        },
-        body: formData,
-    });
+    try {
+        const formData = new FormData();
+        const fileBuffer = await fs.readFile(filePath);
+        const stats = await fs.stat(filePath);
 
-    if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`Pinata upload failed: ${res.status} – ${err}`);
+        logger.debug(`File size: ${stats.size} bytes`);
+
+        formData.append('file', fileBuffer, { filename: path.basename(filePath) });
+        formData.append('pinataMetadata', JSON.stringify({ name }));
+        formData.append('pinataOptions', JSON.stringify({ cidVersion: 1 }));
+
+        const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+            method: 'POST',
+            headers: {
+                'pinata_api_key': PINATA_API_KEY,
+                'pinata_secret_api_key': PINATA_SECRET_KEY,
+                ...formData.getHeaders(),
+            },
+            body: formData,
+        });
+
+        const responseText = await res.text();
+
+        if (!res.ok) {
+            logger.error(`Pinata upload failed: ${res.status} - ${responseText}`);
+            throw new Error(`Pinata upload failed: ${res.status} - ${responseText}`);
+        }
+
+        const result = JSON.parse(responseText);
+        const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
+
+        logger.info(`✅ Pinata upload successful: ${ipfsUrl}`);
+        return ipfsUrl;
+
+    } catch (error) {
+        logger.error(`Pinata upload error: ${error.message}`);
+        throw error;
     }
-
-    const { IpfsHash: cid } = await res.json();
-    return `https://ipfs.io/ipfs/${cid}/${path.basename(filePath)}`;
 }
 
-async function uploadToIPFSFallback(filePath, name) {
-    try {
-        const cmd = `npx web3.storage put "${filePath}" --name "${name}"`;
-        const { stdout } = await execAsync(cmd);
-        const lines = stdout.trim().split('\n').filter(l => l);
-        const cid = lines[lines.length - 1];
+async function uploadToWeb3Storage(filePath, name) {
+    logger.info(`Attempting web3.storage upload for ${name}`);
 
-        if (!/^[A-Za-z0-9]+$/.test(cid)) {
+    try {
+        // First check if web3.storage CLI is installed
+        try {
+            await execAsync('npx web3.storage --version');
+        } catch (versionError) {
+            logger.warn('web3.storage CLI not found, installing...');
+            await execAsync('npm install -g @web3-storage/w3cli');
+        }
+
+        // Check if user is logged in to web3.storage
+        try {
+            await execAsync('npx web3.storage whoami');
+        } catch (authError) {
+            throw new Error('Not logged in to web3.storage. Run: npx web3.storage login');
+        }
+
+        const cmd = `npx web3.storage put "${filePath}" --name "${name}" --json`;
+        logger.debug(`Executing: ${cmd}`);
+
+        const { stdout, stderr } = await execAsync(cmd);
+
+        if (stderr) {
+            logger.warn(`web3.storage stderr: ${stderr}`);
+        }
+
+        // Parse JSON output from web3.storage
+        let cid;
+        try {
+            const result = JSON.parse(stdout);
+            cid = result.cid || result.CID;
+        } catch {
+            // Fallback to parsing plain text output
+            const lines = stdout.trim().split('\n').filter(l => l);
+            cid = lines[lines.length - 1];
+        }
+
+        if (!cid || !/^[A-Za-z0-9]+$/.test(cid)) {
             throw new Error(`Invalid CID from web3.storage: ${cid}`);
         }
 
-        return `https://ipfs.io/ipfs/${cid}/${path.basename(filePath)}`;
-    } catch (err) {
-        logger.warn(`web3.storage fallback failed: ${err.message}`);
+        const ipfsUrl = `https://w3s.link/ipfs/${cid}/${path.basename(filePath)}`;
+        logger.info(`✅ web3.storage upload successful: ${ipfsUrl}`);
+        return ipfsUrl;
 
-        // Last resort: local fallback
+    } catch (error) {
+        logger.error(`web3.storage upload error: ${error.message}`);
+        throw error;
+    }
+}
+
+async function uploadToIPFSFallback(filePath, name) {
+    logger.info(`Attempting local fallback for ${name}`);
+
+    try {
+        // Ensure the backup directory exists
         const backupDir = path.join(process.cwd(), 'public', 'images');
         await fs.mkdir(backupDir, { recursive: true });
-        const filename = `${Date.now()}-${path.basename(filePath)}`;
-        await fs.copyFile(filePath, path.join(backupDir, filename));
-        return `${baseUrl.replace(/\/$/, '')}/images/${filename}`;
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const hash = createHash('sha256').update(name).digest('hex').slice(0, 8);
+        const ext = path.extname(filePath);
+        const filename = `${timestamp}-${hash}${ext}`;
+        const destPath = path.join(backupDir, filename);
+
+        // Copy file
+        await fs.copyFile(filePath, destPath);
+
+        // Verify the file was copied
+        const stats = await fs.stat(destPath);
+        logger.debug(`Local file saved: ${destPath} (${stats.size} bytes)`);
+
+        const localUrl = `${baseUrl.replace(/\/$/, '')}/images/${filename}`;
+        logger.info(`✅ Local fallback successful: ${localUrl}`);
+        return localUrl;
+
+    } catch (error) {
+        logger.error(`Local fallback error: ${error.message}`);
+        throw error;
     }
 }
 
 async function uploadToIPFS(filePath, name) {
+    // Verify file exists before attempting upload
+    try {
+        const stats = await fs.stat(filePath);
+        logger.debug(`Uploading file: ${filePath} (${stats.size} bytes)`);
+    } catch (error) {
+        throw new Error(`File not found: ${filePath}`);
+    }
+
+    const errors = [];
+
+    // 1. Try Pinata first if configured
     if (PINATA_API_KEY && PINATA_SECRET_KEY) {
         try {
             return await uploadToPinata(filePath, name);
         } catch (err) {
-            logger.warn(`Pinata upload failed, falling back: ${err.message}`);
+            errors.push(`Pinata: ${err.message}`);
+            logger.warn(`Pinata upload failed: ${err.message}`);
         }
+    } else {
+        logger.debug('Pinata not configured, skipping...');
     }
 
-    return await uploadToIPFSFallback(filePath, name);
+    // 2. Try web3.storage as fallback
+    try {
+        return await uploadToWeb3Storage(filePath, name);
+    } catch (err) {
+        errors.push(`web3.storage: ${err.message}`);
+        logger.warn(`web3.storage upload failed: ${err.message}`);
+    }
+
+    // 3. Use local storage as last resort
+    try {
+        return await uploadToIPFSFallback(filePath, name);
+    } catch (err) {
+        errors.push(`Local: ${err.message}`);
+        logger.error(`Local storage failed: ${err.message}`);
+    }
+
+    // If all methods fail, throw detailed error
+    throw new Error(`All upload methods failed:\n${errors.join('\n')}`);
+}
+
+// Add a helper function to test IPFS configuration
+export async function testIPFSConfiguration() {
+    console.log('\n🔍 Testing IPFS Configuration...\n');
+
+    // Test Pinata
+    if (PINATA_API_KEY && PINATA_SECRET_KEY) {
+        console.log('✅ Pinata credentials found');
+        try {
+            const response = await fetch('https://api.pinata.cloud/data/testAuthentication', {
+                headers: {
+                    'pinata_api_key': PINATA_API_KEY,
+                    'pinata_secret_api_key': PINATA_SECRET_KEY,
+                }
+            });
+            if (response.ok) {
+                console.log('✅ Pinata authentication successful');
+            } else {
+                console.log('❌ Pinata authentication failed:', await response.text());
+            }
+        } catch (error) {
+            console.log('❌ Pinata connection failed:', error.message);
+        }
+    } else {
+        console.log('⚠️  Pinata not configured (missing PINATA_API_KEY or PINATA_SECRET_KEY)');
+    }
+
+    // Test web3.storage
+    try {
+        const { stdout } = await execAsync('npx web3.storage --version');
+        console.log(`✅ web3.storage CLI installed: ${stdout.trim()}`);
+
+        try {
+            const { stdout: whoami } = await execAsync('npx web3.storage whoami');
+            console.log(`✅ web3.storage authenticated as: ${whoami.trim()}`);
+        } catch {
+            console.log('⚠️  web3.storage not authenticated (run: npx web3.storage login)');
+        }
+    } catch {
+        console.log('⚠️  web3.storage CLI not installed');
+    }
+
+    // Test local fallback
+    try {
+        const backupDir = path.join(process.cwd(), 'public', 'images');
+        await fs.access(backupDir, fs.constants.W_OK);
+        console.log(`✅ Local fallback directory writable: ${backupDir}`);
+    } catch {
+        console.log('⚠️  Local fallback directory not accessible');
+    }
+
+    console.log('\n' + '─'.repeat(50) + '\n');
 }
 
 // Cleanup on process exit
