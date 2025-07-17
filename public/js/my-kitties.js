@@ -1,11 +1,11 @@
 ﻿/* global ethers, fetch, gsap, Sortable */
 // Import centralized utilities
-import { short, formatAddress } from '/src/utils/formatters.js';
+import { short, formatAddress } from './utils/formatters.js';
 import { 
     getAddress, 
     connectWallet, 
     WALLET_EVENTS 
-} from '/src/utils/walletHelpers.js';
+} from './utils/walletHelpers.js';
 
 // Use centralized config and contract info
 import {

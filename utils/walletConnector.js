@@ -12,7 +12,7 @@ import {
     getWalletConnection,
     isWalletConnected,
     WALLET_EVENTS
-} from '../src/utils/walletHelpers.js';
+} from './src/utils/walletHelpers.js';
 
 // Re-export functions with legacy naming for backwards compatibility
 export {

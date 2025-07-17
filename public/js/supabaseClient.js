@@ -20,7 +20,7 @@ import {
     healthCheck,
     clearUserData,
     getSupabaseClient
-} from '/src/utils/apiClient.js';
+} from './utils/apiClient.js';
 
 // Re-export all functions from the centralized API client
 export {

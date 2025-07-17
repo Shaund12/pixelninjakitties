@@ -1,7 +1,7 @@
 ﻿/* global ethers, Chart */
 
 // Import centralized utilities
-import { formatDate, formatAddress } from '/src/utils/formatters.js';
+import { formatDate, formatAddress } from './utils/formatters.js';
 
 // Helper function to safely set text content
 function safeSetTextContent(elementId, text) {
