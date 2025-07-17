@@ -20,6 +20,7 @@ import cors from 'cors';
 import compression from 'compression';
 import { ethers } from 'ethers';
 import { finalizeMint } from './scripts/finalizeMint.js';
+import { normalizeToGatewayUrl } from './utils/metadata.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks, initializeSupabaseTables } from './scripts/supabaseTaskManager.js';
 import {
     validateTokenId,
@@ -362,6 +363,17 @@ async function processMintTask(task) {
             message: 'Setting token URI on blockchain',
             metadata: result.metadata
         });
+
+        // CRITICAL SAFETY CHECK: Verify tokenURI is HTTPS before calling setTokenURI
+        console.log(`🔍 BEFORE setTokenURI - result.tokenURI: ${result.tokenURI}`);
+        if (result.tokenURI.startsWith('ipfs://')) {
+            console.error(`❌ CRITICAL ERROR: About to call setTokenURI with raw IPFS URI: ${result.tokenURI}`);
+            console.error(`❌ This should NEVER happen after our fixes!`);
+            // Force normalize as emergency fallback
+            const fileName = `${id}.json`;
+            result.tokenURI = normalizeToGatewayUrl(result.tokenURI, fileName);
+            console.log(`🔧 EMERGENCY CORRECTION: Fixed to HTTPS: ${result.tokenURI}`);
+        }
 
         const tx = await nft.setTokenURI(id, result.tokenURI);
         await tx.wait();

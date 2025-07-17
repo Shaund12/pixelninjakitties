@@ -903,8 +903,16 @@ export async function finalizeMint({
         let imageUri;
         try {
             imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+            
+            // CRITICAL SAFETY CHECK: Ensure imageUri is HTTPS
+            if (imageUri && imageUri.startsWith('ipfs://')) {
+                console.warn(`⚠️ WARNING: uploadToIPFS returned raw IPFS URI: ${imageUri}`);
+                const imageFilename = `${normalizedBreed}-${tokenId}.png`;
+                imageUri = normalizeToGatewayUrl(imageUri, imageFilename);
+                console.log(`🔧 CORRECTED to HTTPS: ${imageUri}`);
+            }
 
-            // Ensure imageUri is converted to HTTPS gateway URL
+            // Ensure imageUri is converted to HTTPS gateway URL (double-check)
             const imageFilename = `${normalizedBreed}-${tokenId}.png`;
             imageUri = normalizeToGatewayUrl(imageUri, imageFilename);
 
@@ -1003,8 +1011,15 @@ export async function finalizeMint({
         let metadataUri;
         try {
             metadataUri = await uploadToIPFS(metaPath, fileName);
+            
+            // CRITICAL SAFETY CHECK: Ensure metadataUri is HTTPS
+            if (metadataUri && metadataUri.startsWith('ipfs://')) {
+                console.warn(`⚠️ WARNING: uploadToIPFS returned raw IPFS URI: ${metadataUri}`);
+                metadataUri = normalizeToGatewayUrl(metadataUri, fileName);
+                console.log(`🔧 CORRECTED to HTTPS: ${metadataUri}`);
+            }
 
-            // Ensure metadataUri is converted to HTTPS gateway URL
+            // Ensure metadataUri is converted to HTTPS gateway URL (double-check)
             metadataUri = normalizeToGatewayUrl(metadataUri, fileName);
 
             const metadataUploadTime = ((Date.now() - metadataStartTime) / 1000).toFixed(2);
@@ -1050,10 +1065,20 @@ export async function finalizeMint({
             });
         }
 
+        // TRIPLE SAFETY CHECK: Ensure all URIs are HTTPS gateway URLs
+        const finalTokenURI = normalizeToGatewayUrl(metadataUri);
+        const finalImageURI = normalizeToGatewayUrl(imageUri);
+        
+        console.log(`🔍 FINAL SAFETY CHECK:`);
+        console.log(`   • metadataUri: ${metadataUri}`);
+        console.log(`   • finalTokenURI: ${finalTokenURI}`);
+        console.log(`   • finalImageURI: ${finalImageURI}`);
+        console.log(`   • All HTTPS: ${finalTokenURI.startsWith('https://') && finalImageURI.startsWith('https://')}`);
+        
         // Return comprehensive result object with guaranteed HTTPS URLs
         return {
-            tokenURI: normalizeToGatewayUrl(metadataUri), // Extra safety normalization
-            imageUri: normalizeToGatewayUrl(imageUri),   // Extra safety normalization
+            tokenURI: finalTokenURI, // Triple-checked HTTPS URL
+            imageUri: finalImageURI, // Triple-checked HTTPS URL
             metadata,
             provider: imageResult.provider,
             model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
@@ -1255,7 +1280,10 @@ async function uploadToIPFS(filePath, name) {
 
     // Fall back to web3.storage CLI
     try {
+        console.log(`🔄 Attempting web3.storage CLI fallback for ${name}`);
         const { stdout } = await execAsync(`npx web3.storage put "${filePath}" --name "${name}"`);
+        console.log(`📤 Web3.storage CLI output: ${stdout}`);
+        
         const ipfsCid = stdout.trim().split('\n').pop().trim();
 
         if (!ipfsCid || ipfsCid.length < 40) {
@@ -1265,6 +1293,13 @@ async function uploadToIPFS(filePath, name) {
         // Return HTTPS gateway URL instead of raw ipfs:// for better compatibility
         const gatewayUrl = `https://ipfs.io/ipfs/${ipfsCid}/${path.basename(filePath)}`;
         console.log(`✅ Web3.storage upload successful: ${gatewayUrl}`);
+        
+        // CRITICAL SAFETY CHECK: Ensure we're returning HTTPS
+        if (gatewayUrl.startsWith('ipfs://')) {
+            console.error(`❌ ERROR: web3.storage fallback generated ipfs:// URL: ${gatewayUrl}`);
+            throw new Error(`Fallback generated invalid URL format: ${gatewayUrl}`);
+        }
+        
         return gatewayUrl;
     } catch (error) {
         console.error(`Error uploading to IPFS: ${error.message}`);

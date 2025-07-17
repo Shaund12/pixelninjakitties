@@ -153,6 +153,12 @@ export async function generateAndMint({
         reportProgress(60, 'Uploading to IPFS');
         const client = await create();
         const imageCid = await client.uploadFile((await filesFromPaths([imgPath]))[0]);
+        
+        // CRITICAL SAFETY CHECK: Verify the CID format
+        console.log(`🔍 Raw imageCid from w3up-client: ${imageCid}`);
+        if (!imageCid || typeof imageCid !== 'string' || imageCid.length < 40) {
+            throw new Error(`Invalid imageCid received from w3up-client: ${imageCid}`);
+        }
 
         // Use enhanced metadata if available, otherwise create basic metadata
         metadata = metadata || {
@@ -171,14 +177,38 @@ export async function generateAndMint({
             };
         }
 
-        // Ensure image points to our IPFS CID as HTTPS gateway URL
+        // CRITICAL SAFETY CHECK: Ensure image URI is HTTPS
+        if (metadata.image && metadata.image.startsWith('ipfs://')) {
+            console.warn(`⚠️ WARNING: metadata.image is raw IPFS URI: ${metadata.image}`);
+            metadata.image = normalizeToGatewayUrl(metadata.image, 'image.png');
+            console.log(`🔧 CORRECTED metadata.image to HTTPS: ${metadata.image}`);
+        }
+
+        // Ensure image points to our IPFS CID as HTTPS gateway URL (double-check)
         metadata.image = normalizeToGatewayUrl(`ipfs://${imageCid}`, 'image.png');
 
         const metaPath = path.join(tmp, 'meta.json');
         await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
 
         const metaCid = await client.uploadFile((await filesFromPaths([metaPath]))[0]);
+        
+        // CRITICAL SAFETY CHECK: Verify the metadata CID format
+        console.log(`🔍 Raw metaCid from w3up-client: ${metaCid}`);
+        if (!metaCid || typeof metaCid !== 'string' || metaCid.length < 40) {
+            throw new Error(`Invalid metaCid received from w3up-client: ${metaCid}`);
+        }
+        
         const tokenURI = normalizeToGatewayUrl(`ipfs://${metaCid}`, 'meta.json');
+        
+        // CRITICAL SAFETY CHECK: Ensure tokenURI is HTTPS
+        if (tokenURI && tokenURI.startsWith('ipfs://')) {
+            console.warn(`⚠️ WARNING: tokenURI is raw IPFS URI: ${tokenURI}`);
+            const correctedTokenURI = normalizeToGatewayUrl(tokenURI, 'meta.json');
+            console.log(`🔧 CORRECTED tokenURI to HTTPS: ${correctedTokenURI}`);
+            throw new Error(`CRITICAL: tokenURI normalization failed - still got ipfs:// URI: ${tokenURI}`);
+        }
+        
+        console.log(`✅ VERIFIED tokenURI is HTTPS: ${tokenURI}`);
 
         reportProgress(70, 'IPFS upload complete, preparing to mint');
 
