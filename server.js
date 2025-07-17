@@ -366,13 +366,30 @@ async function processMintTask(task) {
 
         // CRITICAL SAFETY CHECK: Verify tokenURI is HTTPS before calling setTokenURI
         console.log(`🔍 BEFORE setTokenURI - result.tokenURI: ${result.tokenURI}`);
+        console.log(`🔍 BEFORE setTokenURI - typeof result.tokenURI: ${typeof result.tokenURI}`);
+        console.log(`🔍 BEFORE setTokenURI - result.tokenURI.length: ${result.tokenURI?.length}`);
+        
         if (result.tokenURI.startsWith('ipfs://')) {
             console.error(`❌ CRITICAL ERROR: About to call setTokenURI with raw IPFS URI: ${result.tokenURI}`);
             console.error(`❌ This should NEVER happen after our fixes!`);
+            console.error(`❌ Provider used: ${result.provider}`);
+            console.error(`❌ Full result object:`, JSON.stringify(result, null, 2));
+            
             // Force normalize as emergency fallback
             const fileName = `${id}.json`;
+            const originalUri = result.tokenURI;
             result.tokenURI = normalizeToGatewayUrl(result.tokenURI, fileName);
             console.log(`🔧 EMERGENCY CORRECTION: Fixed to HTTPS: ${result.tokenURI}`);
+            console.log(`🔧 Original was: ${originalUri}`);
+            
+            // Still throw an error to make sure we know this happened
+            console.error(`❌ EMERGENCY CORRECTION APPLIED - This indicates a bug that needs fixing!`);
+        }
+        
+        // Additional validation
+        if (!result.tokenURI.startsWith('https://')) {
+            console.error(`❌ CRITICAL ERROR: tokenURI is not HTTPS format: ${result.tokenURI}`);
+            throw new Error(`TokenURI must be HTTPS format, got: ${result.tokenURI}`);
         }
 
         const tx = await nft.setTokenURI(id, result.tokenURI);

@@ -1240,11 +1240,11 @@ async function processImage(imageResult) {
  * Upload an image to IPFS via Pinata
  * @param {string} imagePath - Path to the image file
  * @param {string} name - Name for the upload
- * @returns {Promise<string>} - IPFS hash/CID
+ * @returns {Promise<string>} - HTTPS gateway URL (guaranteed)
  */
 async function uploadToPinata(filePath, name) {
     console.log(`📤 Attempting Pinata upload for ${name} (${await getFileSize(filePath)} bytes)`);
-    console.log(`Uploading to Pinata: ${filePath}`);
+    console.log(`🔍 uploadToPinata input: filePath=${filePath}, name=${name}`);
 
     if (!isPinataConfigured) {
         throw new Error('Pinata not configured - missing API key or secret key');
@@ -1277,11 +1277,27 @@ async function uploadToPinata(filePath, name) {
         }
 
         const result = await response.json();
+        console.log(`🔍 Pinata raw response:`, result);
+        
         const ipfsHash = result.IpfsHash;
+        console.log(`🔍 Extracted Pinata IPFS hash: ${ipfsHash}`);
 
         // Return HTTPS gateway URL instead of raw ipfs:// for better compatibility
         const gatewayUrl = `https://ipfs.io/ipfs/${ipfsHash}/${path.basename(filePath)}`;
         console.log(`✅ Pinata upload successful: ${gatewayUrl}`);
+        
+        // CRITICAL SAFETY CHECK: Ensure we're returning HTTPS
+        if (gatewayUrl.startsWith('ipfs://')) {
+            console.error(`❌ ERROR: Pinata generated ipfs:// URL: ${gatewayUrl}`);
+            throw new Error(`Pinata generated invalid URL format: ${gatewayUrl}`);
+        }
+        
+        // TRIPLE SAFETY CHECK: Validate the URL format
+        if (!gatewayUrl.startsWith('https://ipfs.io/ipfs/')) {
+            console.error(`❌ ERROR: Pinata generated invalid gateway URL: ${gatewayUrl}`);
+            throw new Error(`Invalid gateway URL format: ${gatewayUrl}`);
+        }
+        
         return gatewayUrl;
     } catch (error) {
         console.error(`Error uploading to Pinata: ${error.message}`);
@@ -1293,13 +1309,28 @@ async function uploadToPinata(filePath, name) {
  * Upload a file to IPFS
  * @param {string} filePath - Path to the file
  * @param {string} name - Name for the upload
- * @returns {Promise<string>} - IPFS URL
+ * @returns {Promise<string>} - HTTPS gateway URL (guaranteed)
  */
 async function uploadToIPFS(filePath, name) {
+    console.log(`🚀 uploadToIPFS called: filePath=${filePath}, name=${name}`);
+    
     // Try Pinata first if configured
     if (isPinataConfigured) {
         try {
-            return await uploadToPinata(filePath, name);
+            const result = await uploadToPinata(filePath, name);
+            console.log(`✅ Pinata upload result: ${result}`);
+            
+            // CRITICAL VALIDATION: Ensure Pinata returned HTTPS
+            if (result.startsWith('ipfs://')) {
+                console.error(`❌ FATAL: uploadToPinata returned ipfs:// URI: ${result}`);
+                throw new Error(`uploadToPinata returned invalid format: ${result}`);
+            }
+            if (!result.startsWith('https://')) {
+                console.error(`❌ FATAL: uploadToPinata returned non-HTTPS URI: ${result}`);
+                throw new Error(`uploadToPinata returned non-HTTPS format: ${result}`);
+            }
+            
+            return result;
         } catch (error) {
             console.warn(`⚠️ Pinata upload failed: ${error.message}`);
             console.warn('⚠️ Falling back to local w3.storage CLI...');
@@ -1352,6 +1383,12 @@ async function uploadToIPFS(filePath, name) {
             throw new Error(`Fallback generated invalid URL format: ${gatewayUrl}`);
         }
         
+        // TRIPLE SAFETY CHECK: Validate the URL format
+        if (!gatewayUrl.startsWith('https://ipfs.io/ipfs/')) {
+            console.error(`❌ ERROR: web3.storage fallback generated invalid gateway URL: ${gatewayUrl}`);
+            throw new Error(`Invalid gateway URL format: ${gatewayUrl}`);
+        }
+        
         return gatewayUrl;
     } catch (error) {
         console.error(`Error uploading to IPFS: ${error.message}`);
@@ -1368,7 +1405,16 @@ async function uploadToIPFS(filePath, name) {
             await fs.copyFile(filePath, path.join(publicDir, backupFilename));
 
             // Return a URL relative to the base URL
-            return `${baseUrl}/images/${backupFilename}`;
+            const localUrl = `${baseUrl}/images/${backupFilename}`;
+            console.log(`📁 Local fallback URL created: ${localUrl}`);
+            
+            // FINAL VALIDATION: Even local URLs should not be ipfs://
+            if (localUrl.startsWith('ipfs://')) {
+                console.error(`❌ FATAL: Local fallback generated ipfs:// URL: ${localUrl}`);
+                throw new Error(`Local fallback generated invalid format: ${localUrl}`);
+            }
+            
+            return localUrl;
         } catch (err) {
             console.error(`Final fallback failed: ${err.message}`);
             throw new Error('All upload attempts failed');

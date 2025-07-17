@@ -197,12 +197,16 @@ export async function generateAndMint({
             throw new Error(`Invalid imageCid received from w3up-client: ${imageCid}`);
         }
 
+        // Construct HTTPS gateway URL directly - never create ipfs:// URIs
+        const imageGatewayUrl = `https://ipfs.io/ipfs/${imageCid}/image.png`;
+        console.log(`🔗 Constructed image gateway URL: ${imageGatewayUrl}`);
+
         // Use enhanced metadata if available, otherwise create basic metadata
         metadata = metadata || {
             name: `Ninja ${breed} #${timestamp}`,
             description: `A unique on-chain pixel-art ninja ${breed} cat.`,
             attributes: [{ trait_type: 'Breed', value: breed }],
-            image: normalizeToGatewayUrl(`ipfs://${imageCid}`, 'image.png')
+            image: imageGatewayUrl
         };
 
         // Add provider info to metadata
@@ -216,13 +220,17 @@ export async function generateAndMint({
 
         // CRITICAL SAFETY CHECK: Ensure image URI is HTTPS
         if (metadata.image && metadata.image.startsWith('ipfs://')) {
-            console.warn(`⚠️ WARNING: metadata.image is raw IPFS URI: ${metadata.image}`);
+            console.error(`❌ CRITICAL ERROR: metadata.image is raw IPFS URI: ${metadata.image}`);
             metadata.image = normalizeToGatewayUrl(metadata.image, 'image.png');
-            console.log(`🔧 CORRECTED metadata.image to HTTPS: ${metadata.image}`);
+            console.log(`🔧 EMERGENCY CORRECTION to HTTPS: ${metadata.image}`);
         }
 
-        // Ensure image points to our IPFS CID as HTTPS gateway URL (double-check)
-        metadata.image = normalizeToGatewayUrl(`ipfs://${imageCid}`, 'image.png');
+        // Final verification - ensure image is HTTPS gateway URL
+        if (!metadata.image.startsWith('https://ipfs.io/ipfs/')) {
+            console.error(`❌ CRITICAL ERROR: metadata.image is not proper gateway URL: ${metadata.image}`);
+            metadata.image = imageGatewayUrl; // Force to known good URL
+            console.log(`🔧 FORCED to correct gateway URL: ${metadata.image}`);
+        }
 
         const metaPath = path.join(tmp, 'meta.json');
         await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
@@ -248,19 +256,18 @@ export async function generateAndMint({
             throw new Error(`Invalid metaCid received from w3up-client: ${metaCid}`);
         }
         
-        const tokenURI = normalizeToGatewayUrl(`ipfs://${metaCid}`, 'meta.json');
+        // Construct HTTPS gateway URL directly - never create ipfs:// URIs
+        const metadataGatewayUrl = `https://ipfs.io/ipfs/${metaCid}/meta.json`;
+        console.log(`🔗 Constructed metadata gateway URL: ${metadataGatewayUrl}`);
         
         // CRITICAL SAFETY CHECK: Ensure tokenURI is HTTPS
-        if (tokenURI && tokenURI.startsWith('ipfs://')) {
-            console.warn(`⚠️ WARNING: tokenURI is raw IPFS URI: ${tokenURI}`);
-            const correctedTokenURI = normalizeToGatewayUrl(tokenURI, 'meta.json');
-            console.log(`🔧 CORRECTED tokenURI to HTTPS: ${correctedTokenURI}`);
-            throw new Error(`CRITICAL: tokenURI normalization failed - still got ipfs:// URI: ${tokenURI}`);
+        if (!metadataGatewayUrl.startsWith('https://ipfs.io/ipfs/')) {
+            throw new Error(`CRITICAL: Failed to construct proper gateway URL: ${metadataGatewayUrl}`);
         }
         
-        // FINAL VALIDATION: This MUST be HTTPS
-        validateHttpsUri(tokenURI, 'Generated Token URI');
-        console.log(`✅ VERIFIED tokenURI is HTTPS: ${tokenURI}`);
+        // Final validation - this MUST be HTTPS
+        validateHttpsUri(metadataGatewayUrl, 'Generated Token URI');
+        console.log(`✅ VERIFIED tokenURI is HTTPS: ${metadataGatewayUrl}`);
 
         reportProgress(70, 'IPFS upload complete, preparing to mint');
 
@@ -317,7 +324,7 @@ export async function generateAndMint({
         stats.tokenId = mintedTokenId;
 
         return {
-            tokenURI,
+            tokenURI: metadataGatewayUrl,
             txHash: tx.hash,
             tokenId: mintedTokenId,
             metadata,
