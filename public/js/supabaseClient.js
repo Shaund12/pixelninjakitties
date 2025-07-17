@@ -336,18 +336,31 @@ export async function getTrendingTokens(limit = 10) {
         const client = await getSupabaseClient();
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
+        // Process in JavaScript instead of using unsupported groupBy
         const { data, error } = await client
             .from('activity_logs')
-            .select('token_id, count(*)')
+            .select('token_id, event_type, timestamp')
             .not('token_id', 'is', null)
             .gte('timestamp', oneDayAgo)
-            .in('event_type', ['view', 'favorite', 'purchase'])
-            .groupBy('token_id')
-            .order('count', { ascending: false })
-            .limit(limit);
+            .in('event_type', ['view', 'favorite', 'purchase']);
 
         if (error) throw error;
-        return data || [];
+
+        // Process grouping in JavaScript
+        const tokenCounts = {};
+        if (data) {
+            data.forEach(item => {
+                tokenCounts[item.token_id] = (tokenCounts[item.token_id] || 0) + 1;
+            });
+
+            const trendingTokens = Object.entries(tokenCounts)
+                .map(([token_id, count]) => ({ token_id, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, limit);
+
+            return trendingTokens;
+        }
+        return [];
     } catch (error) {
         console.error('Error fetching trending tokens:', error);
         return [];
