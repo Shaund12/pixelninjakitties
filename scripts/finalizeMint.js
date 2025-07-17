@@ -72,15 +72,15 @@ function validateHttpsUri(uri, context = 'URI') {
     if (!uri || typeof uri !== 'string') {
         throw new Error(`${context} is empty or invalid: ${uri}`);
     }
-    
+
     if (uri.startsWith('ipfs://')) {
         throw new Error(`${context} is still raw IPFS format: ${uri} - This should have been normalized!`);
     }
-    
+
     if (!uri.startsWith('https://')) {
         throw new Error(`${context} is not HTTPS format: ${uri}`);
     }
-    
+
     console.log(`✅ ${context} validation passed: ${uri}`);
     return uri;
 }
@@ -927,7 +927,7 @@ export async function finalizeMint({
         let imageUri;
         try {
             imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
-            
+
             // CRITICAL SAFETY CHECK: Ensure imageUri is HTTPS
             if (imageUri && imageUri.startsWith('ipfs://')) {
                 console.warn(`⚠️ WARNING: uploadToIPFS returned raw IPFS URI: ${imageUri}`);
@@ -1035,7 +1035,7 @@ export async function finalizeMint({
         let metadataUri;
         try {
             metadataUri = await uploadToIPFS(metaPath, fileName);
-            
+
             // CRITICAL SAFETY CHECK: Ensure metadataUri is HTTPS
             if (metadataUri && metadataUri.startsWith('ipfs://')) {
                 console.warn(`⚠️ WARNING: uploadToIPFS returned raw IPFS URI: ${metadataUri}`);
@@ -1057,9 +1057,9 @@ export async function finalizeMint({
         }
 
         console.log(`🔗 Token URI metadata at: ${metadataUri}`);
-        
+
         // Verify normalization for debugging
-        console.log(`🔍 FINAL NORMALIZATION CHECK:`);
+        console.log('🔍 FINAL NORMALIZATION CHECK:');
         console.log(`   • metadataUri: ${metadataUri}`);
         console.log(`   • imageUri: ${imageUri}`);
         console.log(`   • Starts with https: ${metadataUri.startsWith('https://')}`);
@@ -1092,17 +1092,17 @@ export async function finalizeMint({
         // TRIPLE SAFETY CHECK: Ensure all URIs are HTTPS gateway URLs
         const finalTokenURI = normalizeToGatewayUrl(metadataUri);
         const finalImageURI = normalizeToGatewayUrl(imageUri);
-        
+
         // CRITICAL VALIDATION: These MUST be HTTPS URLs
         validateHttpsUri(finalTokenURI, 'Final Token URI');
         validateHttpsUri(finalImageURI, 'Final Image URI');
-        
-        console.log(`🔍 FINAL SAFETY CHECK:`);
+
+        console.log('🔍 FINAL SAFETY CHECK:');
         console.log(`   • metadataUri: ${metadataUri}`);
         console.log(`   • finalTokenURI: ${finalTokenURI}`);
         console.log(`   • finalImageURI: ${finalImageURI}`);
         console.log(`   • All HTTPS: ${finalTokenURI.startsWith('https://') && finalImageURI.startsWith('https://')}`);
-        
+
         // Return comprehensive result object with guaranteed HTTPS URLs
         return {
             tokenURI: finalTokenURI, // Triple-checked HTTPS URL
