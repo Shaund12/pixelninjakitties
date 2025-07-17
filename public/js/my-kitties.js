@@ -1,12 +1,17 @@
 ﻿/* global ethers, fetch, gsap, Sortable */
-// Properly integrate with the wallet.js system
+// Import centralized utilities
+import { short, formatAddress } from '/src/utils/formatters.js';
+import { 
+    getAddress, 
+    connectWallet, 
+    WALLET_EVENTS 
+} from '/src/utils/walletHelpers.js';
+
+// Use centralized config and contract info
 import {
     CONTRACT_ADDRESS, NFT_ABI, RPC_URL,
     USDC_ADDRESS, REGENERATION_FEE_RECIPIENT, REGENERATION_FEE_AMOUNT
 } from './config.js';
-import {
-    getAddress, connectWallet, short, EVENTS as WALLET_EVENTS
-} from './wallet.js';
 
 // DOM Elements
 const grid = document.getElementById('grid');

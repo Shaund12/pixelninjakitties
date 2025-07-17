@@ -1,5 +1,8 @@
 ﻿/* global ethers, Chart */
 
+// Import centralized utilities
+import { formatDate, formatAddress } from '/src/utils/formatters.js';
+
 // Helper function to safely set text content
 function safeSetTextContent(elementId, text) {
     const element = document.getElementById(elementId);
@@ -18,22 +21,6 @@ function safeUpdateElement(elementId, updateFn) {
     } else {
         console.error(`Element with ID "${elementId}" not found`);
     }
-}
-
-// Format address for display
-function formatAddress(address) {
-    if (!address) return '';
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-}
-
-// Format date nicely
-function formatDate(timestamp) {
-    const date = timestamp ? new Date(timestamp * 1000) : new Date();
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
 }
 
 // Show a toast message with enhanced styling and animation
@@ -1024,7 +1011,7 @@ function createTimelineVisualization(transactions) {
     transactions.forEach((tx, index) => {
         const isFirst = index === 0;
         const isLast = index === transactions.length - 1;
-        const date = tx.timestamp ? formatDate(tx.timestamp) : 'Unknown date';
+        const date = tx.timestamp ? formatDate(tx.timestamp * 1000, { style: 'medium' }) : 'Unknown date';
 
         timelineHTML += `
             <div class="timeline-item ${isFirst ? 'first' : ''} ${isLast ? 'last' : ''}">
@@ -1604,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                                     ${tx.type === 'Mint' ? '' : `${formatAddress(tx.from)} → ${formatAddress(tx.to)}`}
                                 </span>
                             </div>
-                            <span class="tx-date">${tx.timestamp ? formatDate(tx.timestamp) : 'Unknown date'}</span>
+                            <span class="tx-date">${tx.timestamp ? formatDate(tx.timestamp * 1000, { style: 'medium' }) : 'Unknown date'}</span>
                         </li>
                     `).join('');
 
@@ -1612,9 +1599,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                     // Update mint date if we have it
                     if (transactions[0] && transactions[0].timestamp) {
-                        safeSetTextContent('mintDate', formatDate(transactions[0].timestamp));
+                        safeSetTextContent('mintDate', formatDate(transactions[0].timestamp * 1000, { style: 'long' }));
                     } else {
-                        safeSetTextContent('mintDate', formatDate());
+                        safeSetTextContent('mintDate', formatDate(new Date(), { style: 'long' }));
                     }
 
                     // Also create visual timeline
@@ -1629,10 +1616,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 <span class="tx-type tx-mint">Mint</span>
                                 <a href="${EXPLORER_URL}/tx/${txHash}" class="tx-hash" target="_blank">${txHash}</a>
                             </div>
-                            <span class="tx-date">${formatDate()}</span>
+                            <span class="tx-date">${formatDate(new Date(), { style: 'medium' })}</span>
                         </li>
                     `;
-                    safeSetTextContent('mintDate', formatDate());
+                    safeSetTextContent('mintDate', formatDate(new Date(), { style: 'long' }));
                 }
             });
 
