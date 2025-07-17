@@ -76,8 +76,8 @@ export async function getFavorites(walletAddress) {
         const { data, error } = await client
             .from('favorites')
             .select('token_id')
-            .eq('user_id', walletAddress.toLowerCase())
-            .order('created_at', { ascending: false });
+            .eq('user_id', walletAddress.toLowerCase());
+        // Removed the problematic order clause
 
         if (error) {
             console.error('Error fetching favorites:', error);
