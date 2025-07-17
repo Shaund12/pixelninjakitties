@@ -671,33 +671,26 @@ export async function finalizeMint(options) {
             return await processImageEnhanced(imageResult, tempDirectory);
         });
 
-        // Upload to IPFS with retry
-        const imageUri = await perf.track('upload-image', async () => {
-            return await uploadWithRetry(processedImage.path, `${breed}-${tokenId}.png`);
-        });
-
-        // Create and validate metadata
-        const metadata = await perf.track('create-metadata', async () => {
-            return createEnhancedMetadata(traits, imageUri, {
+        // Save metadata
+        const metadataPath = path.join(tempDirectory, `${tokenId}.json`);
+        const imageFileName = `${breed}-${tokenId}.png`;
+        await fs.writeFile(metadataPath, JSON.stringify(
+            await createEnhancedMetadata(traits, imageFileName, {
                 ...sanitizedOptions,
                 backgroundTrait,
                 imageResult
-            });
-        });
+            }), null, 2));
 
-        // Save metadata
-        const metadataPath = path.join(tempDirectory, `${tokenId}.json`);
-        await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+        // At this point, both image and metadata are in tempDirectory
 
-        // Upload metadata
-        const metadataUri = await perf.track('upload-metadata', async () => {
-            return await uploadWithRetry(metadataPath, `${tokenId}.json`);
-        });
+        // Upload the entire directory to IPFS
+        const { gatewayBase, cid } = await uploadDirectoryToIPFS(tempDirectory, `ninjacat-${tokenId}`);
 
-        // Ensure HTTPS URIs
-        const finalTokenURI = normalizeToGatewayUrl(metadataUri);
-        const finalImageURI = normalizeToGatewayUrl(imageUri);
+        // Construct URIs
+        const finalTokenURI = `${gatewayBase}/${tokenId}.json`;
+        const finalImageURI = `${gatewayBase}/${imageFileName}`;
 
+        // Validate URIs
         validateHttpsUri(finalTokenURI, 'Final Token URI');
         validateHttpsUri(finalImageURI, 'Final Image URI');
 
@@ -708,7 +701,11 @@ export async function finalizeMint(options) {
         const result = {
             tokenURI: finalTokenURI,
             imageUri: finalImageURI,
-            metadata,
+            metadata: await createEnhancedMetadata(traits, finalImageURI, {
+                ...sanitizedOptions,
+                backgroundTrait,
+                imageResult
+            }),
             provider: imageResult.provider,
             model: imageResult.model,
             background: backgroundTrait?.name
@@ -994,11 +991,53 @@ async function uploadWithRetry(filePath, name) {
 }
 
 /**
+ * Uploads the temp directory as a folder to IPFS (web3.storage CLI).
+ * Returns the base gateway URL and the CID.
+ */
+async function uploadDirectoryToIPFS(tempDirectory, name) {
+    try {
+        // Ensure CLI is installed and authenticated
+        await execAsync('npx web3.storage --version');
+        await execAsync('npx web3.storage whoami');
+
+        // Upload the directory
+        const cmd = `npx web3.storage put "${tempDirectory}" --name "${name}" --json`;
+        logger.debug(`Executing: ${cmd}`);
+        const { stdout, stderr } = await execAsync(cmd);
+
+        if (stderr) logger.warn(`web3.storage stderr: ${stderr}`);
+
+        // Parse CID from output
+        let cid;
+        try {
+            const result = JSON.parse(stdout);
+            cid = result.cid || result.CID;
+        } catch {
+            const lines = stdout.trim().split('\n').filter(l => l);
+            cid = lines[lines.length - 1];
+        }
+
+        if (!cid || !/^[A-Za-z0-9]+$/.test(cid)) {
+            throw new Error(`Invalid CID from web3.storage: ${cid}`);
+        }
+
+        // Use cloudflare-ipfs for reliability
+        const gatewayBase = `https://cloudflare-ipfs.com/ipfs/${cid}`;
+        logger.info(`✅ Directory upload successful: ${gatewayBase}`);
+        return { gatewayBase, cid };
+    } catch (error) {
+        logger.error(`web3.storage directory upload error: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
  * Create enhanced metadata with validation
  */
 async function createEnhancedMetadata(traits, imageUri, options) {
     const { tokenId, backgroundTrait, imageResult, metadataExtras = {} } = options;
 
+    // Always use imageResult.provider and imageResult.model
     const metadata = assembleMetadata(traits, imageUri, {
         name: `${projectName} #${tokenId}`,
         tokenId,
@@ -1006,8 +1045,8 @@ async function createEnhancedMetadata(traits, imageUri, options) {
         generationInfo: {
             timestamp: Date.now(),
             version: '2.0',
-            provider: imageResult.provider,
-            model: imageResult.model,
+            provider: imageResult?.provider, // <-- always use imageResult
+            model: imageResult?.model,
             background: backgroundTrait?.name,
             rarity: traits.rarity,
             ...metadataExtras
