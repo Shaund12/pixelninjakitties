@@ -2741,6 +2741,36 @@ function initHotItems() {
     }
 }
 
+// Saved Searches Modal Functionality
+document.addEventListener('DOMContentLoaded', function () {
+    const savedSearchesModal = document.getElementById('savedSearchesModal');
+    const savedSearchesBtn = document.getElementById('savedSearchesBtn');
+    const closeSavedSearchesBtn = document.getElementById('closeSavedSearchesBtn');
+
+    // Open modal
+    if (savedSearchesBtn) {
+        savedSearchesBtn.addEventListener('click', function () {
+            savedSearchesModal.classList.add('active');
+        });
+    }
+
+    // Close modal
+    if (closeSavedSearchesBtn) {
+        closeSavedSearchesBtn.addEventListener('click', function () {
+            savedSearchesModal.classList.remove('active');
+        });
+    }
+
+    // Close when clicking outside
+    if (savedSearchesModal) {
+        savedSearchesModal.addEventListener('click', function (e) {
+            if (e.target === savedSearchesModal) {
+                savedSearchesModal.classList.remove('active');
+            }
+        });
+    }
+});
+
 // Set up the wallet prompt
 // Set up the wallet prompt
 function setupWalletPrompt() {
