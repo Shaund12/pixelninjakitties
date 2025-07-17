@@ -55,7 +55,8 @@ import addFormats from 'ajv-formats';
 import {
     generateTraits,
     assembleMetadata,
-    getBackgroundDefinitions
+    getBackgroundDefinitions,
+    normalizeToGatewayUrl
 } from '../utils/metadata.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -1017,6 +1018,12 @@ export async function finalizeMint({
         }
 
         console.log(`🔗 Token URI metadata at: ${metadataUri}`);
+        
+        // Verify normalization for debugging
+        console.log(`🔍 FINAL NORMALIZATION CHECK:`);
+        console.log(`   • metadataUri: ${metadataUri}`);
+        console.log(`   • imageUri: ${imageUri}`);
+        console.log(`   • Starts with https: ${metadataUri.startsWith('https://')}`);
 
         // Clean up temporary directory
         fs.rm(processedImage.directory, { recursive: true, force: true }).catch(err => {
@@ -1043,10 +1050,10 @@ export async function finalizeMint({
             });
         }
 
-        // Return comprehensive result object
+        // Return comprehensive result object with guaranteed HTTPS URLs
         return {
-            tokenURI: metadataUri,
-            imageUri,
+            tokenURI: normalizeToGatewayUrl(metadataUri), // Extra safety normalization
+            imageUri: normalizeToGatewayUrl(imageUri),   // Extra safety normalization
             metadata,
             provider: imageResult.provider,
             model: imageResult.model || PROVIDERS[imageResult.provider]?.model,
@@ -1286,31 +1293,6 @@ async function uploadToIPFS(filePath, name) {
 async function getFileSize(filePath) {
     const stats = await fs.stat(filePath);
     return stats.size;
-}
-
-/**
- * Convert IPFS URI to HTTPS gateway URL if needed
- * @param {string} uri - URI to convert (may be ipfs:// or https://)
- * @param {string} filename - Optional filename to append
- * @returns {string} - HTTPS gateway URL
- */
-function normalizeToGatewayUrl(uri, filename = '') {
-    if (!uri) return uri;
-
-    // If already HTTPS, return as-is
-    if (uri.startsWith('https://')) {
-        return uri;
-    }
-
-    // Convert ipfs:// to HTTPS gateway
-    if (uri.startsWith('ipfs://')) {
-        const cid = uri.replace('ipfs://', '');
-        const filenamePart = filename ? `/${filename}` : '';
-        return `https://ipfs.io/ipfs/${cid}${filenamePart}`;
-    }
-
-    // Return as-is if not IPFS URI
-    return uri;
 }
 
 /**

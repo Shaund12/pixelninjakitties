@@ -710,7 +710,7 @@ export function getRarityTier(score) {
  * @param {string} filename - Optional filename to append
  * @returns {string} - HTTPS gateway URL
  */
-function normalizeToGatewayUrl(uri, filename = '') {
+export function normalizeToGatewayUrl(uri, filename = '') {
     if (!uri) return uri;
 
     // If already HTTPS, return as-is
