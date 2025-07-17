@@ -1237,189 +1237,77 @@ async function processImage(imageResult) {
 }
 
 /**
- * Upload an image to IPFS via Pinata
- * @param {string} imagePath - Path to the image file
- * @param {string} name - Name for the upload
- * @returns {Promise<string>} - HTTPS gateway URL (guaranteed)
+ * Upload a file (image or JSON) to Pinata and return an HTTPS gateway URL.
+ * @param {string} filePath – Path to the file on disk.
+ * @param {string} name – Friendly name (used for Pinata metadata).
+ * @returns {Promise<string>} – Always an HTTPS URL: https://ipfs.io/ipfs/{CID}/{filename}
  */
 async function uploadToPinata(filePath, name) {
-    console.log(`📤 Attempting Pinata upload for ${name} (${await getFileSize(filePath)} bytes)`);
-    console.log(`🔍 uploadToPinata input: filePath=${filePath}, name=${name}`);
-
-    if (!isPinataConfigured) {
-        throw new Error('Pinata not configured - missing API key or secret key');
+    if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
+        throw new Error('Pinata not configured – missing PINATA_API_KEY or PINATA_SECRET_KEY');
     }
 
-    // Create form data with the file
     const formData = new FormData();
-    const fileStream = await fs.readFile(filePath);
-    formData.append('file', fileStream, { filename: path.basename(filePath) });
+    const fileBuffer = await fs.readFile(filePath);
+    formData.append('file', fileBuffer, { filename: path.basename(filePath) });
+    formData.append('pinataMetadata', JSON.stringify({ name }));
 
-    // Add metadata
-    formData.append('pinataMetadata', JSON.stringify({
-        name: `nft-${name}`
-    }));
-
-    try {
-        const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-            method: 'POST',
-            headers: {
-                'pinata_api_key': PINATA_API_KEY,
-                'pinata_secret_api_key': PINATA_SECRET_KEY,
-                ...formData.getHeaders()
-            },
-            body: formData
-        });
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Pinata error: ${response.status} - ${error}`);
-        }
-
-        const result = await response.json();
-        console.log(`🔍 Pinata raw response:`, result);
-        
-        const ipfsHash = result.IpfsHash;
-        console.log(`🔍 Extracted Pinata IPFS hash: ${ipfsHash}`);
-
-        // Return HTTPS gateway URL instead of raw ipfs:// for better compatibility
-        const gatewayUrl = `https://ipfs.io/ipfs/${ipfsHash}/${path.basename(filePath)}`;
-        console.log(`✅ Pinata upload successful: ${gatewayUrl}`);
-        
-        // CRITICAL SAFETY CHECK: Ensure we're returning HTTPS
-        if (gatewayUrl.startsWith('ipfs://')) {
-            console.error(`❌ ERROR: Pinata generated ipfs:// URL: ${gatewayUrl}`);
-            throw new Error(`Pinata generated invalid URL format: ${gatewayUrl}`);
-        }
-        
-        // TRIPLE SAFETY CHECK: Validate the URL format
-        if (!gatewayUrl.startsWith('https://ipfs.io/ipfs/')) {
-            console.error(`❌ ERROR: Pinata generated invalid gateway URL: ${gatewayUrl}`);
-            throw new Error(`Invalid gateway URL format: ${gatewayUrl}`);
-        }
-        
-        return gatewayUrl;
-    } catch (error) {
-        console.error(`Error uploading to Pinata: ${error.message}`);
-        throw error;
+    const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+            pinata_api_key: PINATA_API_KEY,
+            pinata_secret_api_key: PINATA_SECRET_KEY,
+            ...formData.getHeaders(),
+        },
+        body: formData,
+    });
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Pinata upload failed: ${res.status} – ${err}`);
     }
+
+    const { IpfsHash: cid } = await res.json();
+    // Return the HTTPS gateway URL
+    return `https://ipfs.io/ipfs/${cid}/${path.basename(filePath)}`;
 }
 
 /**
- * Upload a file to IPFS
- * @param {string} filePath - Path to the file
- * @param {string} name - Name for the upload
- * @returns {Promise<string>} - HTTPS gateway URL (guaranteed)
+ * Upload any file to IPFS, preferring Pinata, then falling back to web3.storage.
+ * Always returns an HTTPS gateway URL.
+ * @param {string} filePath – Path to the file on disk.
+ * @param {string} name – Friendly name for metadata or CLI fallback.
+ * @returns {Promise<string>} – https://ipfs.io/ipfs/{CID}/{filename}
  */
 async function uploadToIPFS(filePath, name) {
-    console.log(`🚀 uploadToIPFS called: filePath=${filePath}, name=${name}`);
-    
-    // Try Pinata first if configured
-    if (isPinataConfigured) {
+    // 1) Try Pinata
+    if (PINATA_API_KEY && PINATA_SECRET_KEY) {
         try {
-            const result = await uploadToPinata(filePath, name);
-            console.log(`✅ Pinata upload result: ${result}`);
-            
-            // CRITICAL VALIDATION: Ensure Pinata returned HTTPS
-            if (result.startsWith('ipfs://')) {
-                console.error(`❌ FATAL: uploadToPinata returned ipfs:// URI: ${result}`);
-                throw new Error(`uploadToPinata returned invalid format: ${result}`);
-            }
-            if (!result.startsWith('https://')) {
-                console.error(`❌ FATAL: uploadToPinata returned non-HTTPS URI: ${result}`);
-                throw new Error(`uploadToPinata returned non-HTTPS format: ${result}`);
-            }
-            
-            return result;
-        } catch (error) {
-            console.warn(`⚠️ Pinata upload failed: ${error.message}`);
-            console.warn('⚠️ Falling back to local w3.storage CLI...');
-        }
-    }
-
-    // Fall back to web3.storage CLI
-    try {
-        console.log(`🔄 Attempting web3.storage CLI fallback for ${name}`);
-        const command = `npx web3.storage put "${filePath}" --name "${name}"`;
-        console.log(`🔧 Running command: ${command}`);
-        
-        const { stdout, stderr } = await execAsync(command);
-        console.log(`📤 Web3.storage CLI stdout: ${stdout}`);
-        console.log(`📤 Web3.storage CLI stderr: ${stderr}`);
-        
-        // Parse the output more carefully
-        const lines = stdout.trim().split('\n');
-        console.log(`🔍 All output lines:`, lines);
-        
-        // The CID is typically the last line, but let's be more defensive
-        let ipfsCid = null;
-        for (let i = lines.length - 1; i >= 0; i--) {
-            const line = lines[i].trim();
-            // Look for a line that looks like a CID (starts with Qm or baf and has right length)
-            if (line.match(/^(Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[0-9a-z]{56})$/)) {
-                ipfsCid = line;
-                break;
-            }
-        }
-        
-        if (!ipfsCid) {
-            // Fallback to the last line method
-            ipfsCid = lines[lines.length - 1].trim();
-        }
-        
-        console.log(`🔍 Extracted CID: ${ipfsCid}`);
-
-        if (!ipfsCid || ipfsCid.length < 40) {
-            throw new Error(`Invalid IPFS CID returned: "${ipfsCid}" from output: ${stdout}`);
-        }
-
-        // Return HTTPS gateway URL instead of raw ipfs:// for better compatibility
-        const gatewayUrl = `https://ipfs.io/ipfs/${ipfsCid}/${path.basename(filePath)}`;
-        console.log(`✅ Web3.storage upload successful: ${gatewayUrl}`);
-        
-        // CRITICAL SAFETY CHECK: Ensure we're returning HTTPS
-        if (gatewayUrl.startsWith('ipfs://')) {
-            console.error(`❌ ERROR: web3.storage fallback generated ipfs:// URL: ${gatewayUrl}`);
-            throw new Error(`Fallback generated invalid URL format: ${gatewayUrl}`);
-        }
-        
-        // TRIPLE SAFETY CHECK: Validate the URL format
-        if (!gatewayUrl.startsWith('https://ipfs.io/ipfs/')) {
-            console.error(`❌ ERROR: web3.storage fallback generated invalid gateway URL: ${gatewayUrl}`);
-            throw new Error(`Invalid gateway URL format: ${gatewayUrl}`);
-        }
-        
-        return gatewayUrl;
-    } catch (error) {
-        console.error(`Error uploading to IPFS: ${error.message}`);
-
-        // In case of failure, generate a local URL as last resort
-        const backupFilename = `${Date.now()}-${name}.png`;
-        const publicDir = path.join(process.cwd(), 'public', 'images');
-
-        try {
-            // Ensure the public/images directory exists
-            await fs.mkdir(publicDir, { recursive: true });
-
-            // Copy the file to the public directory
-            await fs.copyFile(filePath, path.join(publicDir, backupFilename));
-
-            // Return a URL relative to the base URL
-            const localUrl = `${baseUrl}/images/${backupFilename}`;
-            console.log(`📁 Local fallback URL created: ${localUrl}`);
-            
-            // FINAL VALIDATION: Even local URLs should not be ipfs://
-            if (localUrl.startsWith('ipfs://')) {
-                console.error(`❌ FATAL: Local fallback generated ipfs:// URL: ${localUrl}`);
-                throw new Error(`Local fallback generated invalid format: ${localUrl}`);
-            }
-            
-            return localUrl;
+            return await uploadToPinata(filePath, name);
         } catch (err) {
-            console.error(`Final fallback failed: ${err.message}`);
-            throw new Error('All upload attempts failed');
+            console.warn(`⚠️ Pinata upload failed, falling back: ${err.message}`);
         }
     }
+
+    // 2) Fall back to web3.storage CLI
+    try {
+        const cmd = `npx web3.storage put "${filePath}" --name "${name}"`;
+        const { stdout } = await execAsync(cmd);
+        const lines = stdout.trim().split('\n').filter(l => l);
+        const cid = lines[lines.length - 1];
+        if (!/^[A-Za-z0-9]+$/.test(cid)) {
+            throw new Error(`Invalid CID from web3.storage: ${cid}`);
+        }
+        return `https://ipfs.io/ipfs/${cid}/${path.basename(filePath)}`;
+    } catch (err) {
+        console.warn(`⚠️ web3.storage fallback failed: ${err.message}`);
+    }
+
+    // 3) Last‑resort local fallback (serves from your BASE_URL/public/images)
+    const backupDir = path.join(process.cwd(), 'public', 'images');
+    await fs.mkdir(backupDir, { recursive: true });
+    const filename = `${Date.now()}-${path.basename(filePath)}`;
+    await fs.copyFile(filePath, path.join(backupDir, filename));
+    return `${BASE_URL.replace(/\/$/, '')}/images/${filename}`;
 }
 
 // Helper to get file size
