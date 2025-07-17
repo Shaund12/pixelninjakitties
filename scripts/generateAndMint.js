@@ -9,6 +9,7 @@ import path from 'path';
 import os from 'os';
 import fetch from 'node-fetch';
 import { finalizeMint } from './finalizeMint.js';
+import { normalizeToGatewayUrl } from '../utils/metadata.js';
 
 /**
  * Generates an AI pixel-art ninja cat image, uploads to IPFS, and mints as NFT
@@ -158,7 +159,7 @@ export async function generateAndMint({
             name: `Ninja ${breed} #${timestamp}`,
             description: `A unique on-chain pixel-art ninja ${breed} cat.`,
             attributes: [{ trait_type: 'Breed', value: breed }],
-            image: `ipfs://${imageCid}`
+            image: normalizeToGatewayUrl(`ipfs://${imageCid}`, 'image.png')
         };
 
         // Add provider info to metadata
@@ -170,14 +171,14 @@ export async function generateAndMint({
             };
         }
 
-        // Ensure image points to our IPFS CID
-        metadata.image = `ipfs://${imageCid}`;
+        // Ensure image points to our IPFS CID as HTTPS gateway URL
+        metadata.image = normalizeToGatewayUrl(`ipfs://${imageCid}`, 'image.png');
 
         const metaPath = path.join(tmp, 'meta.json');
         await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
 
         const metaCid = await client.uploadFile((await filesFromPaths([metaPath]))[0]);
-        const tokenURI = `ipfs://${metaCid}`;
+        const tokenURI = normalizeToGatewayUrl(`ipfs://${metaCid}`, 'meta.json');
 
         reportProgress(70, 'IPFS upload complete, preparing to mint');
 
