@@ -19,7 +19,7 @@ function mockUploadToIPFS(filePath, name) {
         // Metadata upload returns raw IPFS URI
         return Promise.resolve('ipfs://QmMetadataHash987654321');
     } else {
-        // Image upload returns raw IPFS URI  
+        // Image upload returns raw IPFS URI
         return Promise.resolve('ipfs://QmImageHash123456789');
     }
 }
@@ -29,17 +29,17 @@ function mockUploadToIPFS(filePath, name) {
  */
 function normalizeToGatewayUrl(uri, filename = '') {
     if (!uri) return uri;
-    
+
     if (uri.startsWith('https://')) {
         return uri;
     }
-    
+
     if (uri.startsWith('ipfs://')) {
         const cid = uri.replace('ipfs://', '');
         const filenamePart = filename ? `/${filename}` : '';
         return `https://ipfs.io/ipfs/${cid}${filenamePart}`;
     }
-    
+
     return uri;
 }
 
@@ -59,7 +59,7 @@ async function runSmokeTest() {
         console.log('\nStep 2: Simulate image upload...');
         let imageUri = await mockUploadToIPFS('/path/to/image.png', 'Tabby-68');
         console.log(`📷 Mock image upload returned: ${imageUri}`);
-        
+
         // Apply normalization as finalizeMint would
         const imageFilename = 'Tabby-68.png';
         imageUri = normalizeToGatewayUrl(imageUri, imageFilename);
@@ -77,14 +77,14 @@ async function runSmokeTest() {
         console.log('\nStep 4: Simulate metadata upload...');
         let metadataUri = await mockUploadToIPFS('/path/to/metadata.json', '68.json');
         console.log(`📄 Mock metadata upload returned: ${metadataUri}`);
-        
+
         // Apply normalization as finalizeMint would
         metadataUri = normalizeToGatewayUrl(metadataUri, '68.json');
         console.log(`🔗 Normalized metadata URI: ${metadataUri}`);
 
         // Verify results match requirements
         console.log('\nStep 5: Verify requirements...');
-        
+
         // Check tokenURI format
         const expectedTokenUriPattern = /^https:\/\/ipfs\.io\/ipfs\/[A-Za-z0-9]+\/68\.json$/;
         if (expectedTokenUriPattern.test(metadataUri)) {
@@ -109,7 +109,7 @@ async function runSmokeTest() {
         console.log('\nStep 6: Verify metadata structure...');
         const requiredFields = ['name', 'description', 'image', 'attributes'];
         const hasAllFields = requiredFields.every(field => metadata.hasOwnProperty(field));
-        
+
         if (hasAllFields) {
             console.log('✅ Metadata has all required fields');
         } else {
