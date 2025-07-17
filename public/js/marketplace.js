@@ -71,6 +71,10 @@ let currentPreviewIndex = 0;
 let favorites = []; // Will be loaded from Supabase
 let hotItemsCarouselIndex = 0;
 
+// Component instances
+let watchlistComponent = null;
+let settingsComponent = null;
+
 // Token cache to avoid refetching metadata
 const tokenCache = {};
 
