@@ -92,8 +92,12 @@ export async function getFavorites(walletAddress) {
 }
 
 export async function toggleFavorite(walletAddress, tokenId) {
-    if (!walletAddress || !tokenId) {
-        throw new Error('Wallet address and token ID are required');
+    if (!walletAddress) {
+        throw new Error('Wallet address is required for toggleFavorite');
+    }
+
+    if (!tokenId) {
+        throw new Error('Token ID is required for toggleFavorite');
     }
 
     try {
