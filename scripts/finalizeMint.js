@@ -157,7 +157,7 @@ const PROVIDERS = {
             style: 'vivid',
             size: '1024x1024',
             prompt_prefix: '32x32 pixel art sprite of a ninja cat: ',
-            prompt_suffix: '. Retro game style, chunky pixels, extremely limited color palette, cute, charming, high-contrast pixel art. NES/SNES era game graphics, no anti-aliasing, blocky pixel edges. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS.',
+            prompt_suffix: '. Retro game style, chunky pixels, extremely limited color palette, cute, charming, high-contrast pixel art. NES/SNES era game graphics, no anti-aliasing, blocky pixel edges. THE IMAGE MUST CONTAIN NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO CAPTIONS, NO WATERMARKS WHATSOEVER.',
             backgrounds: getBackgroundDefinitions()
         }
     },
@@ -239,8 +239,16 @@ async function generateDallEImage(prompt, options = {}) {
     const maxRetries = options.maxRetries || 2;
 
     // Allow using the prompt directly if specified
-    const enhancedPrompt = options.useCustomPrompt ? prompt :
+    let enhancedPrompt = options.useCustomPrompt ? prompt :
         `${settings.prompt_prefix}${prompt}${settings.prompt_suffix}`;
+
+    // Explicitly incorporate negative prompts for DALL-E since it has no dedicated negative prompt parameter
+    if (options.negativePrompt) {
+        enhancedPrompt += ` DO NOT INCLUDE: ${options.negativePrompt}. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO SIGNATURES, NO WATERMARKS.`;
+    } else {
+        // Reinforce no-text instruction even without explicit negative prompt
+        enhancedPrompt += ` ABSOLUTELY NO TEXT OR LETTERS OF ANY KIND.`;
+    }
 
     console.log(`🎨 Generating image with ${model}...`);
     console.log(`📝 ${options.useCustomPrompt ? 'Custom' : 'Enhanced'} prompt: "${enhancedPrompt}"`);
