@@ -1,7 +1,9 @@
 ﻿import { RPC_URL, CONTRACT_ADDRESS, NFT_ABI, USDC_ADDRESS, USDC_ABI } from './config.js';
-import { getFavorites, toggleFavorite, isFavorite, savePreferences, loadPreferences } from './supabaseClient.js';
+import { getFavorites, toggleFavorite, savePreferences, loadPreferences, subscribeToListings, getActiveListings } from './supabaseClient.js';
 import { getCurrentWalletAddress, addConnectionListener, removeConnectionListener } from './walletConnector.js';
 import { logListingView, logFavoriteAction, logPurchase, logListingCreated, logListingCancelled, logMarketplaceView, logFilterApplied } from './activityLogger.js';
+import WatchlistComponent from '../components/WatchlistComponent.js';
+import SettingsComponent from '../components/SettingsComponent.js';
 
 // Constants
 const MARKETPLACE_ADDRESS = '0x5031fc07293d574Ccbd4d12b0E7106A95502a299';
@@ -1950,6 +1952,10 @@ async function init() {
         // Initialize read-only contracts for browsing
         initReadOnlyContracts();
 
+        // Initialize UI components
+        watchlistComponent = new WatchlistComponent();
+        settingsComponent = new SettingsComponent();
+
         // Set up wallet connection listeners
         addConnectionListener(handleWalletConnectionChange);
 
@@ -1976,8 +1982,94 @@ async function init() {
         // Load trending items
         await loadTrendingItems();
 
-        // Set up real-time subscriptions
-        await setupRealtimeSubscriptions();
+// Set up real-time subscriptions for live updates
+async function setupRealtimeSubscriptions() {
+    try {
+        // Clean up existing subscription
+        if (realtimeSubscription) {
+            await realtimeSubscription.unsubscribe();
+        }
+
+        // Subscribe to listing changes
+        realtimeSubscription = await subscribeToListings((eventType, listing) => {
+            switch (eventType) {
+                case 'listing_created':
+                    handleNewListing(listing);
+                    break;
+                case 'listing_cancelled':
+                    handleListingCancelled(listing);
+                    break;
+                case 'item_sold':
+                    handleItemSold(listing);
+                    break;
+            }
+        });
+
+        console.log('✅ Real-time subscriptions set up successfully');
+    } catch (error) {
+        console.error('❌ Failed to set up real-time subscriptions:', error);
+        // Fall back to polling
+        setupPollingFallback();
+    }
+}
+
+// Handle new listing events
+function handleNewListing(listing) {
+    showToast(`New listing: NFT #${listing.token_id} for ${listing.price} ETH`, 'info');
+    
+    // Add to current listings if not already present
+    const existingIndex = allListings.findIndex(l => l.tokenId === listing.token_id);
+    if (existingIndex === -1) {
+        // Convert Supabase listing to our format and add to beginning
+        const formattedListing = {
+            tokenId: listing.token_id,
+            seller: listing.seller_address,
+            price: listing.price,
+            currency: listing.currency_address,
+            active: listing.is_active
+        };
+        allListings.unshift(formattedListing);
+        
+        // Re-render listings
+        applyListingFiltersAndSort();
+    }
+}
+
+// Handle listing cancellation events
+function handleListingCancelled(listing) {
+    showToast(`Listing cancelled: NFT #${listing.token_id}`, 'warning');
+    
+    // Remove from current listings
+    allListings = allListings.filter(l => l.tokenId !== listing.token_id);
+    
+    // Re-render listings
+    applyListingFiltersAndSort();
+}
+
+// Handle item sold events
+function handleItemSold(listing) {
+    showToast(`Item sold: NFT #${listing.token_id} for ${listing.price} ETH`, 'success');
+    
+    // Remove from current listings
+    allListings = allListings.filter(l => l.tokenId !== listing.token_id);
+    
+    // Re-render listings
+    applyListingFiltersAndSort();
+}
+
+// Fallback polling mechanism
+function setupPollingFallback() {
+    console.log('Setting up polling fallback for real-time updates...');
+    
+    // Poll every 30 seconds
+    setInterval(async () => {
+        try {
+            await loadListings();
+        } catch (error) {
+            console.error('Polling update failed:', error);
+        }
+    }, 30000);
+}
 
         // Set up lazy loading
         setupLazyLoading();

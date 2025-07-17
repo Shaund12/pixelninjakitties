@@ -27,9 +27,11 @@ CREATE TABLE IF NOT EXISTS preferences (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     filters JSONB DEFAULT '{}'::jsonb,
-    theme TEXT DEFAULT 'dark',
+    theme TEXT DEFAULT 'dark' CHECK (theme IN ('light', 'dark')),
     notifications BOOLEAN DEFAULT true,
     saved_searches JSONB DEFAULT '[]'::jsonb,
+    layout_mode TEXT DEFAULT 'grid' CHECK (layout_mode IN ('grid', 'list')),
+    items_per_page INTEGER DEFAULT 20 CHECK (items_per_page BETWEEN 10 AND 100),
     last_viewed TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     
     -- One preference record per user
@@ -58,6 +60,20 @@ CREATE INDEX IF NOT EXISTS idx_users_last_activity ON users(last_activity);
 CREATE INDEX IF NOT EXISTS idx_ninja_player_settings_user_id ON ninja_player_settings(user_id);
 CREATE INDEX IF NOT EXISTS idx_ninja_player_settings_last_updated ON ninja_player_settings(last_updated);
 
+-- New table indexes
+CREATE INDEX IF NOT EXISTS idx_listings_token_id ON listings(token_id);
+CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller_address);
+CREATE INDEX IF NOT EXISTS idx_listings_active ON listings(is_active);
+CREATE INDEX IF NOT EXISTS idx_listings_created_at ON listings(created_at);
+CREATE INDEX IF NOT EXISTS idx_watchlists_user_id ON watchlists(user_id);
+CREATE INDEX IF NOT EXISTS idx_watchlists_token_id ON watchlists(token_id);
+CREATE INDEX IF NOT EXISTS idx_watchlists_active ON watchlists(is_active);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_comments_token_id ON comments(token_id);
+CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
+CREATE INDEX IF NOT EXISTS idx_floor_stats_rarity ON floor_stats(rarity);
+CREATE INDEX IF NOT EXISTS idx_floor_stats_updated ON floor_stats(last_updated);
+
 -- Create composite indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user_event ON activity_logs(user_id, event_type);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_token_event ON activity_logs(token_id, event_type);
@@ -69,6 +85,10 @@ ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ninja_player_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE watchlists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE floor_stats ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies (allow all operations for now, since we're using wallet addresses)
 -- In a production environment, you might want to restrict these further
@@ -109,6 +129,46 @@ CREATE POLICY "Users can view their own player settings" ON ninja_player_setting
     FOR SELECT USING (true);
 
 CREATE POLICY "Users can manage their own player settings" ON ninja_player_settings
+    FOR ALL USING (true);
+
+-- Listings table policies
+CREATE POLICY "Users can view all listings" ON listings
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert their own listings" ON listings
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Users can update their own listings" ON listings
+    FOR UPDATE USING (true);
+
+CREATE POLICY "Users can delete their own listings" ON listings
+    FOR DELETE USING (true);
+
+-- Watchlists table policies
+CREATE POLICY "Users can view their own watchlists" ON watchlists
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage their own watchlists" ON watchlists
+    FOR ALL USING (true);
+
+-- Comments table policies
+CREATE POLICY "Users can view all comments" ON comments
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert their own comments" ON comments
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Users can update their own comments" ON comments
+    FOR UPDATE USING (true);
+
+CREATE POLICY "Users can delete their own comments" ON comments
+    FOR DELETE USING (true);
+
+-- Floor stats table policies (read-only for users, write for service)
+CREATE POLICY "Users can view floor stats" ON floor_stats
+    FOR SELECT USING (true);
+
+CREATE POLICY "Service can manage floor stats" ON floor_stats
     FOR ALL USING (true);
 
 -- Create a function to get trending tokens
@@ -196,6 +256,66 @@ CREATE TABLE IF NOT EXISTS ninja_player_settings (
     
     -- One settings record per user
     UNIQUE(user_id)
+);
+
+-- Create listings table for realtime listing feed
+CREATE TABLE IF NOT EXISTS listings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    token_id INTEGER NOT NULL,
+    seller_address TEXT NOT NULL,
+    price DECIMAL(20,6) NOT NULL,
+    currency_address TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    cancelled_at TIMESTAMP WITH TIME ZONE,
+    sold_at TIMESTAMP WITH TIME ZONE,
+    buyer_address TEXT,
+    
+    -- Unique constraint for active listings
+    UNIQUE(token_id, is_active) WHERE is_active = true
+);
+
+-- Create watchlists table for price alerts
+CREATE TABLE IF NOT EXISTS watchlists (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token_id INTEGER NOT NULL,
+    target_price DECIMAL(20,6),
+    currency_address TEXT DEFAULT '0x0000000000000000000000000000000000000000', -- ETH by default
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    triggered_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Prevent duplicate watchlist entries
+    UNIQUE(user_id, token_id, is_active) WHERE is_active = true
+);
+
+-- Create comments table for reviews and discussions
+CREATE TABLE IF NOT EXISTS comments (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token_id INTEGER NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    is_deleted BOOLEAN DEFAULT false,
+    
+    -- Validation
+    CHECK (LENGTH(body) > 0 AND LENGTH(body) <= 1000)
+);
+
+-- Create floor_stats table for pre-computed floor prices
+CREATE TABLE IF NOT EXISTS floor_stats (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    rarity TEXT NOT NULL,
+    floor_price DECIMAL(20,6) NOT NULL,
+    currency_address TEXT NOT NULL,
+    sample_size INTEGER NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    
+    -- One record per rarity
+    UNIQUE(rarity, currency_address)
 );
 
 -- Create a function to clean up old activity logs (optional, for maintenance)
