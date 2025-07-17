@@ -280,6 +280,8 @@ export async function saveSearch(walletAddress, searchName, filterSettings) {
 
 // **ACTIVITY LOGGING**
 
+// **ACTIVITY LOGGING**
+
 export async function logActivity(walletAddress, eventType, tokenId = null, metadata = {}) {
     if (!walletAddress || !eventType) {
         console.warn('Insufficient data for activity logging');
@@ -290,13 +292,18 @@ export async function logActivity(walletAddress, eventType, tokenId = null, meta
         await ensureUserExists(walletAddress);
         const client = await getSupabaseClient();
 
+        // Handle BigInt serialization issue by converting BigInts to strings
+        const safeMetadata = JSON.parse(JSON.stringify(metadata, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+        ));
+
         const { error } = await client
             .from('activity_logs')
             .insert([{
                 user_id: walletAddress.toLowerCase(),
                 event_type: eventType,
                 token_id: tokenId,
-                metadata: metadata,
+                metadata: safeMetadata,
                 timestamp: new Date().toISOString()
             }]);
 
