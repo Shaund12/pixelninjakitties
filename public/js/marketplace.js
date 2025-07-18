@@ -585,9 +585,20 @@ async function initContractsWithSigner(signer) {
 
 // Initialize read-only contracts
 function initReadOnlyContracts() {
+    console.log('=== INITIALIZING CONTRACTS ===');
+    console.log('Marketplace Address:', MARKETPLACE_ADDRESS);
+    console.log('NFT Contract Address:', CONTRACT_ADDRESS);
+    console.log('USDC Address:', USDC_ADDRESS);
+    console.log('Provider:', provider);
+
     marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, provider);
     nft = new ethers.Contract(CONTRACT_ADDRESS, NFT_ABI, provider);
     usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
+
+    console.log('Contracts initialized:');
+    console.log('- Marketplace contract:', !!marketplace);
+    console.log('- NFT contract:', !!nft);
+    console.log('- USDC contract:', !!usdc);
 }
 
 // Fetch token metadata from IPFS
@@ -645,10 +656,43 @@ async function loadListings() {
         listingsLoading.style.display = 'flex';
         listingsGrid.innerHTML = '';
 
-        allListings = await marketplace.getListings();
+        // Debug logging for contract connection
+        console.log('=== MARKETPLACE DEBUG INFO ===');
+        console.log('RPC URL:', RPC_URL);
+        console.log('Marketplace Address:', MARKETPLACE_ADDRESS);
+        console.log('Provider connected:', !!provider);
+        console.log('Marketplace contract:', !!marketplace);
+
+        // Check if provider is working
+        const blockNumber = await provider.getBlockNumber();
+        console.log('Current block number:', blockNumber);
+
+        // Call the contract method
+        console.log('Calling marketplace.getListings()...');
+        const rawListings = await marketplace.getListings();
+        console.log('Raw listings from contract:', rawListings);
+        console.log('Number of raw listings:', rawListings.length);
+
+        allListings = rawListings;
+
+        // Log each listing for debugging
+        if (allListings.length > 0) {
+            console.log('=== LISTING DETAILS ===');
+            allListings.forEach((listing, index) => {
+                console.log(`Listing ${index}:`, {
+                    tokenId: listing.tokenId.toString(),
+                    seller: listing.seller,
+                    price: listing.price.toString(),
+                    currency: listing.currency,
+                    active: listing.active
+                });
+            });
+        }
 
         // Filter out inactive listings
-        allListings = allListings.filter(listing => listing.active);
+        const activeListings = allListings.filter(listing => listing.active);
+        console.log('Active listings after filter:', activeListings.length);
+        allListings = activeListings;
 
         // Initialize the stats display
         if (window.updateMarketplaceStats) {
@@ -661,10 +705,39 @@ async function loadListings() {
         });
 
         if (allListings.length === 0) {
+            console.log('No active listings found');
             noListings.style.display = 'block';
             listingsLoading.style.display = 'none';
+            
+            // Show additional debug info in the UI
+            noListings.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <h3>No Active Listings Found</h3>
+                    <p>The marketplace contract returned ${rawListings.length} total listings, but ${rawListings.length - activeListings.length} were inactive.</p>
+                    <div style="margin-top: 1rem; font-size: 0.9rem; color: #666; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: left;">
+                        <p><strong>Debug Info:</strong></p>
+                        <p>RPC: ${RPC_URL}</p>
+                        <p>Contract: ${MARKETPLACE_ADDRESS}</p>
+                        <p>Block: ${blockNumber}</p>
+                        <p>Total listings: ${rawListings.length}</p>
+                        <p>Active listings: ${activeListings.length}</p>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <button onclick="loadListings()" 
+                                style="background: #8a65ff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; margin: 0.5rem; cursor: pointer;">
+                            Retry Loading
+                        </button>
+                        <button onclick="window.verifyMarketplaceContract()" 
+                                style="background: #2196F3; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; margin: 0.5rem; cursor: pointer;">
+                            Verify Contract
+                        </button>
+                    </div>
+                </div>
+            `;
             return;
         }
+
+        console.log('Proceeding to render', allListings.length, 'active listings');
 
         // Apply filters and sort
         applyListingFiltersAndSort();
@@ -672,6 +745,12 @@ async function loadListings() {
         listingsLoading.style.display = 'none';
     } catch (error) {
         console.error('Error loading marketplace listings:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        
         listingsLoading.innerHTML = `
             <div style="text-align: center;">
                 <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -680,7 +759,13 @@ async function loadListings() {
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
                 <p>Error loading listings: ${error.message}</p>
-                <button onclick="window.location.reload()" 
+                <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                    <p><strong>Technical Details:</strong></p>
+                    <p>RPC: ${RPC_URL}</p>
+                    <p>Contract: ${MARKETPLACE_ADDRESS}</p>
+                    <p>Error Type: ${error.name}</p>
+                </div>
+                <button onclick="loadListings()" 
                         style="background: #3a3a3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin-top: 1rem; cursor: pointer;">
                     Try Again
                 </button>
@@ -1947,8 +2032,41 @@ window.executePurchase = async function (listing) {
 
 async function init() {
     try {
+        console.log('Initializing marketplace...');
+        
         // Initialize read-only contracts for browsing
         initReadOnlyContracts();
+        
+        // Test contract connectivity
+        try {
+            console.log('=== TESTING CONTRACT CONNECTIVITY ===');
+            
+            // Test RPC connection
+            const blockNumber = await provider.getBlockNumber();
+            console.log('✅ RPC connection successful, block:', blockNumber);
+            
+            // Test if marketplace contract exists and responds
+            const code = await provider.getCode(MARKETPLACE_ADDRESS);
+            if (code === '0x') {
+                console.error('❌ No contract code found at marketplace address:', MARKETPLACE_ADDRESS);
+                showToast('Marketplace contract not found at the specified address', 'error');
+            } else {
+                console.log('✅ Marketplace contract code found, length:', code.length);
+            }
+            
+            // Test if we can call getListings (this will help verify ABI)
+            try {
+                const testListings = await marketplace.getListings();
+                console.log('✅ Contract call successful, listings count:', testListings.length);
+            } catch (contractError) {
+                console.error('❌ Contract call failed:', contractError.message);
+                console.error('This might indicate ABI mismatch or contract interface issues');
+            }
+            
+        } catch (connectionError) {
+            console.error('❌ Connection test failed:', connectionError);
+            showToast('Failed to connect to blockchain network', 'error');
+        }
 
         // Set up wallet connection listeners
         addConnectionListener(handleWalletConnectionChange);
@@ -2716,6 +2834,81 @@ function setupLazyLoading() {
         imageObserver.observe(img);
     });
 }
+
+// Contract verification function for debugging
+window.verifyMarketplaceContract = async function() {
+    console.log('=== MARKETPLACE CONTRACT VERIFICATION ===');
+    
+    try {
+        // Show loading state
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Verifying...';
+        button.disabled = true;
+        
+        // Test 1: Check RPC connection
+        console.log('1. Testing RPC connection...');
+        const blockNumber = await provider.getBlockNumber();
+        console.log('✅ RPC connected, current block:', blockNumber);
+        
+        // Test 2: Check contract exists
+        console.log('2. Checking contract existence...');
+        const code = await provider.getCode(MARKETPLACE_ADDRESS);
+        console.log('Contract code length:', code.length);
+        
+        if (code === '0x') {
+            console.error('❌ No contract found at address:', MARKETPLACE_ADDRESS);
+            alert('No contract found at the marketplace address. The contract may not be deployed or the address is incorrect.');
+            return;
+        }
+        
+        // Test 3: Try to call contract functions
+        console.log('3. Testing contract function calls...');
+        
+        try {
+            const listings = await marketplace.getListings();
+            console.log('✅ getListings() successful, returned:', listings.length, 'listings');
+            
+            // Show detailed listing info
+            if (listings.length > 0) {
+                console.log('Sample listing data:');
+                listings.slice(0, 3).forEach((listing, i) => {
+                    console.log(`Listing ${i}:`, {
+                        tokenId: listing.tokenId.toString(),
+                        seller: listing.seller,
+                        price: listing.price.toString(),
+                        currency: listing.currency,
+                        active: listing.active
+                    });
+                });
+                
+                // Count active vs inactive
+                const activeCount = listings.filter(l => l.active).length;
+                const inactiveCount = listings.length - activeCount;
+                
+                alert(`Contract verification successful!\n\nFound ${listings.length} total listings:\n- ${activeCount} active\n- ${inactiveCount} inactive\n\nCheck console for detailed info.`);
+            } else {
+                alert('Contract verification successful!\n\nThe marketplace contract is working correctly but currently has no listings.');
+            }
+            
+        } catch (funcError) {
+            console.error('❌ Contract function call failed:', funcError);
+            alert(`Contract found but function call failed:\n${funcError.message}\n\nThis suggests an ABI mismatch or the contract interface has changed.`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Verification failed:', error);
+        alert(`Verification failed: ${error.message}`);
+    } finally {
+        // Restore button
+        const button = event.target;
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+};
+
+// Make loadListings available globally for debugging
+window.loadListings = loadListings;
 
 // Start the app when DOM is ready
 document.addEventListener('DOMContentLoaded', init);
