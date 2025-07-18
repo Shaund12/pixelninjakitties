@@ -58,6 +58,13 @@ import {
     getBackgroundDefinitions,
     normalizeToGatewayUrl
 } from '../utils/metadata.js';
+import {
+    PROVIDERS,
+    generateImage as generateImageShared,
+    processImage as processImageShared,
+    enhancePixelArt as enhancePixelArtShared,
+    uploadToIPFS as uploadToIPFSShared
+} from '../utils/imageGenerator.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
@@ -145,111 +152,10 @@ const {
     // IPFS_GATEWAY = 'https://ipfs.io/ipfs/'
 } = process.env;
 
-// Enhanced provider configuration with expanded background options and storytelling
-const PROVIDERS = {
-    huggingface: {
-        name: 'HuggingFace',
-        key: HUGGING_FACE_TOKEN,
-        model: HF_MODEL,
-        models: {
-            'stabilityai/stable-diffusion-xl-base-1.0': 'SDXL (High Quality)',
-            'prompthero/openjourney': 'Openjourney (Midjourney Style)',
-            'runwayml/stable-diffusion-v1-5': 'SD 1.5 (Faster)',
-            'ByteDance/SDXL-Lightning': 'SDXL Lightning (Fastest)',
-            'Lykon/dreamshaper-xl-1-0': 'Dreamshaper XL (Stylized)'
-        },
-        free: true,
-        pixelSettings: {
-            guidance_scale: 8.5,
-            num_inference_steps: 50,
-            prompt_prefix: '32x32 pixel art of a ninja cat, ',
-            prompt_suffix: ', retro game style, limited color palette, charming, detailed pixel art, NES style',
-            backgrounds: getBackgroundDefinitions(),
-            negativePrompt: 'text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality'
-        }
-    },
-    'dall-e': {
-        name: 'DALL-E',
-        key: OPENAI_API_KEY,
-        model: DALLE_MODEL,
-        models: {
-            'dall-e-3': 'DALL-E 3 (Best Quality)',
-            'dall-e-2': 'DALL-E 2 (Faster)'
-        },
-        free: false,
-        pixelSettings: {
-            quality: 'hd',
-            style: 'vivid',
-            size: '1024x1024',
-            prompt_prefix: '32x32 pixel art sprite of a ninja cat: ',
-            prompt_suffix: '. Simple retro game style, chunky pixels, extremely limited color palette, NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, cute, charming pixel art. NES/SNES era game graphics, no anti-aliasing, blocky pixel edges.',
-            backgrounds: getBackgroundDefinitions()
-        }
-    },
-    stability: {
-        name: 'Stability AI',
-        key: STABILITY_API_KEY,
-        model: STABILITY_MODEL,
-        models: {
-            'stable-diffusion-xl-1024-v1-0': 'SDXL 1.0',
-            'stable-diffusion-v1-5': 'SD 1.5 (Faster)'
-        },
-        free: false,
-        pixelSettings: {
-            cfg_scale: 9.5, // Increased for better prompt adherence
-            steps: 40, // Increased for better quality
-            prompt_prefix: '32x32 pixel art sprite of a ninja cat: ',
-            prompt_suffix: ', retro game style, limited color palette (8-16 colors max), chunky pixels, no anti-aliasing, clean pixel art, NES/SNES aesthetic',
-            backgrounds: getBackgroundDefinitions(),
-            negativePrompt: 'text, letters, numbers, words, captions, labels, watermarks, signatures, blurry, low quality'
-        },
-        stylePresets: {
-            'pixel-art': 'Pixel Art',
-            'anime': 'Anime',
-            '3d-model': '3D Model',
-            'photographic': 'Photographic',
-            'digital-art': 'Digital Art'
-        },
-        defaultStylePreset: 'pixel-art'
-    }
-};
-
-// Verify we have at least one image generation API key
-if (!OPENAI_API_KEY && !STABILITY_API_KEY && !HUGGING_FACE_TOKEN) {
-    throw new Error('Missing API keys in .env: need at least one of HUGGING_FACE_TOKEN, OPENAI_API_KEY, or STABILITY_API_KEY');
-}
-
-// Check if the selected provider is configured
-const selectedProvider = PROVIDERS[IMAGE_PROVIDER];
-if (!selectedProvider) {
-    console.warn(`⚠️ Unknown provider "${IMAGE_PROVIDER}". Valid options are: ${Object.keys(PROVIDERS).join(', ')}`);
-    console.warn('⚠️ Falling back to available provider...');
-}
-if (selectedProvider && !selectedProvider.key) {
-    console.warn(`⚠️ Selected provider "${IMAGE_PROVIDER}" has no API key configured.`);
-    console.warn('⚠️ Falling back to available provider...');
-}
-
-console.log(`🖼️ Default image provider: ${selectedProvider && selectedProvider.key ?
-    `${selectedProvider.name} (${selectedProvider.model})` :
-    'Will try all available providers'
-    }`);
-
+/* ─── Image generation with shared utility ─────────────────── */
+// Configuration still needed locally  
 const baseUrl = BASE_URL || 'http://localhost:5000';
 const projectName = PROJECT_NAME || 'Pixel Ninja Cats';
-const isPinataConfigured = PINATA_API_KEY && PINATA_SECRET_KEY;
-
-/* ─── optional sharp (auto-crop) ─────────────────────────────── */
-let sharp;
-try { sharp = (await import('sharp')).default; } catch { /* fine */ }
-
-/* ─── OpenAI client ──────────────────────────────────────────── */
-let openai;
-if (OPENAI_API_KEY) {
-    openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-}
-
-/* ─── Image generation with various providers ─────────────────── */
 /**
  * Generate an image using OpenAI's DALL-E models
  * @param {string} prompt - The base prompt to generate an image from
@@ -872,8 +778,8 @@ export async function finalizeMint({
 
             console.log(`🔒 PROVIDER CONFIRMED: Using "${LOCKED_PROVIDER}" for generation`);
 
-            // Generate the image with our secured options
-            imageResult = await generateImage(prompt, generationOptions);
+            // Generate the image with our secured options using shared utility
+            imageResult = await generateImageShared(prompt, generationOptions);
 
             const imageGenTime = ((Date.now() - imageStartTime) / 1000).toFixed(2);
             console.log(`✅ Image generated in ${imageGenTime}s using ${imageResult.provider}`);
@@ -906,12 +812,12 @@ export async function finalizeMint({
         }
 
         const processingStartTime = Date.now();
-        const processedImage = await processImage(imageResult);
+        const processedImage = await processImageShared(imageResult);
         const processTime = ((Date.now() - processingStartTime) / 1000).toFixed(2);
         console.log(`✅ Image processed in ${processTime}s`);
 
         // Add pixel art enhancements (optional - only if sharp is available)
-        await enhancePixelArt(processedImage);
+        await enhancePixelArtShared(processedImage);
 
         // Update task status for IPFS upload
         if (taskManager) {
@@ -926,7 +832,7 @@ export async function finalizeMint({
         const uploadStartTime = Date.now();
         let imageUri;
         try {
-            imageUri = await uploadToIPFS(processedImage.path, `${normalizedBreed}-${tokenId}`);
+            imageUri = await uploadToIPFSShared(processedImage.path, `${normalizedBreed}-${tokenId}`);
 
             // CRITICAL SAFETY CHECK: Ensure imageUri is HTTPS
             if (imageUri && imageUri.startsWith('ipfs://')) {
@@ -1034,7 +940,7 @@ export async function finalizeMint({
         const metadataStartTime = Date.now();
         let metadataUri;
         try {
-            metadataUri = await uploadToIPFS(metaPath, fileName);
+            metadataUri = await uploadToIPFSShared(metaPath, fileName);
 
             // CRITICAL SAFETY CHECK: Ensure metadataUri is HTTPS
             if (metadataUri && metadataUri.startsWith('ipfs://')) {

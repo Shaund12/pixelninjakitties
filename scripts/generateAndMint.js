@@ -1,6 +1,5 @@
 // scripts/generateAndMint.js
 import 'dotenv/config';
-import OpenAI from 'openai';
 import { create } from '@web3-storage/w3up-client';
 import { ethers } from 'ethers';
 import { filesFromPaths } from 'files-from-path';
@@ -10,6 +9,7 @@ import os from 'os';
 import fetch from 'node-fetch';
 import { finalizeMint } from './finalizeMint.js';
 import { normalizeToGatewayUrl } from '../utils/metadata.js';
+import { generateDallEImage } from '../utils/imageGenerator.js';
 
 /**
  * Critical validation function to ensure URI is HTTPS gateway format
@@ -136,19 +136,18 @@ export async function generateAndMint({
 
             /* ---------- Standard prompt generation ---------- */
             const prompt = `
-            Pixel-art ninja ${breed} cat, retro 32�32 style, vibrant palette,
+            Pixel-art ninja ${breed} cat, retro 32×32 style, vibrant palette,
             action pose with katana, ${promptExtras}
             --no text, watermark, border
             `.replace(/\s+/g, ' ').trim();
 
-            const openai = new OpenAI();
-            const imgResp = await openai.images.generate({
+            // Use shared DALL-E generation function
+            const imgResult = await generateDallEImage(prompt, {
+                useCustomPrompt: true,
                 model: 'dall-e-3',
-                prompt,
-                n: 1,
                 size: '1024x1024'
             });
-            imageURL = imgResp.data[0].url;
+            imageURL = imgResult.url;
             stats.usedProvider = 'dall-e';
             stats.model = 'dall-e-3';
 
