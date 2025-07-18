@@ -22,15 +22,15 @@ function validateHttpsUri(uri, context = 'URI') {
     if (!uri || typeof uri !== 'string') {
         throw new Error(`${context} is empty or invalid: ${uri}`);
     }
-    
+
     if (uri.startsWith('ipfs://')) {
         throw new Error(`${context} is still raw IPFS format: ${uri} - This should have been normalized!`);
     }
-    
+
     if (!uri.startsWith('https://')) {
         throw new Error(`${context} is not HTTPS format: ${uri}`);
     }
-    
+
     console.log(`✅ ${context} validation passed: ${uri}`);
     return uri;
 }
@@ -177,11 +177,11 @@ export async function generateAndMint({
         reportProgress(60, 'Uploading to IPFS');
         const client = await create();
         const imageCidResult = await client.uploadFile((await filesFromPaths([imgPath]))[0]);
-        
+
         // CRITICAL SAFETY CHECK: Extract actual CID string from w3up-client result
-        console.log(`🔍 Raw imageCidResult from w3up-client:`, imageCidResult);
-        console.log(`🔍 Type of imageCidResult:`, typeof imageCidResult);
-        
+        console.log('🔍 Raw imageCidResult from w3up-client:', imageCidResult);
+        console.log('🔍 Type of imageCidResult:', typeof imageCidResult);
+
         // w3up-client might return an object with toString() method or a direct string
         let imageCid;
         if (typeof imageCidResult === 'object' && imageCidResult.toString) {
@@ -191,7 +191,7 @@ export async function generateAndMint({
         } else {
             throw new Error(`Unexpected type from w3up-client uploadFile: ${typeof imageCidResult}, value: ${imageCidResult}`);
         }
-        
+
         console.log(`🔍 Extracted imageCid string: ${imageCid}`);
         if (!imageCid || typeof imageCid !== 'string' || imageCid.length < 40) {
             throw new Error(`Invalid imageCid received from w3up-client: ${imageCid}`);
@@ -236,11 +236,11 @@ export async function generateAndMint({
         await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
 
         const metaCidResult = await client.uploadFile((await filesFromPaths([metaPath]))[0]);
-        
+
         // CRITICAL SAFETY CHECK: Extract actual CID string from w3up-client result
-        console.log(`🔍 Raw metaCidResult from w3up-client:`, metaCidResult);
-        console.log(`🔍 Type of metaCidResult:`, typeof metaCidResult);
-        
+        console.log('🔍 Raw metaCidResult from w3up-client:', metaCidResult);
+        console.log('🔍 Type of metaCidResult:', typeof metaCidResult);
+
         // w3up-client might return an object with toString() method or a direct string
         let metaCid;
         if (typeof metaCidResult === 'object' && metaCidResult.toString) {
@@ -250,21 +250,21 @@ export async function generateAndMint({
         } else {
             throw new Error(`Unexpected type from w3up-client uploadFile: ${typeof metaCidResult}, value: ${metaCidResult}`);
         }
-        
+
         console.log(`🔍 Extracted metaCid string: ${metaCid}`);
         if (!metaCid || typeof metaCid !== 'string' || metaCid.length < 40) {
             throw new Error(`Invalid metaCid received from w3up-client: ${metaCid}`);
         }
-        
+
         // Construct HTTPS gateway URL directly - never create ipfs:// URIs
         const metadataGatewayUrl = `https://ipfs.io/ipfs/${metaCid}/meta.json`;
         console.log(`🔗 Constructed metadata gateway URL: ${metadataGatewayUrl}`);
-        
+
         // CRITICAL SAFETY CHECK: Ensure tokenURI is HTTPS
         if (!metadataGatewayUrl.startsWith('https://ipfs.io/ipfs/')) {
             throw new Error(`CRITICAL: Failed to construct proper gateway URL: ${metadataGatewayUrl}`);
         }
-        
+
         // Final validation - this MUST be HTTPS
         validateHttpsUri(metadataGatewayUrl, 'Generated Token URI');
         console.log(`✅ VERIFIED tokenURI is HTTPS: ${metadataGatewayUrl}`);
