@@ -9,31 +9,8 @@ import path from 'path';
 import os from 'os';
 import fetch from 'node-fetch';
 import { finalizeMint } from './finalizeMint.js';
-import { normalizeToGatewayUrl } from '../utils/metadata.js';
 
-/**
- * Critical validation function to ensure URI is HTTPS gateway format
- * @param {string} uri - URI to validate
- * @param {string} context - Context for error messages
- * @returns {string} - Validated HTTPS URI
- * @throws {Error} - If URI is not in correct format
- */
-function validateHttpsUri(uri, context = 'URI') {
-    if (!uri || typeof uri !== 'string') {
-        throw new Error(`${context} is empty or invalid: ${uri}`);
-    }
-    
-    if (uri.startsWith('ipfs://')) {
-        throw new Error(`${context} is still raw IPFS format: ${uri} - This should have been normalized!`);
-    }
-    
-    if (!uri.startsWith('https://')) {
-        throw new Error(`${context} is not HTTPS format: ${uri}`);
-    }
-    
-    console.log(`✅ ${context} validation passed: ${uri}`);
-    return uri;
-}
+
 
 /**
  * Generates an AI pixel-art ninja cat image, uploads to IPFS, and mints as NFT
@@ -176,37 +153,14 @@ export async function generateAndMint({
 
         reportProgress(60, 'Uploading to IPFS');
         const client = await create();
-        const imageCidResult = await client.uploadFile((await filesFromPaths([imgPath]))[0]);
-        
-        // CRITICAL SAFETY CHECK: Extract actual CID string from w3up-client result
-        console.log(`🔍 Raw imageCidResult from w3up-client:`, imageCidResult);
-        console.log(`🔍 Type of imageCidResult:`, typeof imageCidResult);
-        
-        // w3up-client might return an object with toString() method or a direct string
-        let imageCid;
-        if (typeof imageCidResult === 'object' && imageCidResult.toString) {
-            imageCid = imageCidResult.toString();
-        } else if (typeof imageCidResult === 'string') {
-            imageCid = imageCidResult;
-        } else {
-            throw new Error(`Unexpected type from w3up-client uploadFile: ${typeof imageCidResult}, value: ${imageCidResult}`);
-        }
-        
-        console.log(`🔍 Extracted imageCid string: ${imageCid}`);
-        if (!imageCid || typeof imageCid !== 'string' || imageCid.length < 40) {
-            throw new Error(`Invalid imageCid received from w3up-client: ${imageCid}`);
-        }
-
-        // Construct HTTPS gateway URL directly - never create ipfs:// URIs
-        const imageGatewayUrl = `https://ipfs.io/ipfs/${imageCid}/image.png`;
-        console.log(`🔗 Constructed image gateway URL: ${imageGatewayUrl}`);
+        const imageCid = await client.uploadFile((await filesFromPaths([imgPath]))[0]);
 
         // Use enhanced metadata if available, otherwise create basic metadata
         metadata = metadata || {
             name: `Ninja ${breed} #${timestamp}`,
             description: `A unique on-chain pixel-art ninja ${breed} cat.`,
             attributes: [{ trait_type: 'Breed', value: breed }],
-            image: imageGatewayUrl
+            image: `ipfs://${imageCid}`
         };
 
         // Add provider info to metadata
@@ -255,19 +209,9 @@ export async function generateAndMint({
         if (!metaCid || typeof metaCid !== 'string' || metaCid.length < 40) {
             throw new Error(`Invalid metaCid received from w3up-client: ${metaCid}`);
         }
-        
-        // Construct HTTPS gateway URL directly - never create ipfs:// URIs
-        const metadataGatewayUrl = `https://ipfs.io/ipfs/${metaCid}/meta.json`;
-        console.log(`🔗 Constructed metadata gateway URL: ${metadataGatewayUrl}`);
-        
-        // CRITICAL SAFETY CHECK: Ensure tokenURI is HTTPS
-        if (!metadataGatewayUrl.startsWith('https://ipfs.io/ipfs/')) {
-            throw new Error(`CRITICAL: Failed to construct proper gateway URL: ${metadataGatewayUrl}`);
-        }
-        
-        // Final validation - this MUST be HTTPS
-        validateHttpsUri(metadataGatewayUrl, 'Generated Token URI');
-        console.log(`✅ VERIFIED tokenURI is HTTPS: ${metadataGatewayUrl}`);
+
+
+
 
         reportProgress(70, 'IPFS upload complete, preparing to mint');
 
@@ -324,7 +268,7 @@ export async function generateAndMint({
         stats.tokenId = mintedTokenId;
 
         return {
-            tokenURI: metadataGatewayUrl,
+            tokenURI,
             txHash: tx.hash,
             tokenId: mintedTokenId,
             metadata,

@@ -20,7 +20,6 @@ import cors from 'cors';
 import compression from 'compression';
 import { ethers } from 'ethers';
 import { finalizeMint } from './scripts/finalizeMint.js';
-import { normalizeToGatewayUrl } from './utils/metadata.js';
 import { createTask, updateTask, completeTask, failTask, getTaskStatus, cleanupTasks, initializeSupabaseTables } from './scripts/supabaseTaskManager.js';
 import {
     validateTokenId,
@@ -320,24 +319,9 @@ async function processMintTask(task) {
         try {
             const current = await nft.tokenURI(id).catch(() => '');
             if (!current || current === '') {
-                // CRITICAL SAFETY CHECK: Ensure placeholder URI is HTTPS
-                let placeholderUri = PLACEHOLDER_URI;
-                console.log(`🔍 PLACEHOLDER DEBUG: Original placeholder URI: ${placeholderUri}`);
-                
-                if (placeholderUri && placeholderUri.startsWith('ipfs://')) {
-                    console.warn(`⚠️ PLACEHOLDER_URI is ipfs:// format, normalizing: ${placeholderUri}`);
-                    placeholderUri = normalizeToGatewayUrl(placeholderUri, 'placeholder.json');
-                    console.log(`🔧 PLACEHOLDER normalized to HTTPS: ${placeholderUri}`);
-                }
-                
-                if (!placeholderUri || !placeholderUri.startsWith('https://')) {
-                    console.error(`❌ PLACEHOLDER_URI is not HTTPS format: ${placeholderUri}`);
-                    throw new Error(`PLACEHOLDER_URI must be HTTPS format, got: ${placeholderUri}`);
-                }
-                
-                const txPH = await nft.setTokenURI(id, placeholderUri);
+                const txPH = await nft.setTokenURI(id, PLACEHOLDER_URI);
                 await txPH.wait();
-                console.log(`  • Placeholder set for token #${id}: ${placeholderUri}`);
+                console.log(`  • Placeholder set for token #${id}`);
             }
         } catch (err) {
             console.error(`  • Placeholder failed for token #${id}:`, err);
@@ -379,81 +363,8 @@ async function processMintTask(task) {
             metadata: result.metadata
         });
 
-        // COMPREHENSIVE URI VALIDATION AND BULLETPROOF NORMALIZATION
-        console.log(`🔍 BEFORE setTokenURI - Raw result.tokenURI: ${result.tokenURI}`);
-        console.log(`🔍 BEFORE setTokenURI - typeof result.tokenURI: ${typeof result.tokenURI}`);
-        console.log(`🔍 BEFORE setTokenURI - result.tokenURI.length: ${result.tokenURI?.length}`);
-        console.log(`🔍 BEFORE setTokenURI - provider used: ${result.provider}`);
-        
-        // Store original for debugging
-        const originalTokenURI = result.tokenURI;
-        
-        // STEP 1: Detect if URI is ipfs:// format
-        if (result.tokenURI.startsWith('ipfs://')) {
-            console.error(`❌ CRITICAL BUG DETECTED: finalizeMint returned ipfs:// URI: ${result.tokenURI}`);
-            console.error(`❌ This indicates the normalization in finalizeMint is not working properly!`);
-            console.error(`❌ Provider used: ${result.provider}`);
-            console.error(`❌ Token ID: ${id}, Breed: ${breed}`);
-            
-            // Apply emergency normalization
-            const fileName = `${id}.json`;
-            result.tokenURI = normalizeToGatewayUrl(result.tokenURI, fileName);
-            console.log(`🔧 EMERGENCY FIX: Converted to HTTPS: ${result.tokenURI}`);
-            
-            // Report this as a critical issue
-            console.error(`❌ BUG REPORT: Original ipfs:// URI was: ${originalTokenURI}`);
-            console.error(`❌ BUG REPORT: Emergency fix applied: ${result.tokenURI}`);
-        }
-        
-        // STEP 2: Ensure URI is valid HTTPS format
-        if (!result.tokenURI || typeof result.tokenURI !== 'string') {
-            console.error(`❌ CRITICAL ERROR: tokenURI is invalid: ${result.tokenURI}`);
-            throw new Error(`TokenURI is invalid: ${result.tokenURI}`);
-        }
-        
-        if (!result.tokenURI.startsWith('https://')) {
-            console.error(`❌ CRITICAL ERROR: tokenURI is not HTTPS format: ${result.tokenURI}`);
-            console.error(`❌ Original URI was: ${originalTokenURI}`);
-            throw new Error(`TokenURI must be HTTPS format, got: ${result.tokenURI}`);
-        }
-        
-        // STEP 3: Additional validation for expected format
-        if (!result.tokenURI.includes('ipfs.io/ipfs/')) {
-            console.warn(`⚠️ WARNING: tokenURI doesn't match expected IPFS gateway format: ${result.tokenURI}`);
-        }
-        
-        // STEP 4: Final validation before blockchain call
-        console.log(`✅ URI VALIDATION PASSED: ${result.tokenURI}`);
-        console.log(`📊 URI Stats: Length=${result.tokenURI.length}, HTTPS=${result.tokenURI.startsWith('https://')}`);
-        
-        if (originalTokenURI !== result.tokenURI) {
-            console.warn(`🔧 URI WAS MODIFIED: Original="${originalTokenURI}" Final="${result.tokenURI}"`);
-        }
-
-        // BULLETPROOF setTokenURI CALL WITH FINAL VALIDATION
-        console.log(`🔗 CALLING setTokenURI with validated URI: ${result.tokenURI}`);
-        console.log(`🔗 Token ID: ${id}, Contract: ${nft.target}`);
-        
-        // Final safety check right before blockchain call
-        if (!result.tokenURI.startsWith('https://ipfs.io/ipfs/')) {
-            console.error(`❌ FINAL CHECK FAILED: URI doesn't match expected gateway format: ${result.tokenURI}`);
-            throw new Error(`Final validation failed: Expected https://ipfs.io/ipfs/ format, got: ${result.tokenURI}`);
-        }
-        
-        let tx, receipt;
-        try {
-            tx = await nft.setTokenURI(id, result.tokenURI);
-            console.log(`✅ setTokenURI transaction sent: ${tx.hash}`);
-            console.log(`📝 Transaction details: tokenId=${id}, uri=${result.tokenURI}`);
-            
-            receipt = await tx.wait();
-            console.log(`✅ setTokenURI confirmed in block: ${receipt.blockNumber}`);
-            console.log(`🎯 FINAL SUCCESS: Token #${id} URI set to: ${result.tokenURI}`);
-        } catch (txError) {
-            console.error(`❌ setTokenURI transaction failed: ${txError.message}`);
-            console.error(`❌ Transaction error details:`, txError);
-            throw new Error(`Failed to set token URI: ${txError.message}`);
-        }
+        const tx = await nft.setTokenURI(id, result.tokenURI);
+        await tx.wait();
         
         console.log(`✅ Finalized #${id} → ${result.tokenURI} using ${providerToUse}`);
 

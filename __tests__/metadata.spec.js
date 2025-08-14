@@ -139,24 +139,24 @@ function runTests() {
 
         console.log('\n🎉 All tests completed!');
 
-        // Test IPFS gateway URL normalization
-        console.log('\nTesting IPFS gateway URL normalization...');
+        // Test IPFS URI preservation (reverted from gateway normalization)
+        console.log('\nTesting IPFS URI preservation...');
 
-        // Test with ipfs:// URI
+        // Test with ipfs:// URI - should remain as ipfs://
         const ipfsMetadata = assembleMetadata(traits, 'ipfs://QmTestHash123', {
             name: 'Test Cat #1',
             tokenId: '1'
         });
 
-        if (ipfsMetadata.image.startsWith('https://ipfs.io/ipfs/')) {
-            console.log('✅ IPFS URI correctly converted to HTTPS gateway URL');
+        if (ipfsMetadata.image === 'ipfs://QmTestHash123') {
+            console.log('✅ IPFS URI correctly preserved');
             console.log(`   Image URL: ${ipfsMetadata.image}`);
         } else {
-            console.log('❌ IPFS URI conversion failed');
-            console.log(`   Expected HTTPS URL, got: ${ipfsMetadata.image}`);
+            console.log('❌ IPFS URI preservation failed');
+            console.log(`   Expected ipfs:// URL, got: ${ipfsMetadata.image}`);
         }
 
-        // Test with already HTTPS URI
+        // Test with HTTPS URI - should remain as HTTPS
         const httpsMetadata = assembleMetadata(traits, 'https://ipfs.io/ipfs/QmTestHash123/image.png', {
             name: 'Test Cat #2',
             tokenId: '2'

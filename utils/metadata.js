@@ -704,30 +704,7 @@ export function getRarityTier(score) {
     return 'Standard';                      // Default
 }
 
-/**
- * Convert IPFS URI to HTTPS gateway URL if needed
- * @param {string} uri - URI to convert (may be ipfs:// or https://)
- * @param {string} filename - Optional filename to append
- * @returns {string} - HTTPS gateway URL
- */
-export function normalizeToGatewayUrl(uri, filename = '') {
-    if (!uri) return uri;
 
-    // If already HTTPS, return as-is
-    if (uri.startsWith('https://')) {
-        return uri;
-    }
-
-    // Convert ipfs:// to HTTPS gateway
-    if (uri.startsWith('ipfs://')) {
-        const cid = uri.replace('ipfs://', '');
-        const filenamePart = filename ? `/${filename}` : '';
-        return `https://ipfs.io/ipfs/${cid}${filenamePart}`;
-    }
-
-    // Return as-is if not IPFS URI
-    return uri;
-}
 
 /**
  * Assemble the final metadata object with versioning
@@ -737,14 +714,11 @@ export function normalizeToGatewayUrl(uri, filename = '') {
  * @returns {Object} - Final metadata object
  */
 export function assembleMetadata(traits, imageUri, metadataExtras = {}) {
-    // Ensure imageUri is normalized to HTTPS gateway URL
-    const normalizedImageUri = normalizeToGatewayUrl(imageUri);
-
     const metadata = {
         metadata_version: '2.0',
         name: metadataExtras.name || `Pixel Ninja Cat #${metadataExtras.tokenId || 'Unknown'}`,
         description: traits.description,
-        image: normalizedImageUri,
+        image: imageUri,
         external_url: metadataExtras.external_url || undefined,
         attributes: traits.attributes,
         ...metadataExtras
