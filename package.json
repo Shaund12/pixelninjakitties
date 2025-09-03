@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "deploy": "npx hardhat run deploy/00_deploy.js --network vitruveo",
     "lint": "eslint . --ext .js --fix",
-    "test": "node __tests__/metadata.spec.js"
+    "test": "node __tests__/metadata.spec.js",
+    "test:integration": "node __tests__/integration-mock.js",
+    "test:all": "npm test && npm run test:integration && node __tests__/metadata-fetch.spec.js && node __tests__/final-verification.js"
   },
   "dependencies": {
     "@eslint/js": "^9.31.0",
