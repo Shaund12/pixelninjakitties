@@ -190,11 +190,11 @@ export async function generateAndMint({
         await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
 
         const metaCidResult = await client.uploadFile((await filesFromPaths([metaPath]))[0]);
-        
+
         // CRITICAL SAFETY CHECK: Extract actual CID string from w3up-client result
-        console.log(`🔍 Raw metaCidResult from w3up-client:`, metaCidResult);
-        console.log(`🔍 Type of metaCidResult:`, typeof metaCidResult);
-        
+        console.log('🔍 Raw metaCidResult from w3up-client:', metaCidResult);
+        console.log('🔍 Type of metaCidResult:', typeof metaCidResult);
+
         // w3up-client might return an object with toString() method or a direct string
         let metaCid;
         if (typeof metaCidResult === 'object' && metaCidResult.toString) {
@@ -204,7 +204,7 @@ export async function generateAndMint({
         } else {
             throw new Error(`Unexpected type from w3up-client uploadFile: ${typeof metaCidResult}, value: ${metaCidResult}`);
         }
-        
+
         console.log(`🔍 Extracted metaCid string: ${metaCid}`);
         if (!metaCid || typeof metaCid !== 'string' || metaCid.length < 40) {
             throw new Error(`Invalid metaCid received from w3up-client: ${metaCid}`);
