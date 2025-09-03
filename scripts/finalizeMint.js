@@ -985,7 +985,19 @@ export async function finalizeMint({
         // 📄 Save metadata to `<tokenId>.json`
         const fileName = `${tokenId}.json`;
         const metaPath = path.join(processedImage.directory, fileName);
-        await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
+        
+        // Validate metadata is serializable before writing
+        try {
+            const metadataJson = JSON.stringify(metadata, null, 2);
+            await fs.writeFile(metaPath, metadataJson);
+            console.log(`📄 Metadata saved as ${fileName} (${metadataJson.length} bytes)`);
+        } catch (error) {
+            console.error(`❌ Failed to write metadata file: ${error.message}`);
+            if (taskManager) {
+                taskManager.failTask(taskId, new Error(`Failed to write metadata: ${error.message}`));
+            }
+            throw new Error(`Failed to write metadata file: ${error.message}`);
+        }
 
         // 🚀 Upload metadata to IPFS as `<tokenId>.json`
         if (taskManager) {
