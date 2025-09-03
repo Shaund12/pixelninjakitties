@@ -365,7 +365,7 @@ async function processMintTask(task) {
 
         const tx = await nft.setTokenURI(id, result.tokenURI);
         await tx.wait();
-        
+
         console.log(`✅ Finalized #${id} → ${result.tokenURI} using ${providerToUse}`);
 
         // Mark this token as processed
